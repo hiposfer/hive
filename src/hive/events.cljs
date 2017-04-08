@@ -35,7 +35,7 @@
     (assoc-in context [:coeffects :event]
       [id "mapbox.places" name {:access_token (:mapbox secrets/tokens)} handler])))
 
-(defn carmen->markers
+(defn carmen->targets
   "takes a json object returned by mapbox carmen-geojson style and modifies
    the coeffects map to contain an event with mapbox-compatible annotations"
   [context]

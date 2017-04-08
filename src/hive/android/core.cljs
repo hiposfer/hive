@@ -26,18 +26,21 @@
 (defn app-root []
   (let [map-center (subs/subscribe [:map/center])
         map-zoom   (subs/subscribe [:map/zoom])
-        map-markers (subs/subscribe [:map/markers])]
+        map-markers (subs/subscribe [:user/targets])
+        view-targets? (subs/subscribe [:view/targets])]
     [c/view {:style {:flex 1}}
      [c/mapview {:style {:flex 9} :initialZoomLevel @map-zoom :annotationsAreImmutable true
                  :initialCenterCoordinate @map-center :annotations (clj->js @map-markers)
                  :showsUserLocation true ;:userTrackingMode (-> MapBox .-userTrackingMode .-followWithCourse)
-                 :onUpdateUserLocation #(println "location: " %) :onOpenAnnotation #(println "annotation: " %)
+                 :onUpdateUserLocation #(router/dispatch [:user/location %]) :onOpenAnnotation #(println "annotation: " %)
                  :onLongPress #(println "long-press: " %)}]
-     [c/view {:style {:flex 1 :flexDirection "row" :background-color "teal" :align-items "center"}}
-      [c/text-input {:style {:flex 18 } :placeholderTextColor "white" :placeholder "where would you like to go?"
+     (when @view-targets?
+       [c/targets-list @map-markers])
+     [c/view {:style {:height 90 :flex 1 :flexDirection "row" :background-color "teal" :align-items "center"}}
+      [c/text-input {:style {:height 90 :flex 9} :placeholderTextColor "white" :placeholder "where would you like to go?"
                    ;; TODO: throttle
-                     :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:map/markers %])]))}]
-      [c/button {:style {:flex 3} :accessibilityLabel "search best route"
+                     :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:user/targets %])]))}]
+      [c/button {:style {:height 90 :flex 3} :accessibilityLabel "search best route"
                  :title "GO" :color "#841584" :on-press #(fl/alert (str "Hello " %1))}]]]))
        ;;[image {:source logo-img
        ;;        :style  {:width 80 :height 80 :margin-bottom 30}]
@@ -53,12 +56,17 @@
   ;; ------------- event handlers -------------
   (rf/reg-event-db :hive/state events/init) ;;FIXME validate-spec
   (rf/reg-event-fx :map/geocode [(events/before events/map-token)] events/geocode)
-  (rf/reg-event-db :map/markers [(events/before events/carmen->markers)]
-                   (fn [db [id annotations]] (assoc db id annotations)))
+  (rf/reg-event-db :user/targets [(events/before events/carmen->targets)]
+                   (fn [db [id annotations]] (merge db {:user/targets (reverse annotations)
+                                                        :view/targets (pos? (count annotations))})))
+  (rf/reg-event-db :user/location (fn [db [id gps]] (assoc db id (js->clj gps :keywordize-keys true))))
+  (rf/reg-event-db :view/targets (fn [db [id v]] (assoc db :view/targets v)))
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :map/center query/map-center)
   (subs/reg-sub :map/zoom query/map-zoom)
-  (subs/reg-sub :map/markers query/map-annotations)
+  (subs/reg-sub :view/targets query/view-targets?)
+  (subs/reg-sub :user/targets query/user-targets)
+  (subs/reg-sub :user/location query/user-location)
   ;; App init
   (.setAccessToken fl/MapBox (:mapbox secrets/tokens))
   (.initializeApp fl/FireBase (clj->js (:firebase secrets/tokens)))

@@ -31,7 +31,7 @@
    {:coordinates coord
     :type "point"
     :title title
-    :id (str coord)})
+    :id (str coord)}) ; 1 marker per lat/lon pair
   ([coord title subtitle]
    {:coordinates coord
     :type "point"
