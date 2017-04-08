@@ -2,9 +2,11 @@
   (:require [clojure.spec :as s]
             [hive.core :as hive]
             [re-frame.std-interceptors :as nsa]
+            [re-frame.interceptor :as fbi]
             [clojure.string :as str]
             [re-frame.core :as rf]
-            [hive.secrets :as secrets]))
+            [hive.secrets :as secrets]
+            [hive.effects :as effects]))
 
 ;; -- Interceptors ------------------------------------------------------------
 ;;
@@ -22,13 +24,32 @@
     (nsa/after (partial check-and-throw ::hive/state))
     []))
 
-(def map-token
-  (rf/->interceptor     ;; a utility function supplied by re-frame
-    :id :map.default/geocode  ;; ids are decorative only
-    :before (fn [context] ;; extract db and event from coeffects
-              (let [[id name handler] (:event (:coeffects context))]
-                (assoc-in context [:coeffects :event]
-                  [id "mapbox.places" name {:access_token (:mapbox secrets/tokens)} handler])))))
+(defn before
+  "wrapper for creating 'before' interceptors"
+  ([f] (fbi/->interceptor :id :before :before f))
+  ([id f] (fbi/->interceptor :id id :before f)))
+
+(defn map-token
+  [context] ;; extract db and event from coeffects
+  (let [[id name handler] (:event (:coeffects context))]
+    (assoc-in context [:coeffects :event]
+      [id "mapbox.places" name {:access_token (:mapbox secrets/tokens)} handler])))
+
+(defn carmen->markers
+  "takes a json object returned by mapbox carmen-geojson style and modifies
+   the coeffects map to contain an event with mapbox-compatible annotations"
+  [context]
+  (let [[id carmen-geojson] (:event (:coeffects context))
+        native     (js->clj carmen-geojson :keywordize-keys true)
+        interest   (filter (comp #{"Point"} :type :geometry) (:features native))
+                   ;(sort-by :relevance)
+                   ;(take 5));;FIXME filter by best fit
+        points     (map (comp reverse :coordinates :geometry) interest)
+        names      (map (comp first #(str/split % #",") :place_name) interest)
+        addresses  (map (comp :address :properties) interest)
+        markers    (sequence (map effects/mark) points names addresses)]
+    ;(cljs.pprint/pprint interest)
+    (assoc-in context [:coeffects :event] [id markers])))
 
 ;; -- Handlers --------------------------------------------------------------
 

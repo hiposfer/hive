@@ -4,17 +4,17 @@
             :license {:name "LGPLv3"
                       :url  "https://raw.githubusercontent.com/carocad/phone.app.hive/master/LICENSE"}
             :dependencies [[org.clojure/clojure "1.9.0-alpha10"]
+                           ;; FIXME: https://github.com/bhauman/lein-figwheel/issues/540
                            [org.clojure/clojurescript "1.9.198"]
                            [reagent "0.6.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server]]
-                           [re-frame "0.8.0"]
-                           [day8.re-frame/http-fx "0.1.3"]]
+                           [re-frame "0.8.0"]]
             :plugins [[lein-cljsbuild "1.1.4"]]
                       ;[lein-figwheel "0.5.9"]]
             :clean-targets ["target/" "index.ios.js" "index.android.js"]
             :aliases {"prod-build" ^{:doc "Recompile code with prod profile."}
                                    ["do" "clean"
                                     ["with-profile" "prod" "cljsbuild" "once"]]}
-            :profiles {:dev {:dependencies [[figwheel-sidecar "0.5.8"]
+            :profiles {:dev {:dependencies [[figwheel-sidecar "0.5.8"] ;;FIXME: https://github.com/drapanjanas/re-natal/issues/99
                                             [com.cemerick/piggieback "0.2.1"]]
                              :source-paths ["src" "env/dev" "script"]
                              :cljsbuild    {:builds [{:id           "ios"
@@ -31,6 +31,9 @@
                                                                      :main          "env.android.main"
                                                                      :output-dir    "target/android"
                                                                      :optimizations :none}}]}
+                                                                     ;;FIXME: https://github.com/bhauman/lein-figwheel/issues/50
+                                                                     ;;  https://clojurescript.org/guides/externs
+                                                                     ;:infer-externs true}}]}
                              :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}
                        :prod {:cljsbuild {:builds [{:id           "ios"
                                                     :source-paths ["src" "env/prod"]
@@ -41,6 +44,7 @@
                                                                    :optimize-constants true
                                                                    :optimizations :simple
                                                                    :closure-defines {"goog.DEBUG" false}}}
+                                                                   ;:infer-externs true}}
                                                    {:id            "android"
                                                     :source-paths ["src" "env/prod"]
                                                     :compiler     {:output-to     "index.android.js"
@@ -50,3 +54,4 @@
                                                                    :optimize-constants true
                                                                    :optimizations :simple
                                                                    :closure-defines {"goog.DEBUG" false}}}]}}})
+                                                                   ;:infer-externs true}}]}}})

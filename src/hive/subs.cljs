@@ -3,4 +3,4 @@
 
 (defn map-center [db event] (:map/center db))
 (defn map-zoom [db event] (:map/zoom db))
-(defn map-annotations [db event] (:map/annotations db))
+(defn map-annotations [db event] (:map/markers db))
