@@ -5,7 +5,7 @@
             [re-frame.router :as router]
             [re-frame.subs :as subs]
             [re-frame.fx :as fx]
-            [hive.events :as events]
+            [hive.events :as events :refer [before]]
             [hive.subs :as query]
             [hive.effects :as effects]
             [hive.secrets :as secrets]
@@ -29,18 +29,21 @@
         map-markers (subs/subscribe [:user/targets])
         view-targets? (subs/subscribe [:view/targets])]
     [c/view {:style {:flex 1}}
-     [c/mapview {:style {:flex 9} :initialZoomLevel @map-zoom :annotationsAreImmutable true
+     [c/mapview {:style {:flex 3} :initialZoomLevel @map-zoom :annotationsAreImmutable true
                  :initialCenterCoordinate @map-center :annotations (clj->js @map-markers)
                  :showsUserLocation true ;:userTrackingMode (-> MapBox .-userTrackingMode .-followWithCourse)
-                 :onUpdateUserLocation #(router/dispatch [:user/location %]) :onOpenAnnotation #(println "annotation: " %)
-                 :onLongPress #(println "long-press: " %)}]
+                 :onUpdateUserLocation #(router/dispatch [:user/location %])
+                 :onOpenAnnotation #(println "annotation: " %)
+                 :onLongPress #(println "long-press: " %)
+                 :onTap #(when @view-targets? (router/dispatch [:view/targets false]))}]
      (when @view-targets?
        [c/targets-list @map-markers])
-     [c/view {:style {:height 90 :flex 1 :flexDirection "row" :background-color "teal" :align-items "center"}}
-      [c/text-input {:style {:height 90 :flex 9} :placeholderTextColor "white" :placeholder "where would you like to go?"
-                   ;; TODO: throttle
+     [c/view {:style {:height 50 :flexDirection "row" :background-color "teal"
+                      :align-items "center"}}
+      ;; TODO: throttle
+      [c/text-input {:style {:flex 9} :placeholderTextColor "white" :placeholder "where would you like to go?"
                      :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:user/targets %])]))}]
-      [c/button {:style {:height 90 :flex 3} :accessibilityLabel "search best route"
+      [c/button {:style {:flex 1} :accessibilityLabel "search best route"
                  :title "GO" :color "#841584" :on-press #(fl/alert (str "Hello " %1))}]]]))
        ;;[image {:source logo-img
        ;;        :style  {:width 80 :height 80 :margin-bottom 30}]
@@ -55,8 +58,9 @@
                              (effects/fetch url options effects/res->json handler)))
   ;; ------------- event handlers -------------
   (rf/reg-event-db :hive/state events/init) ;;FIXME validate-spec
-  (rf/reg-event-fx :map/geocode [(events/before events/map-token)] events/geocode)
-  (rf/reg-event-db :user/targets [(events/before events/carmen->targets)]
+  (rf/reg-event-fx :map/geocode [(before events/map-token) (before events/bias-geocode)]
+                   events/geocode)
+  (rf/reg-event-db :user/targets [(before events/carmen->targets)]
                    (fn [db [id annotations]] (merge db {:user/targets (reverse annotations)
                                                         :view/targets (pos? (count annotations))})))
   (rf/reg-event-db :user/location (fn [db [id gps]] (assoc db id (js->clj gps :keywordize-keys true))))

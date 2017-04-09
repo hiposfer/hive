@@ -10,7 +10,7 @@
 
 ;; -- Interceptors ------------------------------------------------------------
 ;;
-;; See https://github.com/Day8/re-frame/blob/master/docs/Interceptors.md
+;; https://github.com/Day8/re-frame/blob/master/docs/Interceptors.md
 ;;
 (defn check-and-throw
   "Throw an exception if db doesn't have a valid spec."
@@ -50,6 +50,20 @@
         markers    (sequence (map effects/mark) points names addresses)]
     ;(cljs.pprint/pprint interest)
     (assoc-in context [:coeffects :event] [id markers])))
+
+(defn bias-geocode
+  [context] ;; extract db and event from coeffects
+  (let [[id kind name params handler] (:event (:coeffects context))
+        position  (:user/location (:db context))
+        prox      (some->> position #(vector (:longitude %) (:latitude %))
+                                     (str/join ","))
+        ;TODO is this always set?)]
+        bounds    (str/join "," (:bbox (:user/city (:db (:coeffects context)))))]
+    (if (nil? position)
+      (assoc-in context [:coeffects :event]
+                [id kind name (merge params {:bbox bounds}) handler])
+      (assoc-in context [:coeffects :event]
+        [id kind name (merge params {:proximity prox :bbox bounds} handler)]))))
 
 ;; -- Handlers --------------------------------------------------------------
 

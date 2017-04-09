@@ -8,8 +8,7 @@
     "prod": "env/prod"
   },
   "modules": [
-    "react-native-mapbox-gl",
-    "firebase"
+    "react-native-mapbox-gl"
   ],
   "imageDirs": [
     "images"

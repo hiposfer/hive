@@ -14,9 +14,9 @@
 
 (defn targets-list
   [targets]
-  [scrollview {:style {:height (* 30 (count targets))}}
+  [view {:style {:height (* 55 (count targets))}}
    (for [t targets]
      ^{:key (:id t)}
-     [view {:style {:flex 1}}
-      [text {:style {:flex 3}} (:title t)]
-      [text {:style {:flex 1 :color "lightgray"}} (:subtitle t)]])])
+     [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
+      [text {:style {:flex 1}} (:title t)]
+      [text {:style {:flex 1 :color "gray"}} (:subtitle t)]])])
