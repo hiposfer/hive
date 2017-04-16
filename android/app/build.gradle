@@ -84,7 +84,7 @@ def enableProguardInReleaseBuilds = false
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion '25.0.2'
 
     defaultConfig {
         applicationId "com.hive"
@@ -130,6 +130,17 @@ dependencies {
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
+
+    // firebase
+    compile "com.google.firebase:firebase-core:9.6.1" // analytics
+    compile "com.google.firebase:firebase-crash:9.6.1"
+
+    /* android only functions as of 02.04.2017 in https://firebase.google.com/docs/
+    com.google.firebase:firebase-config:9.6.1
+    com.google.firebase:firebase-invites:9.6.1
+    com.google.firebase:firebase-ads:9.6.1
+    com.google.android.gms:play-services-appindexing:9.6.1
+    */
 }
 
 // Run this once to be able to run the application with BUCK
@@ -138,3 +149,5 @@ task copyDownloadableDepsToLibs(type: Copy) {
     from configurations.compile
     into 'libs'
 }
+
+apply plugin: 'com.google.gms.google-services'
