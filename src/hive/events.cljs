@@ -6,7 +6,9 @@
             [clojure.string :as str]
             [re-frame.core :as rf]
             [hive.secrets :as secrets]
-            [hive.effects :as effects]))
+            [hive.effects :as effects]
+            [re-frame.router :as router]
+            [hive.foreigns :as fl]))
 
 ;; -- Interceptors ------------------------------------------------------------
 ;;
@@ -42,8 +44,6 @@
   (let [[id carmen-geojson] (:event (:coeffects context))
         native     (js->clj carmen-geojson :keywordize-keys true)
         interest   (filter (comp #{"Point"} :type :geometry) (:features native))
-                   ;(sort-by :relevance)
-                   ;(take 5));;FIXME filter by best fit
         points     (map (comp reverse :coordinates :geometry) interest)
         names      (map (comp first #(str/split % #",") :place_name) interest)
         addresses  (map (comp :address :properties) interest)
@@ -57,7 +57,6 @@
         position  (:user/location (:db context))
         prox      (some->> position #(vector (:longitude %) (:latitude %))
                                      (str/join ","))
-        ;TODO is this always set?)]
         bounds    (str/join "," (:bbox (:user/city (:db (:coeffects context)))))]
     (if (nil? position)
       (assoc-in context [:coeffects :event]
@@ -79,6 +78,12 @@
                 (str/replace "{params}" (str/join "&" params)))]
     {:fetch/json [URL {} handler]}))
 
-;(r/reg-event-db :set-greeting
-;  validate-spec
-;  (fn [db [_ value]] (assoc db :greeting value)))
+;; These handlers take two arguments;  `coeffects` and `event`, and they return `effects`.
+(defn navigate-back
+  [cofx [id]]
+  (println "view: " (:view/screen (:db cofx)))
+  (condp = (:view/screen (:db cofx))
+    :home (if (:view/targets (:db cofx))
+            {:db (assoc (:db cofx) :view/targets false)}
+            {:app/exit true})
+    {:app/exit true}));(do (.exitApp fl/back-android) {})))
