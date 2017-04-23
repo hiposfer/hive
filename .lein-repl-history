@@ -1,3 +1,0 @@
-(start-figwheel "android")
-:cljs/quit
-exit
