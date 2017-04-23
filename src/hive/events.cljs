@@ -110,10 +110,25 @@
     (if (nil? map-ref) {}
       {:map/fly-to [map-ref latitude longitude zoom]})))
 
+(defn bound-map
+  "takes a point coordinate (lat, lon) and an (optional) zoom and makes the
+   mapview fly to it"
+  [points]
+  (let [latitudes  (map first points)
+        longitudes (map second points)
+        lat-sw     (apply min latitudes)
+        lat-ne     (apply max latitudes)
+        lng-sw     (apply min longitudes)
+        lng-ne     (apply max longitudes)]
+    [lat-sw lng-sw lat-ne lng-ne 100 100 100 100]))
+
 (defn targets
   "Handles the events of the result of a geocode search, i.e. possible routing
   targets"
-  [db [id annotations]]
-  (merge db {:user/targets (reverse annotations)
-             :view/targets (pos? (count annotations))}))
+  [cofx [id annotations]]
+  (let [bounds (bound-map (map :coordinates annotations))
+        base   {:db (assoc (:db cofx) :user/targets annotations
+                                      :view/targets (pos? (count annotations)))}]
+    (if (empty? annotations) base
+      (assoc base :map/bound (cons (:map/ref (:db cofx)) bounds)))))
 

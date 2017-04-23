@@ -7,7 +7,7 @@
 
 ;; initial state of app-db
 (def state {:user/location nil
-            :user/targets []
+            :user/targets []; the places the user searched for
             :user/city {:name "Frankfurt am Main" :region "Hessen"
                         :country "Deutschland" :short_code "de"
                         :bbox [8.472715, 50.01552, 8.800496, 50.2269512]}
