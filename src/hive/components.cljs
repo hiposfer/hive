@@ -19,7 +19,9 @@
   [view {:style {:height (* 55 (count targets))}}
    (for [t targets]
      ^{:key (:id t)}
-     [touchable-highlight {:style {:flex 1} :on-press #(router/dispatch [:view/targets false])}
+     [touchable-highlight {:style {:flex 1}
+                           :on-press #(do (router/dispatch [:map/camera (:coordinates t)])
+                                          (router/dispatch [:view/targets false]))}
        [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
          [text {:style {:flex 1}} (:title t)]
          [text {:style {:flex 1 :color "gray"}} (:subtitle t)]]])])

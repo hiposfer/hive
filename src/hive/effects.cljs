@@ -24,6 +24,7 @@
       (.then process-response)
       (.catch #(println %))))
 
+;;TODO: move somewhere else. This doesnt belong in effects
 (defn mark
   "return a minimal hash-map with all required information by mapbox
   for an annotation"
