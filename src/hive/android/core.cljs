@@ -49,15 +49,18 @@
                              (effects/fetch url options effects/res->json handler)))
   (fx/register :app/exit   (fn [v] (.exitApp fl/back-android)))
   (fx/register :map/fly-to (fn [[map-ref lat lng zoom]] (.setCenterCoordinateZoomLevel map-ref lat lng zoom)))
+  (fx/register :map/bound  (fn [[map-ref latSW lngSW latNE lngNE padTop padRight padDown padLeft]]
+                             (when map-ref
+                               (.setVisibleCoordinateBounds map-ref latSW lngSW latNE lngNE padTop padRight padDown padLeft))))
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
   (rf/reg-event-db :hive/state events/init) ;;FIXME validate-spec
   (rf/reg-event-db :map/ref events/assoc-rf)
-  (rf/reg-event-db :user/targets [(before events/carmen->targets)] events/targets)
   (rf/reg-event-db :user/location (fn [db [id gps]] (assoc db id (js->clj gps :keywordize-keys true))))
   (rf/reg-event-db :view/targets events/assoc-rf)
   (rf/reg-event-db :view/screen events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
+  (rf/reg-event-fx :user/targets [(before events/carmen->targets)] events/targets)
   (rf/reg-event-fx :map/geocode [(before events/map-token) (before events/bias-geocode)]
                                 events/geocode)
   (rf/reg-event-fx :map/camera events/fly-to)
