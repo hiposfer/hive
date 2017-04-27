@@ -11,6 +11,7 @@
 (def ReactNative (js/require "react-native"))
 (def MapBox      (js/require "react-native-mapbox-gl"))
 (def FireBase    (js/require "firebase"))
+(def SideMenu    (js/require "react-native-side-menu"))
 
 (def app-registry (.-AppRegistry ReactNative))
 (def back-android (.-BackAndroid ReactNative))

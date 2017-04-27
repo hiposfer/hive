@@ -90,8 +90,8 @@
   It defaults to Exit app if no screen was found"
   [cofx [id]]
   (condp = (:view/screen (:db cofx))
-    :home (if (:view/targets (:db cofx))
-            {:db (assoc (:db cofx) :view/targets false)}
+    :home (if (:view.home/targets (:db cofx))
+            {:db (assoc (:db cofx) :view.home/targets false)}
             {:app/exit true})
     {:app/exit true}))
 
@@ -128,7 +128,7 @@
   [cofx [id annotations]]
   (let [bounds (bound-map (map :coordinates annotations))
         base   {:db (assoc (:db cofx) :user/targets annotations
-                                      :view/targets (pos? (count annotations)))}]
+                                      :view.home/targets (pos? (count annotations)))}]
     (if (empty? annotations) base
       (assoc base :map/bound (cons (:map/ref (:db cofx)) bounds)))))
 
