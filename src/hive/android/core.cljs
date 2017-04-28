@@ -19,27 +19,31 @@
 ; - whenever keeping track of a sequence of transformations, use interceptors for that
 ; - all registrations should be done on init. That way you have pure functions and clean requires
 
-;(def logo-img (js/require "./images/cljs.png"))
+(def menu-img (js/require "./images/ic_menu.png"))
 
 (defn app-root []
   (let [map-camera    (subs/subscribe [:map/camera])
         map-markers   (subs/subscribe [:user/targets])
-        view-targets? (subs/subscribe [:view/targets])]
-    [c/view {:style {:flex 1}}
+        view-targets? (subs/subscribe [:view.home/targets])
+        menu-open?    (subs/subscribe [:view/side-menu])]
+    [c/side-menu {:style {:flex 1} :menu (r/as-element c/menu) :isOpen @menu-open?
+                  :onChange (fn [s] (when-not (= @menu-open? s) (router/dispatch [:view/side-menu s])))}
       [c/view {:style {:height 50 :flexDirection "row" :background-color "teal"
                        :align-items "center"}}
-        ;; TODO: throttle
+        [c/touchable-highlight {:on-press #(router/dispatch [:view/side-menu (not @menu-open?)])}
+          [c/image {:source menu-img}]]
+        ;; TODO: throttle geocoding
         [c/text-input {:style {:flex 9} :placeholderTextColor "white" :placeholder "where would you like to go?"
-                       :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:user/targets %])]))}]
-        [c/button {:style {:flex 1} :accessibilityLabel "search best route"
-                   :title "GO" :color "#841584" :on-press #(fl/alert (str "Hello " %1))}]]
+                       :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:user/targets %])]))}]]
+        ;[c/button {:style {:flex 1} :accessibilityLabel "search best route"
+        ;           :title "GO" :color "#841584" :on-press #(fl/alert (str "Hello " %1))}]]
       (when @view-targets?
         [c/targets-list @map-markers])
       [c/mapview {:style {:flex 3} :initialZoomLevel (:zoom @map-camera) :annotationsAreImmutable true
                   :initialCenterCoordinate (:center @map-camera) :annotations (clj->js @map-markers)
                   :showsUserLocation true ;:ref (fn [this] (println "this: " this)) ;(when this (.keys this))))
                   :onUpdateUserLocation #(router/dispatch [:user/location %])
-                  :onTap #(router/dispatch [:view/targets false])
+                  :onTap #(router/dispatch [:view.home/targets false])
                   :ref (fn [mv] (router/dispatch [:map/ref mv]))}]]))
 
 (defn init []
@@ -57,8 +61,9 @@
   (rf/reg-event-db :hive/state events/init) ;;FIXME validate-spec
   (rf/reg-event-db :map/ref events/assoc-rf)
   (rf/reg-event-db :user/location (fn [db [id gps]] (assoc db id (js->clj gps :keywordize-keys true))))
-  (rf/reg-event-db :view/targets events/assoc-rf)
+  (rf/reg-event-db :view.home/targets events/assoc-rf)
   (rf/reg-event-db :view/screen events/assoc-rf)
+  (rf/reg-event-db :view/side-menu events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
   (rf/reg-event-fx :user/targets [(before events/carmen->targets)] events/targets)
   (rf/reg-event-fx :map/geocode [(before events/map-token) (before events/bias-geocode)]
@@ -68,7 +73,8 @@
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :map/ref query/get-rf)
   (subs/reg-sub :map/camera query/get-rf)
-  (subs/reg-sub :view/targets query/get-rf)
+  (subs/reg-sub :view.home/targets query/get-rf)
+  (subs/reg-sub :view/side-menu query/get-rf)
   (subs/reg-sub :view/screen query/get-rf)
   (subs/reg-sub :user/targets query/get-rf)
   (subs/reg-sub :user/location query/get-rf)
