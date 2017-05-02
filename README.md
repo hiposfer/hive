@@ -20,7 +20,14 @@ This project uses re-natal which in turn wraps react-native (v0.41.1). You would
 
 Once you have installed all the dependencies, run `lein prod-build` and then:
 - for development: `react-native run-android`. You should also check the instructions in *re-natal* regarding development in devices/emulators.
-- for debug/test version: `react-native bundle --dev false --platform android --entry-file index.android.js --bundle-output ./android/app/build/intermediates/assets/debug/index.android.bundle --assets-dest ./android/app/build/intermediates/res/merged/debug`. This will create an *apk* file which you can then install on your device without needing a connection to react-native development server.
+- for debug/test version: 
+  - `react-native bundle --dev false --platform android --entry-file index.android.js --bundle-output ./android/app/build/intermediates/assets/debug/index.android.bundle --assets-dest ./android/app/build/intermediates/res/merged/debug`.
+  - then 
+  ```
+  cd android
+  ./gradlew assembleDebug
+  ``` 
+   This will create an *apk* file which you can then install on your device without needing a connection to react-native development server.
 - for production - not supported yet :(
 
 ### NOTES
