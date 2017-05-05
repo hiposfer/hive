@@ -2,7 +2,8 @@
   (:require [hive.foreigns :as fl]
             [reagent.core :as r]
             [re-frame.router :as router]
-            [reagent.core :as reagent]))
+            [reagent.core :as reagent]
+            [re-frame.subs :as subs]))
 
 (def text-input (r/adapt-react-class (.-TextInput fl/ReactNative)))
 (def button (r/adapt-react-class (.-Button fl/ReactNative)))
@@ -27,11 +28,31 @@
          [text {:style {:flex 1}} (:title t)]
          [text {:style {:flex 1 :color "gray"}} (:subtitle t)]]])])
 
-(def home-img (js/require "./images/ic_home.png"))
-(def settings-img (js/require "./images/ic_settings.png"))
+(defn menu []
+  (let [screen (subs/subscribe [:view/screen])
+        go-home (fn [] (when-not (= @screen :home)
+                         (router/dispatch [:view/screen :home])))
+        go-fix  (fn [] (when-not (= @screen :setting)
+                         (router/dispatch [:view/screen :setting])
+                         (router/dispatch [:view/side-menu false])))]
+    [view
+      [touchable-highlight {:on-press go-home}
+        [view {:flex-direction "row"}
+          [image {:source fl/home-img}]
+          [text "HOME"]]]
+      [touchable-highlight {:on-press go-fix}
+        [view {:flex-direction "row"}
+          [image {:source fl/settings-img}]
+          [text "SETTINGS"]]]]))
 
-(def menu
-  [scrollview
-    [view {:flex-direction "row"} [image {:source home-img}] [text "HOME"]]
-    [view {:flex-direction "row"} [image {:source settings-img}] [text "SETTINGS"]]])
-
+(defn city-selector
+  [cities]
+  (let [current (subs/subscribe [:user/city])]
+    [scrollview
+      (for [[id city] cities]
+        ^{:key id}
+        [touchable-highlight {:on-press #(do (router/dispatch [:user/city city])
+                                             (router/dispatch [:view/screen :home]))}
+          [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
+            [text (:name city)]
+            [text {:style {:color "gray"}} (str (:region city) ", " (:country city))]]])]))
