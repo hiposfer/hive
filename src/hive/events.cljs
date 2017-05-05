@@ -93,22 +93,22 @@
     :home (if (:view.home/targets (:db cofx))
             {:db (assoc (:db cofx) :view.home/targets false)}
             {:app/exit true})
+    :setting {:db (assoc (:db cofx) :view/screen :home)}
     {:app/exit true}))
 
 (defn assoc-rf
   "basic event handler. It assocs the event id with its value"
   [db [id v]] (assoc db id v))
 
-(defn fly-to
+(defn move-camera
   "takes a point coordinate (lat, lon) and an (optional) zoom and makes the
    mapview fly to it"
   [cofx [id center zoom]]
   (let [latitude  (first center)
         longitude (second center)
-        zoom      (or zoom 12)
         map-ref   (:map/ref (:db cofx))]
     (if (nil? map-ref) {}
-      {:map/fly-to [map-ref latitude longitude zoom]})))
+      {:map/fly-to [map-ref latitude longitude (or zoom hive.core/default-zoom)]})))
 
 (defn bound-map
   "takes a point coordinate (lat, lon) and an (optional) zoom and makes the
@@ -131,4 +131,3 @@
                                       :view.home/targets (pos? (count annotations)))}]
     (if (empty? annotations) base
       (assoc base :map/bound (cons (:map/ref (:db cofx)) bounds)))))
-

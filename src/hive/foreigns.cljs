@@ -18,3 +18,8 @@
 
 (defn on-back-button [f] (.addEventListener back-android "hardwareBackPress" f))
 (defn alert [title] (.alert (.-Alert ReactNative) title))
+
+;; ------ images ------
+(def menu-img (js/require "./images/ic_menu.png"))
+(def home-img (js/require "./images/ic_home.png"))
+(def settings-img (js/require "./images/ic_settings.png"))
