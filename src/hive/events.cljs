@@ -31,13 +31,23 @@
   ([f] (fbi/->interceptor :id :before :before f))
   ([id f] (fbi/->interceptor :id id :before f)))
 
-(defn map-token
-  "takes the parameters passed to create a MapBox mapview and inserts the api
+(defn bypass-geocode
+  "takes the parameters passed to create a MapBox geocode call and inserts the api
    token into the events parameters to avoid overly long events calls"
   [context] ;; extract db and event from coeffects
   (let [[id name handler] (:event (:coeffects context))]
     (assoc-in context [:coeffects :event]
       [id "mapbox.places" name {:access_token (:mapbox secrets/tokens)} handler])))
+
+(defn bypass-directions
+  "takes the parameters passed to create a MapBox directions call and inserts the api
+   token into the events parameters to avoid overly long events calls"
+  [context] ;; extract db and event from coeffects
+  (let [[id coordinates handler] (:event (:coeffects context))]
+    (assoc-in context [:coeffects :event]
+      [id "mapbox/driving" coordinates ;;TODO: steps -> turn by turn navigation
+       {:access_token (:mapbox secrets/tokens) :geometries "geojson"}; :steps true}
+       handler])))
 
 (defn carmen->targets
   "takes a json object returned by mapbox carmen-geojson style and modifies
@@ -74,7 +84,8 @@
 (defn init [_ _] hive/state)
 
 (defn geocode
-  "call mapbox geocode api v5 with the provided parameters"
+  "call mapbox geocode api v5 with the provided parameters.
+  See https://www.mapbox.com/api-documentation/#request-format"
   [cofx [id kind query url-param handler]]
   (let [template "https://api.mapbox.com/geocoding/v5/{mode}/{query}.json?{params}"
         params   (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
@@ -84,10 +95,26 @@
                 (str/replace "{params}" (str/join "&" params)))]
     {:fetch/json [URL {} handler]}))
 
+(defn directions
+  "call mapbox directions api v5 with the provided parameters.
+  See https://www.mapbox.com/api-documentation/#directions"
+  [cofx [id profile dst url-param handler]]
+  (let [template "https://api.mapbox.com/directions/v5/{profile}/{coordinates}.json?{params}"
+        params  (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
+                           [] url-param)
+        gps     (:user/location (:db cofx))
+        coords  [[(:longitude gps) (:latitude gps)] (reverse dst)]
+        query   (str/join ";" (map #(str/join "," %) coords))
+        URL     (-> (str/replace template "{profile}" profile)
+                    (str/replace "{coordinates}" (js/encodeURIComponent query))
+                    (str/replace "{params}" (str/join "&" params)))]
+    (if (nil? gps)
+      (do (println "MISSING GPS POSITION") {});;TODO: handle this properly
+      {:fetch/json [URL {} handler]})))
+
 (defn navigate-back
   "modifies the behavior of the back button on Android according to the view
-  currently active. NOTE: this needs to be extended for every new screen.
-  It defaults to Exit app if no screen was found"
+  currently active. It defaults to Exit app if no screen was found"
   [cofx [id]]
   (condp = (:view/screen (:db cofx))
     :home (if (:view.home/targets (:db cofx))
@@ -110,9 +137,10 @@
     (if (nil? map-ref) {}
       {:map/fly-to [map-ref latitude longitude (or zoom hive.core/default-zoom)]})))
 
-(defn bound-map
-  "takes a point coordinate (lat, lon) and an (optional) zoom and makes the
-   mapview fly to it"
+(defn bbox
+  "takes an array of points as (lat, lon) and calculates a bounding box that contains them all.
+  Return an array of coordinates [lat-sw lng-sw lat-ne lng-ne 100 100 100 100]
+  the last numbers are the padding of the map in the respective directions"
   [points]
   (let [latitudes  (map first points)
         longitudes (map second points)
@@ -126,8 +154,23 @@
   "Handles the events of the result of a geocode search, i.e. possible routing
   targets"
   [cofx [id annotations]]
-  (let [bounds (bound-map (map :coordinates annotations))
-        base   {:db (assoc (:db cofx) :user/targets annotations
+  (let [bounds (bbox (map :coordinates annotations))
+        base   {:db (assoc (:db cofx) :map/annotations annotations
                                       :view.home/targets (pos? (count annotations)))}]
     (if (empty? annotations) base
       (assoc base :map/bound (cons (:map/ref (:db cofx)) bounds)))))
+
+(defn destination
+  "takes the result of mapbox directions api and causes both db and mapview
+  to update accordingly"
+  [cofx [id directions]]
+  (let [dirs    (js->clj directions :keywordize-keys true)
+        linestr (:coordinates (:geometry (first (:routes dirs))))
+        ;start   (effects/mark (reverse (first linestr)) "start")
+        goal    (effects/mark (reverse (last linestr)) "goal")
+        route   (effects/route (map reverse linestr))
+        base    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
+                                       :view.home/targets false)
+                 :map/bound (cons (:map/ref (:db cofx)) (bbox (map reverse linestr)))}]
+    ;;(cljs.pprint/pprint base)
+    base))

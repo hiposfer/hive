@@ -22,8 +22,8 @@
    (for [t targets]
      ^{:key (:id t)}
      [touchable-highlight {:style    {:flex 1}
-                           :on-press #(do (router/dispatch [:map/camera (:coordinates t)])
-                                          (router/dispatch [:view.home/targets false]))}
+                           :on-press (fn [] (router/dispatch [:map/directions (:coordinates t)
+                                                              #(router/dispatch [:user/goal %])]))}
        [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
          [text {:style {:flex 1}} (:title t)]
          [text {:style {:flex 1 :color "gray"}} (:subtitle t)]]])])
@@ -51,8 +51,9 @@
     [scrollview
       (for [[id city] cities]
         ^{:key id}
-        [touchable-highlight {:on-press #(do (router/dispatch [:user/city city])
-                                             (router/dispatch [:view/screen :home]))}
+        [touchable-highlight {:on-press #(when-not (= (:city @current) city)
+                                           (router/dispatch [:user/city city])
+                                           (router/dispatch [:view/screen :home]))}
           [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
             [text (:name city)]
             [text {:style {:color "gray"}} (str (:region city) ", " (:country city))]]])]))

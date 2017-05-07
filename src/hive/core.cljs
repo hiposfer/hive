@@ -7,11 +7,11 @@
 
 ;; initial state of app-db
 (def state {:user/location     nil
-            :user/targets      [] ; the places the user searched for
+            :map/annotations   []
             :user/city         {:name    "Frankfurt am Main" :region "Hessen"
                                 :country "Deutschland" :short_code "de"
                                 :bbox    [8.472715, 50.01552, 8.800496, 50.2269512]
-                                :center {:longitude 8.67972 :latitude 50.11361}}
+                                :center  {:longitude 8.67972 :latitude 50.11361}}
             :view.home/targets false ; whether or not to display those places to the user
             :view/side-menu    false
             :view/screen       :home
