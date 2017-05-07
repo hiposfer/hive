@@ -5,7 +5,9 @@
             [re-frame.subs :as subs]
             [hive.foreigns :as fl]))
 
-(defn home []
+(defn home
+  "start screen. A simple screen with a map and an input text to search for a place"
+  []
   (let [current-city  (subs/subscribe [:user/city])]
     (fn [];; this is to prevent updating the initial values of the mapview
       (let [map-markers   (subs/subscribe [:map/annotations])
@@ -29,7 +31,9 @@
                       :onTap                   #(router/dispatch [:view.home/targets false])
                       :ref                     (fn [mv] (router/dispatch [:map/ref mv]))}]]))))
 
-(defn settings []
+(defn settings
+  "currently only allows the user to change his current city"
+  []
   (let [menu-open? (subs/subscribe [:view/side-menu])]
     [c/side-menu {:style {:flex 1} :menu (r/as-element (c/menu)) :isOpen @menu-open?
                   :onChange (fn [s] (when-not (= @menu-open? s) (router/dispatch [:view/side-menu s])))}
