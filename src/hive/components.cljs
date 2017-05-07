@@ -51,8 +51,9 @@
     [scrollview
       (for [[id city] cities]
         ^{:key id}
-        [touchable-highlight {:on-press #(do (router/dispatch [:user/city city])
-                                             (router/dispatch [:view/screen :home]))}
+        [touchable-highlight {:on-press #(when-not (= (:city @current) city)
+                                           (router/dispatch [:user/city city])
+                                           (router/dispatch [:view/screen :home]))}
           [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
             [text (:name city)]
             [text {:style {:color "gray"}} (str (:region city) ", " (:country city))]]])]))
