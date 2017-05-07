@@ -45,16 +45,18 @@
   (rf/reg-event-db :view/screen events/assoc-rf)
   (rf/reg-event-db :view/side-menu events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
-  (rf/reg-event-fx :user/targets [(before events/carmen->targets)] events/targets)
-  (rf/reg-event-fx :map/geocode [(before events/map-token) (before events/bias-geocode)]
+  (rf/reg-event-fx :user/goal events/destination)
+  (rf/reg-event-fx :map/annotations [(before events/carmen->targets)] events/targets)
+  (rf/reg-event-fx :map/geocode [(before events/bypass-geocode) (before events/bias-geocode)]
                                 events/geocode)
+  (rf/reg-event-fx :map/directions [(before events/bypass-directions)] events/directions)
   (rf/reg-event-fx :map/camera events/move-camera);; effect proxy to allow calling dispatch on it
   (rf/reg-event-fx :view/return events/navigate-back)
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :view.home/targets query/get-rf)
   (subs/reg-sub :view/side-menu query/get-rf)
   (subs/reg-sub :view/screen query/get-rf)
-  (subs/reg-sub :user/targets query/get-rf)
+  (subs/reg-sub :map/annotations query/get-rf)
   (subs/reg-sub :user/location query/get-rf)
   (subs/reg-sub :user/city query/get-rf)
   ;; App init

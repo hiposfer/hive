@@ -8,7 +8,7 @@
 (defn home []
   (let [current-city  (subs/subscribe [:user/city])]
     (fn [];; this is to prevent updating the initial values of the mapview
-      (let [map-markers   (subs/subscribe [:user/targets])
+      (let [map-markers   (subs/subscribe [:map/annotations])
             view-targets? (subs/subscribe [:view.home/targets])
             menu-open?    (subs/subscribe [:view/side-menu])]
         [c/side-menu {:style {:flex 1} :menu (r/as-element (c/menu)) :isOpen @menu-open?
@@ -19,13 +19,13 @@
             ;; TODO: throttle geocoding
             [c/text-input {:style {:flex 9} :placeholderTextColor "white"
                            :placeholder "where would you like to go?"
-                           :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:user/targets %])]))}]]
+                           :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:map/annotations %])]))}]]
           (when @view-targets?
             [c/targets-list @map-markers])
           [c/mapview {:style {:flex 3} :initialZoomLevel hive.core/default-zoom :annotationsAreImmutable true
                       :initialCenterCoordinate (:center @current-city) :annotations (clj->js @map-markers)
                       :showsUserLocation       true ;:ref (fn [this] (println "this: " this)) ;(when this (.keys this))))
-                      :onUpdateUserLocation    #(router/dispatch [:user/location %])
+                      :onUpdateUserLocation    #(when % (router/dispatch [:user/location %]))
                       :onTap                   #(router/dispatch [:view.home/targets false])
                       :ref                     (fn [mv] (router/dispatch [:map/ref mv]))}]]))))
 
