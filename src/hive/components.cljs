@@ -17,6 +17,8 @@
 
 
 (defn targets-list
+  "list of items resulting from a geocode search, displayed to the user to choose his
+  destination"
   [targets]
   [view {:style {:height (* 55 (count targets))}}
    (for [t targets]
@@ -28,7 +30,9 @@
          [text {:style {:flex 1}} (:title t)]
          [text {:style {:flex 1 :color "gray"}} (:subtitle t)]]])])
 
-(defn menu []
+(defn menu
+  "side menu for the user to choose where to navigate to in Android"
+  []
   (let [screen (subs/subscribe [:view/screen])
         go-home (fn [] (when-not (= @screen :home)
                          (router/dispatch [:view/screen :home])))
@@ -46,6 +50,8 @@
           [text "SETTINGS"]]]]))
 
 (defn city-selector
+  "list of cities currently supported, displayed to the user to manually change his
+   region of interest"
   [cities]
   (let [current (subs/subscribe [:user/city])]
     [scrollview

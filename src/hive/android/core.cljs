@@ -4,12 +4,13 @@
             [re-frame.router :as router]
             [re-frame.subs :as subs]
             [re-frame.fx :as fx]
-            [hive.events :as events :refer [before]]
+            [hive.events :as events]
             [hive.subs :as query]
             [hive.effects :as effects]
             [hive.secrets :as secrets]
             [hive.foreigns :as fl]
-            [hive.android.screens :as screens]))
+            [hive.android.screens :as screens]
+            [hive.interceptors :as hijack :refer [before]]))
 
 (js* "/* @flow */") ;; TODO
 
@@ -27,14 +28,11 @@
 (defn init []
   ;;------------- effect handlers --------------
   ; effects is a function of [values] -> void
-  (fx/register :fetch/json (fn fetch-json [[url options handler]]
-                             (effects/fetch url options effects/res->json handler)))
-  (fx/register :app/exit   (fn [v] (.exitApp fl/back-android)))
-  (fx/register :map/fly-to (fn [[map-ref lat lng zoom]] (.setCenterCoordinateZoomLevel map-ref lat lng zoom)))
+  (fx/register :fetch/json effects/fetch-json)
+  (fx/register :app/exit   effects/quit)
+  (fx/register :map/fly-to effects/center&zoom)
   ;; TODO: avoid having such long paremeters, prefer a simple default to simplify the function
-  (fx/register :map/bound  (fn [[map-ref latSW lngSW latNE lngNE padTop padRight padDown padLeft]]
-                             (when map-ref
-                               (.setVisibleCoordinateBounds map-ref latSW lngSW latNE lngNE padTop padRight padDown padLeft))))
+  (fx/register :map/bound  effects/box-map)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
   (rf/reg-event-db :hive/state events/init) ;;FIXME validate-spec
@@ -46,10 +44,10 @@
   (rf/reg-event-db :view/side-menu events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
   (rf/reg-event-fx :user/goal events/destination)
-  (rf/reg-event-fx :map/annotations [(before events/carmen->targets)] events/targets)
-  (rf/reg-event-fx :map/geocode [(before events/bypass-geocode) (before events/bias-geocode)]
+  (rf/reg-event-fx :map/annotations [(before hijack/carmen->targets)] events/targets)
+  (rf/reg-event-fx :map/geocode [(before hijack/bypass-geocode) (before hijack/bias-geocode)]
                                 events/geocode)
-  (rf/reg-event-fx :map/directions [(before events/bypass-directions)] events/directions)
+  (rf/reg-event-fx :map/directions [(before hijack/bypass-directions)] events/directions)
   (rf/reg-event-fx :map/camera events/move-camera);; effect proxy to allow calling dispatch on it
   (rf/reg-event-fx :view/return events/navigate-back)
   ;; ------------- queries ---------------------------------
@@ -68,3 +66,6 @@
 
 ;; It works !!!
 ;(.set (.ref (.database fl/FireBase) "hello") (clj->js {:name "na du"}))
+
+;; TODO: restore the latest targets whenever the text input get focus again
+;; remove text input focus on any other component press
