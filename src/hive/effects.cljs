@@ -1,7 +1,9 @@
 (ns hive.effects
   (:require [re-frame.core :as rf]
             [re-frame.router :as router]
-            [hive.foreigns :as fl]))
+            [hive.foreigns :as fl]
+            [hive.util :as util]
+            [hive.geojson :as geojson]))
 
 (defonce debounces (atom {}))
 ;(defonce throttles (atom {})) ;; FIXME
@@ -31,16 +33,22 @@
 
 (defn box-map
   "modify the mapview to display the area specified in the parameters"
-  [[map-ref [latSW lngSW latNE lngNE] padding]]
-  (let [[padTop padRight padDown padLeft] (or padding [100 100 100 100])]
+  [[map-ref geojson]]
+  (let [[min-lon, min-lat, max-lon, max-lat] (geojson/bbox geojson)
+        padding                              (:padding (:properties (:geometry geojson)))
+        [padTop padRight padDown padLeft]    (or padding [100 100 100 100])]
     (when map-ref
-      (.setVisibleCoordinateBounds map-ref
-                                   latSW lngSW latNE lngNE
+      (.setVisibleCoordinateBounds map-ref ; latSW lngSW latNE lngNE
+                                   min-lat min-lon max-lat max-lon
                                    padTop padRight padDown padLeft))))
 
 (defn center&zoom
-  [[map-ref lat lng zoom]]
-  (.setCenterCoordinateZoomLevel map-ref lat lng zoom))
+  "takes a mapview reference and a feature point geojson and moves the map
+  to the point coordinates with respective zoom level"
+  [[map-ref feat-point]]
+  (let [verbose   (util/feature->verbose feat-point)
+        [lon lat] (:coordinates verbose)]
+    (.setCenterCoordinateZoomLevel map-ref lat lon (:zoom verbose))))
 
 (defn quit
   "quits the android app"

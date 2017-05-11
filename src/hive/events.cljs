@@ -9,7 +9,8 @@
             [hive.effects :as effects]
             [re-frame.router :as router]
             [hive.foreigns :as fl]
-            [hive.util :as util]))
+            [hive.util :as util]
+            [hive.geojson :as geojson]))
 
 ;; -- Handlers --------------------------------------------------------------
 
@@ -35,8 +36,7 @@
         params  (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
                            [] url-param)
         gps     (:user/location (:db cofx))
-        coords  [[(:longitude gps) (:latitude gps)] (reverse dst)]
-        query   (str/join ";" (map #(str/join "," %) coords))
+        query   (str (geojson/uri gps) ";" (geojson/uri dst))
         URL     (-> (str/replace template "{profile}" profile)
                     (str/replace "{coordinates}" (js/encodeURIComponent query))
                     (str/replace "{params}" (str/join "&" params)))]
@@ -62,34 +62,28 @@
 (defn move-camera
   "takes a point coordinate (lat, lon) and an (optional) zoom and makes the
    mapview fly to it"
-  [cofx [id center zoom]]
-  (let [latitude  (first center)
-        longitude (second center)
+  [cofx [id feature]]
+  (let [[lon lat] (:coordinates (:geometry feature))
+        zoom      (:zoom (:properties feature))
         map-ref   (:map/ref (:db cofx))]
     (if (nil? map-ref) {}
-      {:map/fly-to [map-ref latitude longitude (or zoom hive.core/default-zoom)]})))
-
-(defn bbox
-  "takes an array of points as (lat, lon) and calculates a bounding box that contains them all.
-  Return an array of coordinates [lat-sw lng-sw lat-ne lng-ne]"
-  [points]
-  (let [latitudes  (map first points)
-        longitudes (map second points)
-        lat-sw     (apply min latitudes)
-        lat-ne     (apply max latitudes)
-        lng-sw     (apply min longitudes)
-        lng-ne     (apply max longitudes)]
-    [lat-sw lng-sw lat-ne lng-ne]))
+      {:map/fly-to [map-ref lat lon (or zoom hive.core/default-zoom)]})))
 
 (defn targets
   "Handles the events of the result of a geocode search, i.e. possible routing
   targets"
-  [cofx [id annotations]]
-  (let [bounds (bbox (map :coordinates annotations))
-        base   {:db (assoc (:db cofx) :map/annotations annotations
+  [cofx [id carmen-geojson]]
+  (let [native (js->clj carmen-geojson :keywordize-keys true)
+        titles (map #(hash-map :title (first (str/split (:place_name %) #","))) (:features native))
+        subs   (map #(hash-map :subtitle (:address (:properties %))) (:features native))
+        flat   (map util/feature->verbose (:features native))
+        annotations (map merge titles subs (map #(update % :coordinates reverse) flat))
+        base   {:db (assoc (:db cofx) :map/annotations (map #(update % :type str/lower-case) annotations)
+                                      ;:user/targets native
                                       :view.home/targets (pos? (count annotations)))}]
+    ;(cljs.pprint/pprint annotations)
     (if (empty? annotations) base
-      (assoc base :map/bound [(:map/ref (:db cofx)) bounds]))))
+      (assoc base :map/bound [(:map/ref (:db cofx)) native]))))
 
 (defn destination
   "takes the result of mapbox directions api and causes both db and mapview
@@ -98,10 +92,10 @@
   (let [dirs    (js->clj directions :keywordize-keys true)
         linestr (:coordinates (:geometry (first (:routes dirs))))
         ;start   (effects/mark (reverse (first linestr)) "start")
-        goal    (util/mark (reverse (last linestr)) "goal")
-        route   (util/route (map reverse linestr))
+        goal    (util/marker (reverse (last linestr)) "goal")
+        route   (util/polyline (map reverse linestr))
         base    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
                                        :view.home/targets false)
-                 :map/bound [(:map/ref (:db cofx)) (bbox (map reverse linestr))]}]
+                 :map/bound [(:map/ref (:db cofx)) (first (:routes dirs))]}]
     ;;(cljs.pprint/pprint base)
     base))

@@ -44,7 +44,7 @@
   (rf/reg-event-db :view/side-menu events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
   (rf/reg-event-fx :user/goal events/destination)
-  (rf/reg-event-fx :map/annotations [(before hijack/carmen->targets)] events/targets)
+  (rf/reg-event-fx :map/annotations events/targets)
   (rf/reg-event-fx :map/geocode [(before hijack/bypass-geocode) (before hijack/bias-geocode)]
                                 events/geocode)
   (rf/reg-event-fx :map/directions [(before hijack/bypass-directions)] events/directions)

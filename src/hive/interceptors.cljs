@@ -5,7 +5,8 @@
             [re-frame.interceptor :as fbi]
             [hive.secrets :as secrets]
             [clojure.string :as str]
-            [hive.util :as util]))
+            [hive.util :as util]
+            [hive.geojson :as geojson]))
 
 ;; -- Interceptors ------------------------------------------------------------
 ;;
@@ -47,20 +48,6 @@
                {:access_token (:mapbox secrets/tokens) :geometries "geojson"}; :steps true}
                handler])))
 
-(defn carmen->targets
-  "takes a json object returned by mapbox carmen-geojson style and modifies
-   the coeffects map to contain an event with mapbox-compatible annotations"
-  [context]
-  (let [[id carmen-geojson] (:event (:coeffects context))
-        native     (js->clj carmen-geojson :keywordize-keys true)
-        interest   (filter (comp #{"Point"} :type :geometry) (:features native))
-        points     (map (comp reverse :coordinates :geometry) interest)
-        names      (map (comp first #(str/split % #",") :place_name) interest)
-        addresses  (map (comp :address :properties) interest)
-        markers    (sequence (map util/mark) points names addresses)]
-    ;(cljs.pprint/pprint interest)
-    (assoc-in context [:coeffects :event] [id markers])))
-
 (defn bias-geocode
   "takes the parameters used to make a geocode call and insert the position
   to bias the results towards it. It also inserts a bounding box based on
@@ -68,8 +55,7 @@
   [context] ;; extract db and event from coeffects
   (let [[id kind name params handler] (:event (:coeffects context))
         position  (:user/location (:db context))
-        prox      (some->> position #(vector (:longitude %) (:latitude %))
-                           (str/join ","))
+        prox      (some->> position geojson/uri);FIXME city make geojson compatible
         bounds    (str/join "," (:bbox (:user/city (:db (:coeffects context)))))]
     (if (nil? position)
       (assoc-in context [:coeffects :event]
