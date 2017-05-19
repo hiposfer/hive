@@ -5,31 +5,16 @@
 
 ;; MapBox annotations
 ;; https://github.com/mapbox/react-native-mapbox-gl/blob/master/API.md#annotations
-(defn marker
-  "return a minimal hash-map with all required information by mapbox
-  for an annotation"
-  ([coord title] ; a single annotation per point in space is allowed
-   {:coordinates coord ;; [latitude longitude]
-    :type "point"
-    :title title
-    :id (str coord)}) ; 1 marker per lat/lon pair
-  ([coord title subtitle]
-   {:coordinates coord
-    :type "point"
-    :title title
-    :subtitle subtitle
-    :id (str coord)}))
-
 (defn polyline
   "return a minimal hash-map with all required information by mapbox
   for an annotation"
-  ([coords] ; a single annotation per point in space is allowed
-   {:coordinates coords
-    :type        "polyline"
-    :strokeColor "#3bb2d0" ;; light
-    :strokeWidth 4
-    :strokeAlpha 0.5 ;; opacity
-    :id          (str (first coords) (last coords))})) ; 1 marker per lat/lon pair
+  ([feature] ; a single annotation per point in space is allowed
+   (merge feature
+     {:strokeColor "#3bb2d0" ;; light
+      :strokeWidth 4
+      :strokeAlpha 0.5 ;; opacity
+      :id (str (first (:coordinates (:geometry feature)))
+               (last  (:coordinates (:geometry feature))))})))
 
 (defn annotation->feature
   "takes a mapbox annotation and unbundles it into a geojson feature.
@@ -70,12 +55,13 @@
   {coordinates [10 5] type point, zoomLevel: 0, direction: 0, pitch: 0, animated: false}
   "
   [feature]
-  (let [props  (:properties feature)
+  (let [extras (set/difference (set (keys feature)) #{:id :bbox :type :properties})
+        props  (merge (:properties feature) (select-keys feature extras))
         roots  (select-keys feature [:id :bbox])]
     (condp = (:type (:geometry feature))
       "Point"      (merge {:coordinates (reverse (:coordinates (:geometry feature)))}
                           props roots {:type "point"})
-      "Linestring" (merge {:coordinates (map reverse (:coordinates (:geometry feature)))}
+      "LineString" (merge {:coordinates (map reverse (:coordinates (:geometry feature)))}
                           props roots {:type "polyline"})
       "Polygon"    (merge {:coordinates (map reverse (:coordinates (:geometry feature)))}
                           props roots {:type "polygon"}))))

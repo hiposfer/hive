@@ -1,9 +1,35 @@
 (ns hive.core
-  (:require [clojure.spec :as s]))
+  (:require [clojure.spec :as s]
+            [hive.geojson :as geojson]))
 
+;; -- Spec --------------------------------------------------------------------
+;;
+;; This is a clojure.spec specification for the value in app-db. It is like a
+;; Schema. See: http://clojure.org/guides/spec
+;;
+;; The value in app-db should always match this spec. Only event handlers
+;; can change the value in app-db so, after each event handler
+;; has run, we re-check app-db for correctness (compliance with the Schema).
+;;
+;; How is this done? Look in events.cljs and you'll notice that all handers
+;; have an "after" interceptor which does the spec re-check.
+;;
+;; None of this is strictly necessary. It could be omitted. But we find it
+;; good practice.
+
+(s/def :user/location (s/nilable (geojson/limited-feature :geojson/point)))
+(s/def :map/annotations (s/coll-of (s/or :point      (geojson/limited-feature :geojson/point)
+                                         :linestring (geojson/limited-feature :geojson/linestring)
+                                         :polygon    (geojson/limited-feature :geojson/polygon))))
+(s/def :user/city (geojson/limited-feature :geojson/point))
+(s/def :view.home/targets boolean?)
+(s/def :view/side-menu boolean?)
+(s/def :view/screen keyword?) ;; do we need more than this?
+(s/def :map/ref (s/nilable any?));; js object with custom constructor
 ;; spec of app-db
-(s/def ::greeting string?)
-(s/def ::state (s/keys :req-un [::greeting]))
+(s/def :hive/state (s/keys :req [:map/ref
+                                 :user/location :user/city
+                                 :view/side-menu :view/screen :view.home/targets]))
 
 ;; initial state of app-db
 (def state {:user/location     nil

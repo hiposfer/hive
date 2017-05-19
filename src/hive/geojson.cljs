@@ -35,7 +35,7 @@
 (s/def :polygon/coordinates (s/coll-of :geojson/linear-ring))
 (s/def :multipolygon/coordinates (s/coll-of :polygon/coordinates))
 
-;FIXME
+;TODO
 ;FeatureCollection and Geometry objects, respectively, MUST
 ;NOT contain a "geometry" or "properties" member.
 (s/def :geocoll/geometries (s/coll-of :geojson/object))
@@ -86,6 +86,16 @@
 (s/def :geojson/feature-collection
   (s/keys :req-un [:featurecoll/type :featurecoll/features]
           :opt-un [:geojson/bbox]))
+
+
+;; -------------- utility functions
+
+(defn limited-feature
+  "returns an feature spec that conforms only to the specified geometry type
+  instead of any geometry object"
+  [geo-spec]
+  (s/keys :req-un [:feature/type (s/nilable geo-spec)]
+          :opt-un [:feature/id :geojson/bbox]))
 
 (defn failure?
   [object]

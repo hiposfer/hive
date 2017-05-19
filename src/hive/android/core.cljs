@@ -35,21 +35,21 @@
   (fx/register :map/bound  effects/box-map)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
-  (rf/reg-event-db :hive/state events/init) ;;FIXME validate-spec
-  (rf/reg-event-db :map/ref events/assoc-rf)
-  (rf/reg-event-db :user/city (fn [db [id v]] (assoc db id v :map/camera [(:center v)])))
-  (rf/reg-event-db :user/location (fn [db [id gps]] (assoc db id (js->clj gps :keywordize-keys true))))
-  (rf/reg-event-db :view.home/targets events/assoc-rf)
-  (rf/reg-event-db :view/screen events/assoc-rf)
-  (rf/reg-event-db :view/side-menu events/assoc-rf)
+  (rf/reg-event-db :hive/state hijack/validate events/init)
+  (rf/reg-event-db :map/ref    hijack/validate events/assoc-rf)
+  (rf/reg-event-db :user/city  hijack/validate events/move-out)
+  (rf/reg-event-db :user/location     hijack/validate events/assoc-rf)
+  (rf/reg-event-db :view.home/targets hijack/validate events/assoc-rf)
+  (rf/reg-event-db :view/screen    hijack/validate events/assoc-rf)
+  (rf/reg-event-db :view/side-menu hijack/validate events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
-  (rf/reg-event-fx :user/goal events/destination)
+  (rf/reg-event-fx :user/goal events/destination);; json object not geojson conformen
   (rf/reg-event-fx :map/annotations events/targets)
   (rf/reg-event-fx :map/geocode [(before hijack/bypass-geocode) (before hijack/bias-geocode)]
                                 events/geocode)
-  (rf/reg-event-fx :map/directions [(before hijack/bypass-directions)] events/directions)
+  (rf/reg-event-fx :map/directions (before hijack/bypass-directions) events/directions)
   (rf/reg-event-fx :map/camera events/move-camera);; effect proxy to allow calling dispatch on it
-  (rf/reg-event-fx :view/return events/navigate-back)
+  (rf/reg-event-fx :view/return hijack/validate events/navigate-back)
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :view.home/targets query/get-rf)
   (subs/reg-sub :view/side-menu query/get-rf)

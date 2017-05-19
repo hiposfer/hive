@@ -20,17 +20,16 @@
 (defn targets-list
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
-  [targets]
-  [view {:style {:height (* 55 (count targets))}}
-   (for [t targets]
-     ^{:key (:id t)}
+  [features]
+  [view {:style {:height (* 55 (count features))}}
+   (for [target features]
+     ^{:key (:id target)}
      [touchable-highlight {:style    {:flex 1}
-                           :on-press (fn [] (router/dispatch [:map/directions
-                                                              (util/annotation->feature t)
+                           :on-press (fn [] (router/dispatch [:map/directions target
                                                               #(router/dispatch [:user/goal %])]))}
        [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
-         [text {:style {:flex 1}} (:title t)]
-         [text {:style {:flex 1 :color "gray"}} (:subtitle t)]]])])
+         [text {:style {:flex 1}} (:title target)]
+         [text {:style {:flex 1 :color "gray"}} (:subtitle target)]]])])
 
 (defn menu
   "side menu for the user to choose where to navigate to in Android"
