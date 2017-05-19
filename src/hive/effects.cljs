@@ -20,16 +20,19 @@
 (defn res->text [res] (.text res))
 (defn res->json [res] (.json res))
 
-(defn fetch
+(defn retrieve
+  "wrapper around React Native fetch function
+  See https://facebook.github.io/react-native/docs/network.html
+  for more information"
   [url opts on-response process-response]
   (-> (js/fetch url opts)
       (.then on-response)
       (.then process-response)
       (.catch #(println %))))
 
-(defn fetch-json
+(defn retrieve->json
   [[url options handler]]
-  (fetch url options res->json handler))
+  (retrieve url options res->json handler))
 
 (defn box-map
   "modify the mapview to display the area specified in the parameters"
@@ -55,4 +58,4 @@
   [v]
   (.exitApp fl/back-android))
 
-;(fetch "https://google.com" {} (cons res->json [#(println %)]))
+;(retrieve "https://google.com" {} (cons res->json [#(println %)]))

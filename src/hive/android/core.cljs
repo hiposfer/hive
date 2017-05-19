@@ -28,7 +28,7 @@
 (defn init []
   ;;------------- effect handlers --------------
   ; effects is a function of [values] -> void
-  (fx/register :fetch/json effects/fetch-json)
+  (fx/register :fetch/json effects/retrieve->json)
   (fx/register :app/exit   effects/quit)
   (fx/register :map/fly-to effects/center&zoom)
   ;; TODO: avoid having such long paremeters, prefer a simple default to simplify the function
