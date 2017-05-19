@@ -12,7 +12,7 @@
             [hive.android.screens :as screens]
             [hive.interceptors :as hijack :refer [before]]))
 
-(js* "/* @flow */") ;; TODO
+(js* "// @flow")
 
 ;; I use the following convention for effects, subscriptions and event handlers
 ; - the app-state (:db) is sacred, so only store resources values there
