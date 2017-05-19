@@ -90,12 +90,14 @@
   to update accordingly"
   [cofx [id directions]]
   (let [dirs    (js->clj directions :keywordize-keys true)
-        linestr (:coordinates (:geometry (first (:routes dirs))))
+        linestr (:geometry (first (:routes dirs)))
         ;start   (effects/mark (reverse (first linestr)) "start")
-        goal    (util/marker (reverse (last linestr)) "goal")
-        route   (util/polyline (map reverse linestr))
+        goal    (util/marker (reverse (last (:coordinates linestr))) "goal")
+        route   (util/polyline (map reverse (:coordinates linestr)))
         base    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
                                        :view.home/targets false)
-                 :map/bound [(:map/ref (:db cofx)) (first (:routes dirs))]}]
-    ;;(cljs.pprint/pprint base)
+                 :map/bound [(:map/ref (:db cofx)) linestr]}]
     base))
+
+
+;;(cljs.pprint/pprint base)
