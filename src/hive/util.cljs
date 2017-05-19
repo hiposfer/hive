@@ -67,12 +67,17 @@
   Example: TODO
   "
   [object]
-  (let [coords (reverse (:coordinates object))
-        extras (set/difference (set (keys object)) #{:coordinates})]
+  (let [extras (set/difference (set (keys object)) #{:coordinates})]
     (condp = (:type object)
-      "point"    (geojson/feature "Point" coords (select-keys object extras))
-      "polyline" (geojson/feature "LineString" coords (select-keys object extras))
-      "polygon"  (geojson/feature "Polygon" coords (select-keys object extras)))))
+      "point"    (geojson/feature "Point"
+                                  (reverse (:coordinates object))
+                                  (select-keys object extras))
+      "polyline" (geojson/feature "LineString"
+                                  (map reverse (:coordinates object))
+                                  (select-keys object extras))
+      "polygon"  (geojson/feature "Polygon"
+                                  (map reverse (:coordinates object))
+                                  (select-keys object extras)))))
 
 (defn feature->verbose
   "takes a feature geojson and flattens it to be a map of
