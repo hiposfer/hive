@@ -3,7 +3,8 @@
             [hive.components :as c]
             [reagent.core :as r]
             [re-frame.subs :as subs]
-            [hive.foreigns :as fl]))
+            [hive.foreigns :as fl]
+            [hive.util :as util]))
 
 (defn home
   "start screen. A simple screen with a map and an input text to search for a place"
@@ -24,10 +25,10 @@
                            :onChangeText (fn [v] (router/dispatch [:map/geocode v #(router/dispatch [:map/annotations %])]))}]]
           (when @view-targets?
             [c/targets-list @map-markers])
-          [c/mapview {:style {:flex 3} :initialZoomLevel hive.core/default-zoom :annotationsAreImmutable true
+          [c/mapview {:style                   {:flex 3} :initialZoomLevel hive.core/default-zoom :annotationsAreImmutable true
                       :initialCenterCoordinate (:center @current-city) :annotations (clj->js @map-markers)
                       :showsUserLocation       true ;:ref (fn [this] (println "this: " this)) ;(when this (.keys this))))
-                      :onUpdateUserLocation    #(when % (router/dispatch [:user/location %]))
+                      :onUpdateUserLocation    #(when % (router/dispatch [:user/location (util/verbose->feature %)]))
                       :onTap                   #(router/dispatch [:view.home/targets false])
                       :ref                     (fn [mv] (router/dispatch [:map/ref mv]))}]]))))
 

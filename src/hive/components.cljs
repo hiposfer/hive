@@ -3,7 +3,8 @@
             [reagent.core :as r]
             [re-frame.router :as router]
             [reagent.core :as reagent]
-            [re-frame.subs :as subs]))
+            [re-frame.subs :as subs]
+            [hive.util :as util]))
 
 (def text-input (r/adapt-react-class (.-TextInput fl/ReactNative)))
 (def button (r/adapt-react-class (.-Button fl/ReactNative)))
@@ -24,7 +25,8 @@
    (for [t targets]
      ^{:key (:id t)}
      [touchable-highlight {:style    {:flex 1}
-                           :on-press (fn [] (router/dispatch [:map/directions (:coordinates t)
+                           :on-press (fn [] (router/dispatch [:map/directions
+                                                              (util/annotation->feature t)
                                                               #(router/dispatch [:user/goal %])]))}
        [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
          [text {:style {:flex 1}} (:title t)]
