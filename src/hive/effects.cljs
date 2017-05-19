@@ -49,9 +49,9 @@
   "takes a mapview reference and a feature point geojson and moves the map
   to the point coordinates with respective zoom level"
   [[map-ref feat-point]]
-  (let [verbose   (util/feature->verbose feat-point)
-        [lon lat] (:coordinates verbose)]
-    (.setCenterCoordinateZoomLevel map-ref lat lon (:zoom verbose))))
+  (let [zoom      (:zoom (:properties feat-point))
+        [lon lat] (:coordinates (:geometry feat-point))]
+    (.setCenterCoordinateZoomLevel map-ref lat lon (:zoom zoom))))
 
 (defn quit
   "quits the android app"

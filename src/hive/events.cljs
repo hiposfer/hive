@@ -74,11 +74,13 @@
   targets"
   [cofx [id carmen-geojson]]
   (let [native (js->clj carmen-geojson :keywordize-keys true)
-        titles (map #(hash-map :title (first (str/split (:place_name %) #","))) (:features native))
-        subs   (map #(hash-map :subtitle (:address (:properties %))) (:features native))
-        flat   (map util/feature->verbose (:features native))
-        annotations (map merge titles subs (map #(update % :coordinates reverse) flat))
-        base   {:db (assoc (:db cofx) :map/annotations (map #(update % :type str/lower-case) annotations)
+        titles (map #(hash-map :title (first (str/split (:place_name %) #",")))
+                    (:features native))
+        subs   (map #(hash-map :subtitle (:address (:properties %)))
+                    (:features native))
+        flat   (map util/feature->annotation (:features native))
+        annotations (map merge titles subs flat)
+        base   {:db (assoc (:db cofx) :map/annotations annotations
                                       ;:user/targets native
                                       :view.home/targets (pos? (count annotations)))}]
     ;(cljs.pprint/pprint annotations)

@@ -26,7 +26,7 @@
           (when @view-targets?
             [c/targets-list @map-markers])
           [c/mapview {:style                   {:flex 3} :initialZoomLevel hive.core/default-zoom :annotationsAreImmutable true
-                      :initialCenterCoordinate (:center @current-city) :annotations (clj->js @map-markers)
+                      :initialCenterCoordinate (util/feature->verbose @current-city) :annotations (clj->js @map-markers)
                       :showsUserLocation       true ;:ref (fn [this] (println "this: " this)) ;(when this (.keys this))))
                       :onUpdateUserLocation    #(when % (router/dispatch [:user/location (util/verbose->feature %)]))
                       :onTap                   #(router/dispatch [:view.home/targets false])

@@ -56,7 +56,7 @@
   (let [[id kind name params handler] (:event (:coeffects context))
         position  (:user/location (:db context))
         prox      (some->> position geojson/uri);FIXME city make geojson compatible
-        bounds    (str/join "," (:bbox (:user/city (:db (:coeffects context)))))]
+        bounds    (str/join "," (geojson/bbox (:user/city (:db (:coeffects context)))))]
     (if (nil? position)
       (assoc-in context [:coeffects :event]
                 [id kind name (merge params {:bbox bounds}) handler])
