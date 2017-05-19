@@ -23,12 +23,11 @@
   [spec db [event]]
   (when-not (s/valid? spec db)
     (let [explain-data (s/explain-data spec db)]
-      (throw (ex-info (str "Spec check after " event " failed: " explain-data) explain-data)))))
+      (throw (ex-info (str "INVALID STATE: " (s/explain-str spec db)) explain-data)))))
 
-(def validate-spec
-  (if goog.DEBUG
-    (nsa/after (partial check-and-throw :hive/state))
-    []))
+(def validate "interceptor to check valid db state"
+  (if-not goog.DEBUG []
+    (nsa/after (partial check-and-throw :hive/state))))
 
 (defn bypass-geocode
   "takes the parameters passed to create a MapBox geocode call and inserts the api

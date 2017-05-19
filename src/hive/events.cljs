@@ -1,14 +1,7 @@
 (ns hive.events
-  (:require [clojure.spec :as s]
-            [hive.core :as hive]
-            [re-frame.std-interceptors :as nsa]
-            [re-frame.interceptor :as fbi]
+  (:require [hive.core :as hive]
             [clojure.string :as str]
             [re-frame.core :as rf]
-            [hive.secrets :as secrets]
-            [hive.effects :as effects]
-            [re-frame.router :as router]
-            [hive.foreigns :as fl]
             [hive.util :as util]
             [hive.geojson :as geojson]))
 
@@ -74,32 +67,29 @@
   targets"
   [cofx [id carmen-geojson]]
   (let [native (js->clj carmen-geojson :keywordize-keys true)
-        titles (map #(hash-map :title (first (str/split (:place_name %) #",")))
-                    (:features native))
-        subs   (map #(hash-map :subtitle (:address (:properties %)))
-                    (:features native))
-        flat   (map util/feature->annotation (:features native))
-        annotations (map merge titles subs flat)
+        annotations (into [] (comp (map #(assoc % :title (first (str/split (:place_name %) #","))))
+                                   (map #(assoc % :subtitle (:address (:properties %)))))
+                          (:features native))
         base   {:db (assoc (:db cofx) :map/annotations annotations
-                                      ;:user/targets native
                                       :view.home/targets (pos? (count annotations)))}]
-    ;(cljs.pprint/pprint annotations)
     (if (empty? annotations) base
       (assoc base :map/bound [(:map/ref (:db cofx)) native]))))
 
+;; https://www.mapbox.com/api-documentation/#directions-response-object
 (defn destination
   "takes the result of mapbox directions api and causes both db and mapview
   to update accordingly"
   [cofx [id directions]]
   (let [dirs    (js->clj directions :keywordize-keys true)
         linestr (:geometry (first (:routes dirs)))
-        ;start   (effects/mark (reverse (first linestr)) "start")
-        goal    (util/marker (reverse (last (:coordinates linestr))) "goal")
-        route   (util/polyline (map reverse (:coordinates linestr)))
+        goal    (geojson/feature "Point" (last (:coordinates linestr)) {:title "goal"
+                                                                        :id (str (last (:coordinates linestr)))})
+        route   (util/polyline {:type "Feature" :geometry linestr})
         base    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
                                        :view.home/targets false)
                  :map/bound [(:map/ref (:db cofx)) linestr]}]
     base))
 
+(defn move-out [db [id v]] (assoc db id v :map/camera [(:center v)]))
 
 ;;(cljs.pprint/pprint base)
