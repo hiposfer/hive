@@ -10,7 +10,9 @@
             [hive.secrets :as secrets]
             [hive.foreigns :as fl]
             [hive.android.screens :as screens]
-            [hive.interceptors :as hijack :refer [before]]))
+            [hive.interceptors :as hijack :refer [before]]
+            [hive.wrappers.firebase :as firebase]
+            [hive.wrappers.mapbox :as mapbox]))
 
 (js* "// @flow")
 
@@ -30,9 +32,9 @@
   ; effects is a function of [values] -> void
   (fx/register :fetch/json effects/retrieve->json)
   (fx/register :app/exit   effects/quit)
-  (fx/register :map/fly-to effects/center&zoom)
+  (fx/register :map/fly-to mapbox/center&zoom!)
   ;; TODO: avoid having such long paremeters, prefer a simple default to simplify the function
-  (fx/register :map/bound  effects/box-map)
+  (fx/register :map/bound mapbox/box-map!)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
   (rf/reg-event-db :hive/state hijack/validate events/init)
@@ -58,8 +60,8 @@
   (subs/reg-sub :user/location query/get-rf)
   (subs/reg-sub :user/city query/get-rf)
   ;; App init
-  (.setAccessToken fl/MapBox (:mapbox secrets/tokens))
-  (.initializeApp fl/FireBase (clj->js (:firebase secrets/tokens)))
+  (mapbox/init! (:mapbox secrets/tokens))
+  (firebase/init! (clj->js (:firebase secrets/tokens)))
   (fl/on-back-button (fn [] (do (router/dispatch [:view/return true]) true)))
   (router/dispatch-sync [:hive/state]);(dispatch-sync [:initialize-db])
   (.registerComponent fl/app-registry "Hive" #(r/reactify-component app-root)))
