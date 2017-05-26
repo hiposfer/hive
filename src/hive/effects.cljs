@@ -37,6 +37,6 @@
 (defn quit!
   "quits the android app"
   [v]
-  (.exitApp fl/back-android))
+  (.exitApp fl/back-handler))
 
 ;(retrieve "https://google.com" {} (cons res->json [#(println %)]))

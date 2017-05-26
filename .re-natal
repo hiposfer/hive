@@ -10,7 +10,8 @@
   "modules": [
     "react-native-mapbox-gl",
     "firebase",
-    "react-native-side-menu"
+    "react-native-side-menu",
+    "native-base"
   ],
   "imageDirs": [
     "images"

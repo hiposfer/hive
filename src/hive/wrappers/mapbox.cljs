@@ -10,7 +10,7 @@
   [[map-ref geojson]]
   (let [[min-lon, min-lat, max-lon, max-lat] (geojson/bbox geojson)
         padding                              (:padding (:properties (:geometry geojson)))
-        [padTop padRight padDown padLeft]    (or padding [100 100 100 100])]
+        [padTop padRight padDown padLeft]    (or padding [10 10 10 10])]
     (when map-ref
       (.setVisibleCoordinateBounds map-ref ; latSW lngSW latNE lngNE
                                    min-lat min-lon max-lat max-lon
@@ -23,4 +23,3 @@
   (let [zoom      (:zoom (:properties feat-point))
         [lon lat] (:coordinates (:geometry feat-point))]
     (.setCenterCoordinateZoomLevel map-ref lat lon (:zoom zoom))))
-
