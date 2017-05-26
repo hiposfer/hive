@@ -20,7 +20,7 @@
 (defn res->text [res] (.text res))
 (defn res->json [res] (.json res))
 
-(defn retrieve
+(defn retrieve!
   "wrapper around React Native fetch function
   See https://facebook.github.io/react-native/docs/network.html
   for more information"
@@ -30,11 +30,11 @@
       (.then process-response)
       (.catch #(println %))))
 
-(defn retrieve->json
+(defn retrieve->json!
   [[url options handler]]
-  (retrieve url options res->json handler))
+  (retrieve! url options res->json handler))
 
-(defn quit
+(defn quit!
   "quits the android app"
   [v]
   (.exitApp fl/back-android))

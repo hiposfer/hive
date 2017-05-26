@@ -8,7 +8,9 @@
   "Original docs: https://firebase.google.com/docs/auth/web/anonymous-auth
   Returns Firebase.User type: https://firebase.google.com/docs/reference/js/firebase.User"
   [[on-success on-error]]
-  (-> (FireBase.auth.signInAnonymously)
+  (-> FireBase
+      (.auth)
+      (.signInAnonymously)
       (.then on-success)
       (.catch on-error)))
   ;(sign-in-anonymously! [(fn [user] (let [cuser (js->clj user :keywordize-keys true)]

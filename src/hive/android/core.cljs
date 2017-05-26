@@ -30,10 +30,10 @@
 (defn init []
   ;;------------- effect handlers --------------
   ; effects is a function of [values] -> void
-  (fx/register :fetch/json effects/retrieve->json)
-  (fx/register :app/exit   effects/quit)
+  (fx/register :fetch/json effects/retrieve->json!)
+  (fx/register :app/exit effects/quit!)
+  (fx/register :firebase.auth/anonymous firebase/sign-in-anonymously!)
   (fx/register :map/fly-to mapbox/center&zoom!)
-  ;; TODO: avoid having such long paremeters, prefer a simple default to simplify the function
   (fx/register :map/bound mapbox/box-map!)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
@@ -45,20 +45,20 @@
   (rf/reg-event-db :view/screen    hijack/validate events/assoc-rf)
   (rf/reg-event-db :view/side-menu hijack/validate events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
-  (rf/reg-event-fx :user/goal events/destination);; json object not geojson conformen
+  (rf/reg-event-fx :user/goal       events/destination);; json object not geojson conformen
   (rf/reg-event-fx :map/annotations events/targets)
   (rf/reg-event-fx :map/geocode [(before hijack/bypass-geocode) (before hijack/bias-geocode)]
                                 events/geocode)
   (rf/reg-event-fx :map/directions (before hijack/bypass-directions) events/directions)
-  (rf/reg-event-fx :map/camera events/move-camera);; effect proxy to allow calling dispatch on it
+  (rf/reg-event-fx :map/camera  events/move-camera);; effect proxy to allow calling dispatch on it
   (rf/reg-event-fx :view/return hijack/validate events/navigate-back)
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :view.home/targets query/get-rf)
-  (subs/reg-sub :view/side-menu query/get-rf)
-  (subs/reg-sub :view/screen query/get-rf)
-  (subs/reg-sub :map/annotations query/get-rf)
-  (subs/reg-sub :user/location query/get-rf)
-  (subs/reg-sub :user/city query/get-rf)
+  (subs/reg-sub :view/side-menu    query/get-rf)
+  (subs/reg-sub :view/screen       query/get-rf)
+  (subs/reg-sub :map/annotations   query/get-rf)
+  (subs/reg-sub :user/location     query/get-rf)
+  (subs/reg-sub :user/city         query/get-rf)
   ;; App init
   (mapbox/init! (:mapbox secrets/tokens))
   (firebase/init! (clj->js (:firebase secrets/tokens)))
