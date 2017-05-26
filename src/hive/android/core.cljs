@@ -12,7 +12,8 @@
             [hive.android.screens :as screens]
             [hive.interceptors :as hijack :refer [before]]
             [hive.wrappers.firebase :as firebase]
-            [hive.wrappers.mapbox :as mapbox]))
+            [hive.wrappers.mapbox :as mapbox]
+            [hive.wrappers.storage :as storage]))
 
 (js* "// @flow")
 
@@ -31,10 +32,13 @@
   ;;------------- effect handlers --------------
   ; effects is a function of [values] -> void
   (fx/register :fetch/json effects/retrieve->json!)
-  (fx/register :app/exit effects/quit!)
+  (fx/register :app/exit   effects/quit!)
+  (fx/register :app.storage/read   storage/read)
+  (fx/register :app.storage/write  storage/write!)
+  (fx/register :app.storage/remove storage/remove!)
   (fx/register :firebase.auth/anonymous firebase/sign-in-anonymously!)
   (fx/register :map/fly-to mapbox/center&zoom!)
-  (fx/register :map/bound mapbox/box-map!)
+  (fx/register :map/bound  mapbox/box-map!)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
   (rf/reg-event-db :hive/state hijack/validate events/init)

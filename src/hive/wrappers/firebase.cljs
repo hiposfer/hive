@@ -7,7 +7,7 @@
 (defn sign-in-anonymously!
   "Original docs: https://firebase.google.com/docs/auth/web/anonymous-auth
   Returns Firebase.User type: https://firebase.google.com/docs/reference/js/firebase.User"
-  [[on-success on-error]]
+  [[{:keys [on-success on-error] :or {on-success identity, on-error identity}}]]
   (-> FireBase
       (.auth)
       (.signInAnonymously)
