@@ -8,18 +8,18 @@
 ;; FIXME
 ;(set! *warn-on-infer* true)
 
-(def ReactNative (js/require "react-native"))
-(def MapBox      (js/require "react-native-mapbox-gl"))
-(def FireBase    (js/require "firebase"))
-(def SideMenu    (js/require "react-native-side-menu"))
+(defonce ReactNative (js/require "react-native"))
+(defonce MapBox      (js/require "react-native-mapbox-gl"))
+(defonce SideMenu    (js/require "react-native-side-menu"))
 
-(def app-registry (.-AppRegistry ReactNative))
-(def back-android (.-BackAndroid ReactNative))
+(defonce app-registry (.-AppRegistry ReactNative))
+(defonce async-storage (.-AsyncStorage ReactNative))
+(defonce back-android (.-BackAndroid ReactNative))
 
 (defn on-back-button [f] (.addEventListener back-android "hardwareBackPress" f))
 (defn alert [title] (.alert (.-Alert ReactNative) title))
 
 ;; ------ images ------
-(def menu-img (js/require "./images/ic_menu.png"))
-(def home-img (js/require "./images/ic_home.png"))
-(def settings-img (js/require "./images/ic_settings.png"))
+(defonce menu-img (js/require "./images/ic_menu.png"))
+(defonce home-img (js/require "./images/ic_home.png"))
+(defonce settings-img (js/require "./images/ic_settings.png"))
