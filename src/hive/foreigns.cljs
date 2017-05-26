@@ -13,6 +13,7 @@
 (defonce SideMenu    (js/require "react-native-side-menu"))
 
 (defonce app-registry (.-AppRegistry ReactNative))
+(defonce async-storage (.-AsyncStorage ReactNative))
 (defonce back-android (.-BackAndroid ReactNative))
 
 (defn on-back-button [f] (.addEventListener back-android "hardwareBackPress" f))
