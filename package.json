@@ -10,7 +10,6 @@
     "native-base": "^2.1.4",
     "react": "16.0.0-alpha.6",
     "react-native": "0.44.0",
-    "react-native-mapbox-gl": "^5.1.0",
-    "react-native-side-menu": "^0.20.1"
+    "react-native-mapbox-gl": "^5.1.0"
   }
 }
