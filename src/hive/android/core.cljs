@@ -7,7 +7,6 @@
             [hive.events :as events]
             [hive.subs :as query]
             [hive.effects :as effects]
-            [hive.secrets :as secrets]
             [hive.foreigns :as fl]
             [hive.android.screens :as screens]
             [hive.interceptors :as hijack :refer [before]]
@@ -25,6 +24,7 @@
 (defn app-root []
   (let [screen (subs/subscribe [:view/screen])]
     (condp = @screen
+      :blockade [screens/blockade]
       :home [screens/home]
       :setting [screens/settings])))
 
@@ -39,9 +39,10 @@
   (fx/register :firebase.auth/anonymous firebase/sign-in-anonymously!)
   (fx/register :map/fly-to mapbox/center&zoom!)
   (fx/register :map/bound  mapbox/box-map!)
+  (fx/register :mapbox/init     mapbox/init!)
+  (fx/register :firebase/init   firebase/init!)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
-  (rf/reg-event-db :hive/state hijack/validate events/init)
   (rf/reg-event-db :map/ref    hijack/validate events/assoc-rf)
   (rf/reg-event-db :user/city  hijack/validate events/move-out)
   (rf/reg-event-db :user/location     hijack/validate events/assoc-rf)
@@ -49,6 +50,8 @@
   (rf/reg-event-db :view/screen    hijack/validate events/assoc-rf)
   (rf/reg-event-db :view/side-menu hijack/validate events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
+  (rf/reg-event-fx :hive/state      hijack/validate effects/init)
+  (rf/reg-event-fx :hive/services   events/start-services)
   (rf/reg-event-fx :user/goal       events/destination);; json object not geojson conformen
   (rf/reg-event-fx :map/annotations events/targets)
   (rf/reg-event-fx :map/geocode [(before hijack/bypass-geocode) (before hijack/bias-geocode)]
@@ -64,8 +67,6 @@
   (subs/reg-sub :user/location     query/get-rf)
   (subs/reg-sub :user/city         query/get-rf)
   ;; App init
-  (mapbox/init! (:mapbox secrets/tokens))
-  (firebase/init! (clj->js (:firebase secrets/tokens)))
   (fl/on-back-button (fn [] (do (router/dispatch [:view/return true]) true)))
   (router/dispatch-sync [:hive/state]);(dispatch-sync [:initialize-db])
   (.registerComponent fl/app-registry "Hive" #(r/reactify-component app-root)))

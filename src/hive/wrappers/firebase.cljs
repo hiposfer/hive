@@ -2,7 +2,7 @@
 
 (defonce FireBase (js/require "firebase"))
 
-(defn init! [token](.initializeApp FireBase token))
+(defn init! [token] (.initializeApp FireBase token))
 
 (defn sign-in-anonymously!
   "Original docs: https://firebase.google.com/docs/auth/web/anonymous-auth

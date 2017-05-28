@@ -55,3 +55,8 @@
             [c/title "Settings"]]]
         [c/content
           [c/city-selector hive.core/cities]]]]))
+
+(defn blockade
+  []
+  [c/container
+    [c/text "Fetching app information ... please wait"]])
