@@ -59,4 +59,6 @@
 (defn blockade
   []
   [c/container
-    [c/text "Fetching app information ... please wait"]])
+    [c/content
+      [c/spinner {:color "blue"}]
+      [c/text "Fetching app information ... please wait"]]])

@@ -18,6 +18,7 @@
 (def body      (r/adapt-react-class (.-Body fl/NativeBase)))
 (def item      (r/adapt-react-class (.-Item fl/NativeBase)))
 (def content   (r/adapt-react-class (.-Content fl/NativeBase)))
+(def spinner   (r/adapt-react-class (.-Spinner fl/NativeBase)))
 (def input     (r/adapt-react-class (.-Input fl/NativeBase)))
 (def drawer    (r/adapt-react-class (.-Drawer fl/NativeBase)))
 (def text      (r/adapt-react-class (.-Text fl/NativeBase)))
