@@ -3,7 +3,6 @@
   (:require [cljs.spec :as s]
             [re-frame.std-interceptors :as nsa]
             [re-frame.interceptor :as fbi]
-            [hive.secrets :as secrets]
             [clojure.string :as str]
             [hive.util :as util]
             [hive.geojson :as geojson]))
