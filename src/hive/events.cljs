@@ -12,7 +12,8 @@
 (defn- start-services
   [cofx [id secrets]]
   (let [tokens (js->clj secrets :keywordize-keys true)]
-    {:mapbox/init (:mapbox tokens)
+    {:db (assoc (:db cofx) :tokens tokens)
+     :mapbox/init (:mapbox tokens)
      :firebase/init (:firebase tokens)}))
 
 (defn geocode
