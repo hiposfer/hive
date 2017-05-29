@@ -10,13 +10,13 @@
 
 (defonce ReactNative (js/require "react-native"))
 (defonce MapBox      (js/require "react-native-mapbox-gl"))
-(defonce SideMenu    (js/require "react-native-side-menu"))
+(defonce NativeBase  (js/require "native-base"))
 
 (defonce app-registry (.-AppRegistry ReactNative))
 (defonce async-storage (.-AsyncStorage ReactNative))
-(defonce back-android (.-BackAndroid ReactNative))
+(defonce back-handler (.-BackHandler ReactNative))
 
-(defn on-back-button [f] (.addEventListener back-android "hardwareBackPress" f))
+(defn on-back-button [f] (.addEventListener back-handler "hardwareBackPress" f))
 (defn alert [title] (.alert (.-Alert ReactNative) title))
 
 ;; ------ images ------

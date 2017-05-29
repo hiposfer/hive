@@ -3,24 +3,17 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "node_modules/react-native/packager/packager.sh --nonPersistent",
-    "test": "jest"
+    "start": "node_modules/react-native/packager/packager.sh --nonPersistent"
   },
   "dependencies": {
-    "babel-plugin-transform-es2015-block-scoping": "6.15.0",
     "firebase": "^3.7.5",
-    "react": "15.4.2",
-    "react-native": "0.41.1",
-    "react-native-mapbox-gl": "^5.1.0",
-    "react-native-side-menu": "^0.20.1"
+    "native-base": "^2.1.4",
+    "react": "16.0.0-alpha.6",
+    "react-native": "0.44.0",
+    "react-native-mapbox-gl": "^5.1.0"
   },
   "devDependencies": {
-    "babel-jest": "19.0.0",
-    "babel-preset-react-native": "1.9.1",
-    "jest": "19.0.2",
-    "react-test-renderer": "15.4.2"
-  },
-  "jest": {
-    "preset": "react-native"
+    "babel-plugin-transform-es2015-block-scoping": "6.15.0",
+    "babel-preset-react-native": "1.9.1"
   }
 }

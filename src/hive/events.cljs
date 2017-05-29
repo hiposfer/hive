@@ -3,11 +3,18 @@
             [clojure.string :as str]
             [re-frame.core :as rf]
             [hive.util :as util]
-            [hive.geojson :as geojson]))
+            [hive.geojson :as geojson]
+            [hive.wrappers.firebase :as firebase]
+            [hive.wrappers.mapbox :as mapbox]))
 
 ;; -- Handlers --------------------------------------------------------------
 
-(defn init [_ _] hive/state)
+(defn- start-services
+  [cofx [id secrets]]
+  (let [tokens (js->clj secrets :keywordize-keys true)]
+    {:db (assoc (:db cofx) :tokens tokens)
+     :mapbox/init (:mapbox tokens)
+     :firebase/init (:firebase tokens)}))
 
 (defn geocode
   "call mapbox geocode api v5 with the provided parameters.

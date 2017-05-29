@@ -6,30 +6,39 @@
             [re-frame.subs :as subs]
             [hive.util :as util]))
 
-(def text-input (r/adapt-react-class (.-TextInput fl/ReactNative)))
-(def button (r/adapt-react-class (.-Button fl/ReactNative)))
-(def text (r/adapt-react-class (.-Text fl/ReactNative)))
 (def view (r/adapt-react-class (.-View fl/ReactNative)))
-(def scrollview (r/adapt-react-class (.-ScrollView fl/ReactNative)))
-(def image (r/adapt-react-class (.-Image fl/ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight fl/ReactNative)))
+
+(def container (r/adapt-react-class (.-Container fl/NativeBase)))
+(def header    (r/adapt-react-class (.-Header fl/NativeBase)))
+(def left      (r/adapt-react-class (.-Left fl/NativeBase)))
+(def list-base (r/adapt-react-class (.-List fl/NativeBase)))
+(def list-item (r/adapt-react-class (.-ListItem fl/NativeBase)))
+(def button    (r/adapt-react-class (.-Button fl/NativeBase)))
+(def icon      (r/adapt-react-class (.-Icon fl/NativeBase)))
+(def body      (r/adapt-react-class (.-Body fl/NativeBase)))
+(def item      (r/adapt-react-class (.-Item fl/NativeBase)))
+(def content   (r/adapt-react-class (.-Content fl/NativeBase)))
+(def spinner   (r/adapt-react-class (.-Spinner fl/NativeBase)))
+(def input     (r/adapt-react-class (.-Input fl/NativeBase)))
+(def drawer    (r/adapt-react-class (.-Drawer fl/NativeBase)))
+(def text      (r/adapt-react-class (.-Text fl/NativeBase)))
+(def title     (r/adapt-react-class (.-Title fl/NativeBase)))
+
 (def mapview (r/adapt-react-class (.-MapView fl/MapBox)))
-(def side-menu (r/adapt-react-class fl/SideMenu))
 
 
 (defn targets-list
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
-  [view {:style {:height (* 55 (count features))}}
+  [list-base
    (for [target features]
      ^{:key (:id target)}
-     [touchable-highlight {:style    {:flex 1}
-                           :on-press (fn [] (router/dispatch [:map/directions target
-                                                              #(router/dispatch [:user/goal %])]))}
-       [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
-         [text {:style {:flex 1}} (:title target)]
-         [text {:style {:flex 1 :color "gray"}} (:subtitle target)]]])])
+     [list-item {:on-press (fn [] (router/dispatch [:map/directions target
+                                                    #(router/dispatch [:user/goal %])]))}
+       [body
+         [text (:title target)]
+         [text {:note true :style {:color "gray"}} (:subtitle target)]]])])
 
 (defn menu
   "side menu for the user to choose where to navigate to in Android"
@@ -40,27 +49,26 @@
         go-fix  (fn [] (when-not (= @screen :setting)
                          (router/dispatch [:view/screen :setting])
                          (router/dispatch [:view/side-menu false])))]
-    [view
-      [touchable-highlight {:on-press go-home}
-        [view {:flex-direction "row"}
-          [image {:source fl/home-img}]
-          [text "HOME"]]]
-      [touchable-highlight {:on-press go-fix}
-        [view {:flex-direction "row"}
-          [image {:source fl/settings-img}]
-          [text "SETTINGS"]]]]))
+    [view {:activeOpacity 1}
+      [button {:full true :on-press go-home}
+        [icon {:name "home"}]
+        [text "HOME"]]
+      [button {:full true :on-press go-fix}
+        [icon {:name "settings"}]
+        [text "SETTINGS"]]]))
 
 (defn city-selector
   "list of cities currently supported, displayed to the user to manually change his
    region of interest"
   [cities]
   (let [current (subs/subscribe [:user/city])]
-    [scrollview
+    [list-base
       (for [[id city] cities]
         ^{:key id}
-        [touchable-highlight {:on-press #(when-not (= (:city @current) city)
-                                           (router/dispatch [:user/city city])
-                                           (router/dispatch [:view/screen :home]))}
-          [view {:style {:flex 1 :borderBottomColor "lightblue" :borderWidth 1}}
-            [text (:name city)]
-            [text {:style {:color "gray"}} (str (:region city) ", " (:country city))]]])]))
+        [list-item {:on-press #(when-not (= (:city @current) city
+                                            (router/dispatch [:user/city city])
+                                            (router/dispatch [:view/screen :home])))}
+         [body
+           [text (:name city)]
+           [text {:note true :style {:color "gray"}}
+                 (str (:region city) ", " (:country city))]]])]))

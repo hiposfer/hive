@@ -83,7 +83,11 @@ target/
 # Figwheel
 #
 figwheel_server.log
-/src/hive/secrets.cljs
-/android/app/google-services.json
+google-services.json
 /.lein-repl-history
 /.nrepl-port
+
+# Haul
+#
+haul-debug.log
+.happypack

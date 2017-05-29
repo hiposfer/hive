@@ -1,0 +1,7 @@
+
+language: clojure
+# check that it compiles && run linters && run tests
+# stop if any of them fails
+
+# TODO: add proper tests and run on CI
+script: lein prod-build

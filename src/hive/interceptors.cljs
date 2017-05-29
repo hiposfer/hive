@@ -3,7 +3,6 @@
   (:require [cljs.spec :as s]
             [re-frame.std-interceptors :as nsa]
             [re-frame.interceptor :as fbi]
-            [hive.secrets :as secrets]
             [clojure.string :as str]
             [hive.util :as util]
             [hive.geojson :as geojson]))
@@ -33,18 +32,20 @@
   "takes the parameters passed to create a MapBox geocode call and inserts the api
    token into the events parameters to avoid overly long events calls"
   [context] ;; extract db and event from coeffects
-  (let [[id name handler] (:event (:coeffects context))]
+  (let [[id name handler] (:event (:coeffects context))
+        token             (:mapbox (:tokens (:db (:coeffects context))))]
     (assoc-in context [:coeffects :event]
-              [id "mapbox.places" name {:access_token (:mapbox secrets/tokens)} handler])))
+              [id "mapbox.places" name {:access_token token} handler])))
 
 (defn bypass-directions
   "takes the parameters passed to create a MapBox directions call and inserts the api
    token into the events parameters to avoid overly long events calls"
   [context] ;; extract db and event from coeffects
-  (let [[id coordinates handler] (:event (:coeffects context))]
+  (let [[id coordinates handler] (:event (:coeffects context))
+        token                    (:mapbox (:tokens (:db (:coeffects context))))]
     (assoc-in context [:coeffects :event]
               [id "mapbox/driving" coordinates ;;TODO: steps -> turn by turn navigation
-               {:access_token (:mapbox secrets/tokens) :geometries "geojson"}; :steps true}
+               {:access_token token :geometries "geojson"}; :steps true}
                handler])))
 
 (defn bias-geocode

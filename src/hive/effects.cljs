@@ -1,9 +1,15 @@
 (ns hive.effects
-  (:require [re-frame.core :as rf]
-            [re-frame.router :as router]
+  (:require [re-frame.router :as router]
             [hive.foreigns :as fl]
-            [hive.util :as util]
-            [hive.geojson :as geojson]))
+            [hive.core :as hive]))
+
+;; fixme: save tokens once received
+(def init-json-url "<YOUR STORAGE URL HERE>")
+
+(defn init [_ _] {:db hive/state
+                  :fetch/json [init-json-url {}
+                               #(do (router/dispatch [:hive/services %])
+                                    (router/dispatch [:view/screen :home]))]})
 
 (defonce debounces (atom {}))
 ;(defonce throttles (atom {})) ;; FIXME
@@ -13,7 +19,7 @@
   [[id event-vec n]]
   (js/clearTimeout (@debounces id))
   (swap! debounces assoc id
-         (js/setTimeout (fn [] (rf/dispatch event-vec)
+         (js/setTimeout (fn [] (router/dispatch event-vec)
                                (swap! debounces dissoc id))
                         n)))
 
@@ -37,6 +43,6 @@
 (defn quit!
   "quits the android app"
   [v]
-  (.exitApp fl/back-android))
+  (.exitApp fl/back-handler))
 
 ;(retrieve "https://google.com" {} (cons res->json [#(println %)]))

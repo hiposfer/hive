@@ -41,7 +41,7 @@
                                 :geometry {:type "Point" :coordinates [8.67972 50.11361]}}
             :view.home/targets false ; whether or not to display those places to the user
             :view/side-menu    false
-            :view/screen       :home
+            :view/screen       :blockade
             :map/ref           nil}) ;; holds a reference to the mapview instance from mapbox
 
 ;;FIXME: this should come from the server, not being hardcoded
