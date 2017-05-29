@@ -86,3 +86,8 @@ figwheel_server.log
 google-services.json
 /.lein-repl-history
 /.nrepl-port
+
+# Haul
+#
+haul-debug.log
+.happypack

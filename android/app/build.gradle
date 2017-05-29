@@ -65,6 +65,10 @@ import com.android.build.OutputFile
  * ]
  */
 
+project.ext.react = [
+    cliPath: "node_modules/haul-cli/bin/cli.js"
+]
+
 apply from: "../../node_modules/react-native/react.gradle"
 
 /**
