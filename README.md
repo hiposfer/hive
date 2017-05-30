@@ -27,12 +27,10 @@ Once you have installed all the dependencies, run `lein prod-build` and then:
   cd android
   ./gradlew assembleDebug
   ``` 
-   This will create an *apk* file which you can then install on your device without needing a connection to react-native development server.
+   This will create an *apk* file which you can then install on your device without needing a connection to react-native development server. The *apk* can be found in `android/app/build/outputs/apk`
 - for production - not supported yet :(
 
 ### NOTES
-- you need to provide a `secrets.clj` file with
-  - mapbox api key
-  - firebase config
 - you need to provide a `google-services.json` file downloadable from the firebase project
 - If you want to run *figwheel* in a Cursive repl you need to follow the instructions [here](https://github.com/bhauman/lein-figwheel/wiki/Running-figwheel-in-a-Cursive-Clojure-REPL)
+- currently it is not possible to run an nrepl and connect to it (or rather I dont know how to)
