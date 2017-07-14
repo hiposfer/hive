@@ -4,12 +4,11 @@
             [hive.core :as hive]))
 
 ;; fixme: save tokens once received
-(def init-json-url "<YOUR STORAGE URL HERE>")
+(def init-json-url "https://firebasestorage.googleapis.com/v0/b/hive-6c54a.appspot.com/o/app%2Finit.json?alt=media&token=03675ebe-dc51-4ff8-8e80-f8fefdda2757")
 
-(defn init [_ _] {:db hive/state
-                  :fetch/json [init-json-url {}
-                               #(do (router/dispatch [:hive/services %])
-                                    (router/dispatch [:view/screen :home]))]})
+(defn init [_ _]
+  {:db hive/state
+   :fetch/json [init-json-url {} :hive/services]})
 
 (defonce debounces (atom {}))
 ;(defonce throttles (atom {})) ;; FIXME
@@ -30,19 +29,19 @@
   "wrapper around React Native fetch function
   See https://facebook.github.io/react-native/docs/network.html
   for more information"
-  [url opts on-response process-response]
+  [url opts on-response event-id]
   (-> (js/fetch url opts)
       (.then on-response)
-      (.then process-response)
+      (.then #(router/dispatch [event-id %]))
       (.catch #(println %))))
 
 (defn retrieve->json!
-  [[url options handler]]
-  (retrieve! url options res->json handler))
+  [[url options handler-id]]
+  (retrieve! url options res->json handler-id))
 
 (defn quit!
   "quits the android app"
-  [v]
+  [_]
   (.exitApp fl/back-handler))
 
 ;(retrieve "https://google.com" {} (cons res->json [#(println %)]))

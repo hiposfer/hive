@@ -34,8 +34,7 @@
   [list-base
    (for [target features]
      ^{:key (:id target)}
-     [list-item {:on-press (fn [] (router/dispatch [:map/directions target
-                                                    #(router/dispatch [:user/goal %])]))}
+     [list-item {:on-press #(router/dispatch [:map/directions target :user/goal])}
        [body
          [text (:title target)]
          [text {:note true :style {:color "gray"}} (:subtitle target)]]])])

@@ -18,7 +18,8 @@
             ["do" "clean"
              ["with-profile" "prod" "cljsbuild" "once"]]}
   :profiles {:dev {:dependencies [[figwheel-sidecar "0.5.11"]
-                                  [com.cemerick/piggieback "0.2.2"]]
+                                  [com.cemerick/piggieback "0.2.2"]
+                                  [expound "0.1.0"]]
                    :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                    :source-paths ["src" "env/dev" "script"]
                    :cljsbuild    {:builds [{:id           "ios"

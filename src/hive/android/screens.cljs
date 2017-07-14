@@ -3,12 +3,7 @@
             [hive.components :as c]
             [reagent.core :as r]
             [re-frame.subs :as subs]
-            [hive.foreigns :as fl]
             [hive.util :as util]))
-
-(defn- search-input [v]
-  (let [annotate #(router/dispatch [:map/annotations %])]
-    (router/dispatch [:map/geocode v annotate])))
 
 (defn home
   "start screen. A simple screen with a map and an input text to search for a place"
@@ -20,7 +15,7 @@
             menu-open?    (subs/subscribe [:view/side-menu])]
         [c/drawer {:content (r/as-component (c/menu)) :open @menu-open?
                    :type "displace" :tweenDuration 100
-                   :onClose (fn [s] (router/dispatch [:view/side-menu false]))}
+                   :onClose (fn [_] (router/dispatch [:view/side-menu false]))}
           [c/container
             [c/header {:searchBar true :rounded true}
               [c/item
@@ -28,7 +23,7 @@
                            :on-press #(router/dispatch [:view/side-menu (not @menu-open?)])}
                   [c/icon {:name "menu" :transparent true}]]
                 [c/input {:placeholder "where would you like to go?"
-                          :onChangeText search-input}]
+                          :onChangeText #(router/dispatch [:map/geocode % :map/annotations])}]
                 [c/icon {:name "ios-search"}]]]
             (when @view-targets?
               [c/targets-list @map-markers])
