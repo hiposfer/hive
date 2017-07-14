@@ -1,18 +1,27 @@
 {
   "name": "Hive",
   "interface": "reagent6",
-  "androidHost": "localhost",
-  "iosHost": "localhost",
   "envRoots": {
     "dev": "env/dev",
     "prod": "env/prod"
   },
   "modules": [
+    "react-native",
     "react-native-mapbox-gl",
-    "firebase",
-    "native-base"
+    "native-base",
+    "firebase"
   ],
   "imageDirs": [
     "images"
-  ]
+  ],
+  "platforms": {
+    "ios": {
+      "host": "localhost",
+      "modules": []
+    },
+    "android": {
+      "host": "localhost",
+      "modules": []
+    }
+  }
 }

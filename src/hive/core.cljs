@@ -1,5 +1,5 @@
 (ns hive.core
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [hive.geojson :as geojson]))
 
 ;; -- Spec --------------------------------------------------------------------

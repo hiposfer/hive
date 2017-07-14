@@ -1,5 +1,5 @@
 (ns hive.geojson
-  (:require [cljs.spec :as s]
+  (:require [cljs.spec.alpha :as s]
             [clojure.string :as str]
             [clojure.set :as set]))
 
@@ -35,15 +35,6 @@
 (s/def :polygon/coordinates (s/coll-of :geojson/linear-ring))
 (s/def :multipolygon/coordinates (s/coll-of :polygon/coordinates))
 
-;TODO
-;FeatureCollection and Geometry objects, respectively, MUST
-;NOT contain a "geometry" or "properties" member.
-(s/def :geocoll/geometries (s/coll-of :geojson/object))
-(s/def :feature/geometry (s/nilable :geojson/object))
-(s/def :featurecoll/features (s/coll-of :geojson/feature))
-
-(s/def :feature/id (s/or :string string? :number number?))
-
 ;; --------------- geometry objects
 (s/def :geojson/point ;;              "GeoJSON Point"
   (s/keys :req-un [:point/type :point/coordinates]
@@ -74,6 +65,16 @@
                              :polygon    :geojson/polygon    :multipolygon :geojson/multipolygon
                              :collection :geojson/geometry-collection))
 
+;TODO
+;FeatureCollection and Geometry objects, respectively, MUST
+;NOT contain a "geometry" or "properties" member.
+(s/def :geocoll/geometries (s/coll-of :geojson/object))
+(s/def :feature/geometry (s/nilable :geojson/object))
+(s/def :featurecoll/features (s/coll-of :geojson/feature))
+
+(s/def :feature/id (s/or :string string? :number number?))
+
+
 ;; -------- features/collections
 
 (s/def :geojson/geometry-collection
@@ -94,12 +95,8 @@
   "returns an feature spec that conforms only to the specified geometry type
   instead of any geometry object"
   [geo-spec]
-  (s/keys :req-un [:feature/type (s/nilable geo-spec)]
+  (s/keys :req-un [:feature/type geo-spec]
           :opt-un [:feature/id :geojson/bbox]))
-
-(defn failure?
-  [object]
-  (instance? ExceptionInfo object))
 
 (defn- bounds
   "computes a bounding box with [min-lon, min-lat, max-lon, max-lat]"
@@ -111,12 +108,9 @@
 
 (defn- super-bounds
   "computes the bounding box of bounding boxes"
-  [bboxes]
-  (let [valids (filter #(= 4 (count %)) bboxes)]
-    (if-not (empty? valids)
-      [(apply min (map first valids))      (apply min (map second valids))
-       (apply max (map #(nth % 2) valids)) (apply max (map #(nth % 3) valids))]
-      (ex-info "cannot compute super bounds of empty or malformed bbox" bboxes))))
+  [boxes]
+  [(min-key #(nth % 0) boxes) (min-key #(nth % 1) boxes)
+   (max-key #(nth % 2) boxes) (max-key #(nth % 3) boxes)])
 
 ;The value of the bbox member MUST be an array of
 ;length 2*n where n is the number of dimensions represented in the
@@ -127,35 +121,38 @@
    box with [min-lon, min-lat, max-lon, max-lat]. Note: according to the rfc7946 the values of
    a bbox array are [west, south, east, north], not [minx, miny, maxx, maxy]
 
-   However for simplicity they are calculated that way.
-
-   Returns an Exception on failure"
+   However for simplicity we calculate them that way"
   [geojson]
   (if (:bbox geojson) (:bbox geojson)
-    (condp = (:type geojson)
-      "Point" (ex-info "cannot compute bbox for a point" geojson)
+    (case (:type geojson)
       "MultiPoint" (bounds (:coordinates geojson))
       "LineString" (bounds (:coordinates geojson))
       "MultiLineString" (super-bounds (map bounds (:coordinates geojson)))
-      "Polygon" (super-bounds (map bounds (:coordinates geojson)))
-      "MultiPolygon" (super-bounds (map super-bounds (map bounds (:coordinates geojson))))
-      "GeometryCollection" (let [points     (filter (comp #{"Point"} :type) (:geometries geojson))
-                                 others     (remove (comp #{"Point"} :type) (:geometries geojson))]
-                             (super-bounds [(map bbox others) (bounds (map :coordinates points))]))
-      "Feature" (bbox (:geometry geojson))
+      "Polygon"         (super-bounds (map bounds (:coordinates geojson)))
+      "MultiPolygon"    (super-bounds (map super-bounds (map bounds (:coordinates geojson))))
+      "GeometryCollection" (let [points (filter (comp #{"Point"} :type) (:geometries geojson))
+                                 others (remove (comp #{"Point"} :type) (:geometries geojson))]
+                             (if (and (not-empty points) (>= (count points) 2))
+                               (super-bounds (concat (map bbox others) (bounds (map :coordinates points))))
+                               (super-bounds (map bbox others))))
+      "Feature"    (bbox (:geometry geojson))
       "FeatureCollection" (let [geometries (map :geometry (:features geojson))
                                 points     (filter (comp #{"Point"} :type) geometries)
                                 others     (remove (comp #{"Point"} :type) geometries)]
-                            (super-bounds [(map bbox others) (bounds (map :coordinates points))]))
-      (ex-info "unknown geojson object" geojson))))
+                            (if (and (not-empty points) (>= (count points) 2))
+                              (super-bounds (concat (map bbox others) (bounds (map :coordinates points))))
+                              (super-bounds (map bbox others)))))))
+      ;; Point is not supported
+;;FIXME: I think the bbox implementation of GeometryCollection and FeatureCollection is wrong.
+;; it should take into account single points as well. Probably it would be better to compute the bbox
+;; of the other elements and then expand the bbox if necessary to include the points
 
 (defn uri
   "takes a point or feature and concatenates the coordinates as {longitude},{latitude}"
   [geojson]
-  (condp = (:type geojson)
+  (case (:type geojson)
     "Point" (str/join "," (:coordinates geojson))
-    "Feature" (uri (:geometry geojson))
-    (ex-info "geoUri is only supported on Point and Feature (Points) objects" geojson)))
+    "Feature" (uri (:geometry geojson))))
 
 (defn geo-uri
   "return a geoUri as specified by the rfc7946. Example:
@@ -163,9 +160,7 @@
    geo:lat,lon
    GeoJSON:{\"type\": \"Point\", \"coordinates\": [lon, lat]}\n"
   [geojson]
-  (let [result (uri geojson)]
-    (if (failure? result) result
-      (str "geo:" result))))
+  (str "geo:" (uri geojson)))
 
 (defn feature
   "returns a geojson feature with data as properties except for bbox and id"

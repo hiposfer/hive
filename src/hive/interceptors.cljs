@@ -1,6 +1,6 @@
 (ns hive.interceptors
   "see https://github.com/Day8/re-frame/blob/master/docs/Interceptors.md"
-  (:require [cljs.spec :as s]
+  (:require [cljs.spec.alpha :as s]
             [re-frame.std-interceptors :as nsa]
             [re-frame.interceptor :as fbi]
             [clojure.string :as str]
