@@ -41,21 +41,22 @@
   (fx/register :firebase/init      firebase/init!)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
-  (rf/reg-event-db :map/ref           hijack/validate events/assoc-rf)
-  (rf/reg-event-db :user/city         hijack/validate events/update-user-city)
-  (rf/reg-event-db :user/location     hijack/validate events/assoc-rf)
-  (rf/reg-event-db :view.home/targets hijack/validate events/assoc-rf)
-  (rf/reg-event-db :view/screen       hijack/validate events/assoc-rf)
-  (rf/reg-event-db :view/side-menu    hijack/validate events/assoc-rf)
+  (rf/reg-event-db :map/ref            hijack/validate events/assoc-rf)
+  (rf/reg-event-db :user/city          hijack/validate events/update-user-city)
+  (rf/reg-event-db :user/location      hijack/validate events/assoc-rf)
+  (rf/reg-event-db :view.home/targets  hijack/validate events/assoc-rf)
+  (rf/reg-event-db :view/screen        hijack/validate events/assoc-rf)
+  (rf/reg-event-db :view/side-menu     hijack/validate events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
-  (rf/reg-event-fx :hive/state        hijack/validate effects/init)
-  (rf/reg-event-fx :hive/services     events/start-services)
-  (rf/reg-event-fx :user/goal         mapbox/show-directions);; json object not geojson conformen
-  (rf/reg-event-fx :map/annotations   mapbox/show-places)
-  (rf/reg-event-fx :map/geocode       mapbox/get-places)
-  (rf/reg-event-fx :map/directions    mapbox/get-directions)
-  (rf/reg-event-fx :map/camera        mapbox/move-camera);; effect proxy to allow calling dispatch on it
-  (rf/reg-event-fx :view/return       hijack/validate events/on-back-button)
+  (rf/reg-event-fx :hive/state         hijack/validate effects/init)
+  (rf/reg-event-fx :hive/services      events/start-services)
+  (rf/reg-event-fx :user/goal          mapbox/show-directions);; json object not geojson conformen
+  (rf/reg-event-fx :map/annotations    mapbox/on-geocode-result)
+  (rf/reg-event-fx :map.geocode/mapbox mapbox/get-places)
+  (rf/reg-event-fx :map.geocode/photon mapbox/get-photon-places)
+  (rf/reg-event-fx :map/directions     mapbox/get-directions)
+  (rf/reg-event-fx :map/camera         mapbox/move-camera);; effect proxy to allow calling dispatch on it
+  (rf/reg-event-fx :view/return        hijack/validate events/on-back-button)
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :view.home/targets get-rf)
   (subs/reg-sub :view/side-menu    get-rf)

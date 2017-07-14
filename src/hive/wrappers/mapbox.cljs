@@ -52,6 +52,20 @@
                 (str/replace "{params}" (str/join "&" params)))]
     {:fetch/json [URL {} handler]}))
 
+;; http://photon.komoot.de/
+(defn get-photon-places
+  "call photon.koomot.de geocode api with the query parameter"
+  [cofx [_ query]]
+  ;(cljs.pprint/pprint query)
+  (let [new-query (str query ", " (:name (:user/city (:db cofx))))
+        position  (:user/location (:db cofx))
+        template  "https://photon.komoot.de/api/?q={query}&lat={lat}&lon={lon}&limit={limit}"
+        URL (-> (str/replace template "{query}" (js/encodeURIComponent new-query))
+                (str/replace "{lat}" (second (:coordinates position)))
+                (str/replace "{lon}" (first (:coordinates position)))
+                (str/replace "{limit}" 10))]
+    {:fetch/json [URL {} :map/annotations]}))
+
 (defn- complete-directions-event
   "takes the parameters passed to create a MapBox directions call and inserts the api
    token into the events parameters to avoid overly long events calls"
@@ -88,18 +102,41 @@
     (if (nil? map-ref) {}
       {:map/fly-to [map-ref lat lon (or zoom hive.core/default-zoom)]})))
 
-(defn show-places
+(defn- carmen->simple-feature
+  "transform the result of Mapbox geocoding result into a simpler/smaller
+  version"
+  [feature]
+  (merge
+    (select-keys feature [:id :type :bbox :geometry])
+    {:title (:text feature)
+     :subtitle (:address (:properties feature))}))
+
+(defn- osm-feature->simple-feature
+  "transform the result of Photon geocoding result into a simpler/smaller
+  version"
+  [feature]
+  (let [prop (:properties feature)]
+    (merge
+      (select-keys feature [:type :geometry])
+      {:id    (str (:osm_id prop))
+       :title (or (:name prop) (str (:street prop) " " (:housenumber prop)))
+       :subtitle (str (:postcode prop) ", " (:city prop))})))
+
+(defn on-geocode-result
   "Handles the events of the result of a geocode search, i.e. possible routing
   targets"
-  [cofx [_ carmen-geojson]]
-  (let [native (js->clj carmen-geojson :keywordize-keys true)
-        annotations (into [] (comp (map #(assoc % :title (first (str/split (:place_name %) #","))))
-                                   (map #(assoc % :subtitle (:address (:properties %)))))
-                          (:features native))
-        base   {:db (assoc (:db cofx) :map/annotations annotations
-                                      :view.home/targets (pos? (count annotations)))}]
-    (if (empty? annotations) base
-      (assoc base :map/bound [(:map/ref (:db cofx)) native]))))
+  [cofx [_ result]]
+  (let [native     (js->clj result :keywordize-keys true)
+        processor  (if-not (nil? (:attribution native))
+                     carmen->simple-feature
+                     osm-feature->simple-feature)
+        features   (map processor (:features native))
+        new-result (assoc native :features features)
+        new-cofx   {:db (assoc (:db cofx) :map/annotations features
+                                          :view.home/targets (pos? (count features)))}]
+    (if (and (not (nil? (:attribution native))) (empty? features))
+      (assoc new-cofx :dispatch [:map.geocode/photon (str/join " " (:query native))])
+      (assoc new-cofx :map/bound [(:map/ref new-cofx) new-result]))))
 
 ;; https://www.mapbox.com/api-documentation/#directions-response-object
 (defn show-directions
@@ -108,8 +145,8 @@
   [cofx [_ directions]]
   (let [dirs    (js->clj directions :keywordize-keys true)
         linestr (:geometry (first (:routes dirs)))
-        goal    (geojson/feature "Point" (last (:coordinates linestr)) {:title "goal"
-                                                                        :id (str (last (:coordinates linestr)))})
+        goal    (geojson/feature "Point" (last (:coordinates linestr))
+                                 {:title "goal" :id (str (last (:coordinates linestr)))})
         route   (util/polyline {:type "Feature" :geometry linestr})
         base    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
                                        :view.home/targets false)

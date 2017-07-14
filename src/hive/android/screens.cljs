@@ -22,13 +22,16 @@
                 [c/button {:transparent true :full true
                            :on-press #(router/dispatch [:view/side-menu (not @menu-open?)])}
                   [c/icon {:name "menu" :transparent true}]]
-                [c/input {:placeholder "where would you like to go?"
-                          :onChangeText #(router/dispatch [:map/geocode % :map/annotations])}]
+                [c/input {:placeholder  "where would you like to go?"
+                          :onChangeText #(when (not-empty %) (router/dispatch [:map.geocode/mapbox % :map/annotations]))}]
                 [c/icon {:name "ios-search"}]]]
             (when @view-targets?
               [c/targets-list @map-markers])
-            [c/mapview {:style                   {:flex 1} :initialZoomLevel hive.core/default-zoom :annotationsAreImmutable true
-                        :initialCenterCoordinate (util/feature->verbose @current-city) :annotations (clj->js (map util/feature->annotation @map-markers))
+            [c/mapview {:style                   {:flex 1}
+                        :initialZoomLevel        hive.core/default-zoom
+                        :annotationsAreImmutable true
+                        :initialCenterCoordinate (util/feature->verbose @current-city)
+                        :annotations             (clj->js (map util/feature->annotation @map-markers))
                         :showsUserLocation       true ;:ref (fn [this] (println "this: " this)) ;(when this (.keys this))))
                         :onUpdateUserLocation    #(when % (router/dispatch [:user/location (util/verbose->feature (js->clj % :keywordize-keys true))]))
                         :onTap                   #(router/dispatch [:view.home/targets false])
