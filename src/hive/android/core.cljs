@@ -14,8 +14,6 @@
             [hive.wrappers.mapbox :as mapbox]
             [hive.wrappers.storage :as storage]))
 
-(js* "// @flow")
-
 ;; I use the following convention for effects, subscriptions and event handlers
 ; - the app-state (:db) is sacred, so only store resources values there
 ; - whenever keeping track of a sequence of transformations, use interceptors for that

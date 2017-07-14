@@ -109,8 +109,8 @@
 (defn- super-bounds
   "computes the bounding box of bounding boxes"
   [boxes]
-  [(min-key #(nth % 0) boxes) (min-key #(nth % 1) boxes)
-   (max-key #(nth % 2) boxes) (max-key #(nth % 3) boxes)])
+  [(apply min (map #(nth % 0) boxes)) (apply min (map #(nth % 1) boxes))
+   (apply max (map #(nth % 2) boxes)) (apply max (map #(nth % 3) boxes))])
 
 ;The value of the bbox member MUST be an array of
 ;length 2*n where n is the number of dimensions represented in the
@@ -132,16 +132,20 @@
       "MultiPolygon"    (super-bounds (map super-bounds (map bounds (:coordinates geojson))))
       "GeometryCollection" (let [points (filter (comp #{"Point"} :type) (:geometries geojson))
                                  others (remove (comp #{"Point"} :type) (:geometries geojson))]
-                             (if (and (not-empty points) (>= (count points) 2))
-                               (super-bounds (concat (map bbox others) (bounds (map :coordinates points))))
-                               (super-bounds (map bbox others))))
+                             (super-bounds (concat (map bbox others) ;; duplicate point coordinates to fake bounds
+                                                   (map #(vec (concat % %)) (map :coordinates points)))))
       "Feature"    (bbox (:geometry geojson))
       "FeatureCollection" (let [geometries (map :geometry (:features geojson))
                                 points     (filter (comp #{"Point"} :type) geometries)
                                 others     (remove (comp #{"Point"} :type) geometries)]
-                            (if (and (not-empty points) (>= (count points) 2))
-                              (super-bounds (concat (map bbox others) (bounds (map :coordinates points))))
-                              (super-bounds (map bbox others)))))))
+                            (super-bounds (concat (map bbox others) ;; duplicate point coordinates to fake bounds
+                                                  (map #(vec (concat % %)) (map :coordinates points))))))))
+;(bbox {:type "FeatureCollection"
+;       :features [{:type "Feature"
+;                   :geometry {:type "Point" :coordinates [1 2]}}
+;                  {:type "Feature"
+;                   :geometry {:type "Point" :coordinates [3 4]}}]})
+
       ;; Point is not supported
 ;;FIXME: I think the bbox implementation of GeometryCollection and FeatureCollection is wrong.
 ;; it should take into account single points as well. Probably it would be better to compute the bbox
