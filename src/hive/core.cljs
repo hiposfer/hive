@@ -17,6 +17,8 @@
 ;; None of this is strictly necessary. It could be omitted. But we find it
 ;; good practice.
 
+(s/def :user.input/place string?)
+
 (s/def :user.goal.route/duration (s/and number? pos?))
 (s/def :user.goal.route/distance (s/and number? pos?))
 (s/def :user.goal.route/geometry :geojson/linestring)
@@ -38,6 +40,7 @@
 (s/def :hive/state (s/keys :req [:map/ref
                                  :user/location
                                  :user.goal/route
+                                 :user.input/place
                                  :user/city
                                  :view/side-menu
                                  :view/screen
@@ -45,7 +48,7 @@
 
 ;; initial state of app-db
 (def state {:user/location     nil
-            :map/annotations   []
+            :user.input/place ""
             :user.goal/route   nil
             :user/city         {:name    "Frankfurt am Main" :region "Hessen"
                                 :country "Deutschland" :short_code "de"
@@ -55,7 +58,8 @@
             :view.home/targets false ; whether or not to display those places to the user
             :view/side-menu    false
             :view/screen       :blockade
-            :map/ref           nil}) ;; holds a reference to the mapview instance from mapbox
+            :map/ref           nil  ;; holds a reference to the mapview instance from mapbox
+            :map/annotations   []})
 
 ;;FIXME: this should come from the server, not being hardcoded
 (def cities

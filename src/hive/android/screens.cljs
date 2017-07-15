@@ -24,7 +24,7 @@
                            :on-press #(router/dispatch [:view/side-menu (not @menu-open?)])}
                   [c/icon {:name "menu" :transparent true}]]
                 [c/input {:placeholder  "where would you like to go?"
-                          :onChangeText #(when (not-empty %) (router/dispatch [:map.geocode/mapbox % :map/annotations]))}]
+                          :onChangeText #(router/dispatch [:user.input/place %])}]
                 [c/icon {:name "ios-search"}]]]
             (when @view-targets?
               [c/targets-list @map-markers])
@@ -68,11 +68,11 @@
 
 (defn directions
   []
-  (let [route   (subs/subscribe [:user.goal/route])
-        content (with-out-str (cljs.pprint/pprint @route))]
+  (let [route   (subs/subscribe [:user.goal/route])]
+        ;content (with-out-str (cljs.pprint/pprint @route))]
     [c/container
      [c/content
       [c/text "distance: " (:distance @route) " meters"]
       [c/text "duration: " (Math/round (/ (:duration @route) 60)) " minutes"]
-      [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]
-      [c/text content]]]))
+      [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]]]))
+      ;[c/text content]]]))

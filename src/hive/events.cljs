@@ -28,4 +28,11 @@
 
 (defn update-user-city [db [id v]] (assoc db id v :map/camera [(:center v)]))
 
+(defn on-search-place
+  "store the current user search text and trigger a geocode for it"
+  [cofx [_ text]]
+  (if (empty? text) {}
+    {:db (assoc (:db cofx) :user.input/place text)
+     :dispatch [:map.geocode/mapbox text :map/annotations]}))
+
 ;;(cljs.pprint/pprint base)

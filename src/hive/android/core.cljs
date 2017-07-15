@@ -54,6 +54,7 @@
   (rf/reg-event-fx :hive/state         hijack/validate effects/init)
   (rf/reg-event-fx :hive/services      events/start-services)
   (rf/reg-event-fx :user/goal          mapbox/show-directions)
+  (rf/reg-event-fx :user.input/place   hijack/validate events/on-search-place)
   (rf/reg-event-fx :map/annotations    mapbox/on-geocode-result)
   (rf/reg-event-fx :map.geocode/mapbox mapbox/get-mapbox-places)
   (rf/reg-event-fx :map.geocode/photon mapbox/get-photon-places)
@@ -67,6 +68,7 @@
   (subs/reg-sub :map/annotations   get-rf)
   (subs/reg-sub :user/location     get-rf)
   (subs/reg-sub :user/city         get-rf)
+  (subs/reg-sub :user.input/place  get-rf)
   (subs/reg-sub :user.goal/route   get-rf)
   ;; App init
   (fl/on-back-button (fn [] (do (router/dispatch [:view/return]) true)))

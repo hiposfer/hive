@@ -30,10 +30,13 @@
   See https://facebook.github.io/react-native/docs/network.html
   for more information"
   [url opts on-response event-id]
-  (-> (js/fetch url opts)
-      (.then on-response)
-      (.then #(router/dispatch [event-id %]))
-      (.catch #(println %))))
+  (if (nil? event-id) (throw (ex-info (str "ERROR: no event-id given to process the result of "
+                                           url)
+                                      {}))
+    (-> (js/fetch url opts)
+        (.then on-response)
+        (.then #(router/dispatch [event-id %]))
+        (.catch #(println "ERROR: fetch failed for " url "\nmessage" %)))))
 
 (defn retrieve->json!
   [[url options handler-id]]
