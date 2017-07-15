@@ -11,6 +11,7 @@
 (defonce ReactNative (js/require "react-native"))
 (defonce MapBox      (js/require "react-native-mapbox-gl"))
 (defonce NativeBase  (js/require "native-base"))
+(defonce FireBase    (js/require "firebase"))
 
 (defonce app-registry (.-AppRegistry ReactNative))
 (defonce async-storage (.-AsyncStorage ReactNative))

@@ -56,7 +56,6 @@
 (defn get-photon-places
   "call photon.koomot.de geocode api with the query parameter"
   [cofx [_ query]]
-  ;(cljs.pprint/pprint query)
   (let [new-query (str query ", " (:name (:user/city (:db cofx))))
         position  (:user/location (:db cofx))
         template  "https://photon.komoot.de/api/?q={query}&lat={lat}&lon={lon}&limit={limit}"
@@ -83,7 +82,8 @@
   (merge
     (select-keys feature [:id :type :bbox :geometry])
     {:title (:text feature)
-     :subtitle (:address (:properties feature))}))
+     :subtitle (:address (:properties feature))
+     :provider :mapbox}))
 
 (defn- osm-feature->simple-feature
   "transform the result of Photon geocoding result into a simpler/smaller
@@ -94,7 +94,8 @@
       (select-keys feature [:type :geometry])
       {:id    (str (:osm_id prop))
        :title (or (:name prop) (str (:street prop) " " (:housenumber prop)))
-       :subtitle (str (:postcode prop) ", " (:city prop))})))
+       :subtitle (str (:postcode prop) ", " (:city prop))
+       :provider :koomot})))
 
 (defn on-geocode-result
   "Handles the events of the result of a geocode search, i.e. possible routing
@@ -109,7 +110,7 @@
         effects    {:db (assoc (:db cofx) :map/annotations features
                                           :view.home/targets (pos? (count features)))}]
     (if (and (not (nil? (:attribution native))) (empty? features))
-      (assoc effects :dispatch  [:map.geocode/photon (str/join " " (:query native))])
+      (assoc effects :dispatch  [:map.geocode/photon (:user.input/place (:db cofx))])
       (assoc effects :map/bound [(:map/ref effects) new-result]))))
 
 (defn- complete-directions-event
@@ -135,7 +136,12 @@
             URL     (-> (str/replace template "{profile}" profile)
                         (str/replace "{coordinates}" (js/encodeURIComponent query))
                         (str/replace "{params}" (str/join "&" params)))]
-        {:fetch/json [URL {} handler]}))))
+        (if (= (:provider dst) :mapbox) {:fetch/json [URL {} handler]}
+          {:fetch/json [URL {} handler]
+           :firebase/report [:geocode/miss {:geocoded (:map/annotations (:db cofx))
+                                            :selected dst
+                                            :query (:user.input/place (:db cofx))
+                                            :location-bias  (:user/location (:db cofx))}]})))))
 
 ;; https://www.mapbox.com/api-documentation/#directions-response-object
 (defn show-directions

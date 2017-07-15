@@ -13,7 +13,8 @@
       (let [map-markers   (subs/subscribe [:map/annotations])
             view-targets? (subs/subscribe [:view.home/targets])
             menu-open?    (subs/subscribe [:view/side-menu])
-            directions    (subs/subscribe [:user.goal/route])]
+            directions    (subs/subscribe [:user.goal/route])
+            search-text   (subs/subscribe [:user.input/place])]
         [c/drawer {:content (r/as-component (c/menu)) :open @menu-open?
                    :type "displace" :tweenDuration 100
                    :onClose (fn [_] (router/dispatch [:view/side-menu false]))}
@@ -37,7 +38,7 @@
                         :onUpdateUserLocation    #(when % (router/dispatch [:user/location (util/verbose->feature (js->clj % :keywordize-keys true))]))
                         :onTap                   #(router/dispatch [:view.home/targets false])
                         :ref                     (fn [mv] (router/dispatch [:map/ref mv]))}]
-            (when @directions
+            (when (and @directions (seq @search-text))
               [c/footer
                [c/text {:on-press #(router/dispatch [:view/screen :directions])}
                        "See trip details"]])]]))))
