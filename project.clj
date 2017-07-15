@@ -8,7 +8,8 @@
                  ;; FIXME: there is a problem with the inclusion of createClass into reagent
                  ;; https://github.com/reagent-project/reagent/blob/master/CHANGELOG.md#070-2762017
                  [reagent "0.6.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server]]
-                 [re-frame "0.9.4"]]
+                 [re-frame "0.9.4"]
+                 [expound "0.1.0"]]
   :plugins [[lein-cljsbuild "1.1.6"]]
             ;[lein-figwheel "0.5.9"]]
   :global-vars {*warn-on-infer* true
@@ -18,8 +19,7 @@
             ["do" "clean"
              ["with-profile" "prod" "cljsbuild" "once"]]}
   :profiles {:dev {:dependencies [[figwheel-sidecar "0.5.11"]
-                                  [com.cemerick/piggieback "0.2.2"]
-                                  [expound "0.1.0"]]
+                                  [com.cemerick/piggieback "0.2.2"]]
                    :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                    :source-paths ["src" "env/dev" "script"]
                    :cljsbuild    {:builds [{:id           "ios"
