@@ -10,6 +10,7 @@
 
 (def container (r/adapt-react-class (.-Container fl/NativeBase)))
 (def header    (r/adapt-react-class (.-Header fl/NativeBase)))
+(def footer    (r/adapt-react-class (.-Footer fl/NativeBase)))
 (def left      (r/adapt-react-class (.-Left fl/NativeBase)))
 (def list-base (r/adapt-react-class (.-List fl/NativeBase)))
 (def list-item (r/adapt-react-class (.-ListItem fl/NativeBase)))
