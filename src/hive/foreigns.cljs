@@ -15,11 +15,9 @@
 (defonce app-registry (.-AppRegistry ReactNative))
 (defonce async-storage (.-AsyncStorage ReactNative))
 (defonce back-handler (.-BackHandler ReactNative))
+(defonce toast-android (.-ToastAndroid ReactNative))
 
 (defn on-back-button [f] (.addEventListener back-handler "hardwareBackPress" f))
 (defn alert [title] (.alert (.-Alert ReactNative) title))
 
 ;; ------ images ------
-(defonce menu-img (js/require "./images/ic_menu.png"))
-(defonce home-img (js/require "./images/ic_home.png"))
-(defonce settings-img (js/require "./images/ic_settings.png"))

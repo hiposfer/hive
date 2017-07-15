@@ -34,6 +34,7 @@
   (fx/register :app.storage/read   storage/read)
   (fx/register :app.storage/write  storage/write!)
   (fx/register :app.storage/remove storage/remove!)
+  (fx/register :app/toast          effects/show-toast)
   (fx/register :firebase.auth/anonymous firebase/sign-in-anonymously!)
   (fx/register :map/fly-to         mapbox/center&zoom!)
   (fx/register :map/bound          mapbox/box-map!)
