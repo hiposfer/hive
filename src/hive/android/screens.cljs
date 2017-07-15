@@ -72,4 +72,7 @@
         content (with-out-str (cljs.pprint/pprint @route))]
     [c/container
      [c/content
+      [c/text "distance: " (:distance @route) " meters"]
+      [c/text "duration: " (Math/round (/ (:duration @route) 60)) " minutes"]
+      [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]
       [c/text content]]]))
