@@ -4,7 +4,8 @@
             [hive.core :as hive]))
 
 ;; fixme: save tokens once received
-(def init-json-url "https://firebasestorage.googleapis.com/v0/b/hive-6c54a.appspot.com/o/app%2Finit.json?alt=media&token=03675ebe-dc51-4ff8-8e80-f8fefdda2757")
+
+(def init-json-url "YOUR-API-KEY-HERE")
 
 (defn init [_ _]
   {:db hive/state
