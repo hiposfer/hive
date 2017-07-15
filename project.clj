@@ -29,7 +29,8 @@
                                                            :main          "env.ios.main"
                                                            :output-dir    "target/ios"
                                                            :optimizations :none
-                                                           :infer-externs true}}
+                                                           :infer-externs true
+                                                           :source-map true}}
                                            {:id           "android"
                                             :source-paths ["src" "env/dev"]
                                             :figwheel     true
@@ -37,7 +38,8 @@
                                                            :main          "env.android.main"
                                                            :output-dir    "target/android"
                                                            :optimizations :none
-                                                           :infer-externs true}}]}}
+                                                           :infer-externs true
+                                                           :source-map true}}]}}
              :prod {:cljsbuild {:builds [{:id           "ios"
                                           :source-paths ["src" "env/prod"]
                                           :compiler     {:output-to     "index.ios.js"

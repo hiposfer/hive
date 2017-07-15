@@ -46,6 +46,6 @@
 
 ;(retrieve "https://google.com" {} (cons res->json [#(println %)]))
 
-(defn show-toast
+(defn show-toast!
   [[text duration]]
   (.show fl/toast-android text (or duration fl/toast-android.SHORT)))

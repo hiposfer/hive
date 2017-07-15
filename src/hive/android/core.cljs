@@ -34,7 +34,7 @@
   (fx/register :app.storage/read   storage/read)
   (fx/register :app.storage/write  storage/write!)
   (fx/register :app.storage/remove storage/remove!)
-  (fx/register :app/toast          effects/show-toast)
+  (fx/register :app/toast          effects/show-toast!)
   (fx/register :firebase.auth/anonymous firebase/sign-in-anonymously!)
   (fx/register :map/fly-to         mapbox/center&zoom!)
   (fx/register :map/bound          mapbox/box-map!)
@@ -52,9 +52,9 @@
   (rf/reg-event-fx :hive/state         hijack/validate effects/init)
   (rf/reg-event-fx :hive/services      events/start-services)
   (rf/reg-event-fx :user/goal          mapbox/show-directions);; json object not geojson conformen
-  (rf/reg-event-fx :map/annotations    mapbox/on-geocode-result)
-  (rf/reg-event-fx :map.geocode/mapbox mapbox/get-places)
-  (rf/reg-event-fx :map.geocode/photon mapbox/get-photon-places)
+  (rf/reg-event-fx :map/annotations    [re-frame.core/debug] mapbox/on-geocode-result)
+  (rf/reg-event-fx :map.geocode/mapbox [re-frame.core/debug] mapbox/get-mapbox-places)
+  (rf/reg-event-fx :map.geocode/photon [re-frame.core/debug] mapbox/get-photon-places)
   (rf/reg-event-fx :map/directions     mapbox/get-directions)
   (rf/reg-event-fx :map/camera         mapbox/move-camera);; effect proxy to allow calling dispatch on it
   (rf/reg-event-fx :view/return        hijack/validate events/on-back-button)

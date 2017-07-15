@@ -39,7 +39,7 @@
       [id "mapbox.places" query (merge params {:bbox bounds}) handler]
       [id "mapbox.places" query (merge params {:proximity prox :bbox bounds}) handler])))
 
-(defn get-places
+(defn get-mapbox-places
   "call mapbox geocode api v5 with the provided parameters.
   See https://www.mapbox.com/api-documentation/#request-format"
   [cofx event]
@@ -84,12 +84,12 @@
         params  (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
                            [] url-param)
         gps     (:user/location (:db cofx))
-        query   (str (geojson/uri gps) ";" (geojson/uri dst))
+        query   (some-> gps geojson/uri (str ";" (geojson/uri dst)))
         URL     (-> (str/replace template "{profile}" profile)
                     (str/replace "{coordinates}" (js/encodeURIComponent query))
                     (str/replace "{params}" (str/join "&" params)))]
     (if (nil? gps)
-      (do (println "MISSING GPS POSITION") {});;TODO: handle this properly
+      {:app/toast ["ERROR: missing gps position"]}
       {:fetch/json [URL {} handler]})))
 
 (defn move-camera
@@ -132,11 +132,11 @@
                      osm-feature->simple-feature)
         features   (map processor (:features native))
         new-result (assoc native :features features)
-        new-cofx   {:db (assoc (:db cofx) :map/annotations features
+        effects    {:db (assoc (:db cofx) :map/annotations features
                                           :view.home/targets (pos? (count features)))}]
     (if (and (not (nil? (:attribution native))) (empty? features))
-      (assoc new-cofx :dispatch [:map.geocode/photon (str/join " " (:query native))])
-      (assoc new-cofx :map/bound [(:map/ref new-cofx) new-result]))))
+      (assoc effects :dispatch  [:map.geocode/photon (str/join " " (:query native))])
+      (assoc effects :map/bound [(:map/ref effects) new-result]))))
 
 ;; https://www.mapbox.com/api-documentation/#directions-response-object
 (defn show-directions
@@ -147,8 +147,7 @@
         linestr (:geometry (first (:routes dirs)))
         goal    (geojson/feature "Point" (last (:coordinates linestr))
                                  {:title "goal" :id (str (last (:coordinates linestr)))})
-        route   (util/polyline {:type "Feature" :geometry linestr})
-        base    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
-                                       :view.home/targets false)
-                 :map/bound [(:map/ref (:db cofx)) linestr]}]
-    base))
+        route   (util/polyline {:type "Feature" :geometry linestr})]
+    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
+                           :view.home/targets false
+                           :map/bound [(:map/ref (:db cofx)) linestr])}))
