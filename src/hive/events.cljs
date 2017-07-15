@@ -19,6 +19,7 @@
             {:db (assoc (:db cofx) :view.home/targets false)}
             {:app/exit true})
     :setting {:db (assoc (:db cofx) :view/screen :home)}
+    :directions {:db (assoc (:db cofx) :view/screen :home)}
     {:app/exit true}))
 
 (defn assoc-rf

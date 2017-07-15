@@ -24,7 +24,8 @@
     (case @screen
       :blockade [screens/blockade]
       :home     [screens/home]
-      :setting  [screens/settings])))
+      :setting  [screens/settings]
+      :directions [screens/directions])))
 
 (defn init []
   ;;------------- effect handlers --------------
@@ -48,13 +49,14 @@
   (rf/reg-event-db :view.home/targets  hijack/validate events/assoc-rf)
   (rf/reg-event-db :view/screen        hijack/validate events/assoc-rf)
   (rf/reg-event-db :view/side-menu     hijack/validate events/assoc-rf)
+  (rf/reg-event-db :user.goal/route    hijack/validate events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
   (rf/reg-event-fx :hive/state         hijack/validate effects/init)
   (rf/reg-event-fx :hive/services      events/start-services)
-  (rf/reg-event-fx :user/goal          mapbox/show-directions);; json object not geojson conformen
-  (rf/reg-event-fx :map/annotations    [re-frame.core/debug] mapbox/on-geocode-result)
-  (rf/reg-event-fx :map.geocode/mapbox [re-frame.core/debug] mapbox/get-mapbox-places)
-  (rf/reg-event-fx :map.geocode/photon [re-frame.core/debug] mapbox/get-photon-places)
+  (rf/reg-event-fx :user/goal          mapbox/show-directions)
+  (rf/reg-event-fx :map/annotations    mapbox/on-geocode-result)
+  (rf/reg-event-fx :map.geocode/mapbox mapbox/get-mapbox-places)
+  (rf/reg-event-fx :map.geocode/photon mapbox/get-photon-places)
   (rf/reg-event-fx :map/directions     mapbox/get-directions)
   (rf/reg-event-fx :map/camera         mapbox/move-camera);; effect proxy to allow calling dispatch on it
   (rf/reg-event-fx :view/return        hijack/validate events/on-back-button)
@@ -65,6 +67,7 @@
   (subs/reg-sub :map/annotations   get-rf)
   (subs/reg-sub :user/location     get-rf)
   (subs/reg-sub :user/city         get-rf)
+  (subs/reg-sub :user.goal/route   get-rf)
   ;; App init
   (fl/on-back-button (fn [] (do (router/dispatch [:view/return]) true)))
   (router/dispatch-sync [:hive/state]);(dispatch-sync [:initialize-db])

@@ -17,6 +17,11 @@
 ;; None of this is strictly necessary. It could be omitted. But we find it
 ;; good practice.
 
+(s/def :user.goal.route/duration (s/and number? pos?))
+(s/def :user.goal.route/distance (s/and number? pos?))
+(s/def :user.goal.route/geometry :geojson/linestring)
+;;(s/def :user.goal.route/legs     (s/and number? pos?)) ;TODO
+
 (s/def :user/location (s/nilable (geojson/limited-feature :geojson/point)))
 (s/def :map/annotations (s/coll-of (s/or :point      (geojson/limited-feature :geojson/point)
                                          :linestring (geojson/limited-feature :geojson/linestring)
@@ -26,14 +31,22 @@
 (s/def :view/side-menu boolean?)
 (s/def :view/screen keyword?) ;; do we need more than this?
 (s/def :map/ref (s/nilable any?));; js object with custom constructor
+(s/def :user.goal/route (s/nilable (s/keys :req-un [:user.goal.route/distance :user.goal.route/duration
+                                                    :user.goal.route/geometry])))
+
 ;; spec of app-db
 (s/def :hive/state (s/keys :req [:map/ref
-                                 :user/location :user/city
-                                 :view/side-menu :view/screen :view.home/targets]))
+                                 :user/location
+                                 :user.goal/route
+                                 :user/city
+                                 :view/side-menu
+                                 :view/screen
+                                 :view.home/targets]))
 
 ;; initial state of app-db
 (def state {:user/location     nil
             :map/annotations   []
+            :user.goal/route   nil
             :user/city         {:name    "Frankfurt am Main" :region "Hessen"
                                 :country "Deutschland" :short_code "de"
                                 :bbox    [8.472715, 50.01552, 8.800496, 50.2269512]

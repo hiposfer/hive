@@ -1,11 +1,9 @@
 (ns hive.interceptors
   "see https://github.com/Day8/re-frame/blob/master/docs/Interceptors.md"
   (:require [cljs.spec.alpha :as s]
-            [clojure.string :as str]
             [re-frame.std-interceptors :as nsa]
             [re-frame.interceptor :as fbi]
-            [expound.alpha :as expound]
-            [hive.geojson :as geojson]))
+            [expound.alpha :as expound]))
 
 ;; -- Interceptors ------------------------------------------------------------
 ;;

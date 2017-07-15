@@ -66,32 +66,6 @@
                 (str/replace "{limit}" 10))]
     {:fetch/json [URL {} :map/annotations]}))
 
-(defn- complete-directions-event
-  "takes the parameters passed to create a MapBox directions call and inserts the api
-   token into the events parameters to avoid overly long events calls"
-  [db [id coordinates handler]]
-  (let [token (:mapbox (:tokens db))]
-    [id "mapbox/driving" coordinates
-     {:access_token token :geometries "geojson"} ; :steps true}
-     handler]))
-
-(defn get-directions
-  "call mapbox directions api v5 with the provided parameters.
-  See https://www.mapbox.com/api-documentation/#directions"
-  [cofx event]
-  (let [[_ profile dst url-param handler] (complete-directions-event (:db cofx) event)
-        template "https://api.mapbox.com/directions/v5/{profile}/{coordinates}.json?{params}"
-        params  (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
-                           [] url-param)
-        gps     (:user/location (:db cofx))
-        query   (some-> gps geojson/uri (str ";" (geojson/uri dst)))
-        URL     (-> (str/replace template "{profile}" profile)
-                    (str/replace "{coordinates}" (js/encodeURIComponent query))
-                    (str/replace "{params}" (str/join "&" params)))]
-    (if (nil? gps)
-      {:app/toast ["ERROR: missing gps position"]}
-      {:fetch/json [URL {} handler]})))
-
 (defn move-camera
   "takes a point coordinate (lat, lon) and an (optional) zoom and makes the
    mapview fly to it"
@@ -138,16 +112,44 @@
       (assoc effects :dispatch  [:map.geocode/photon (str/join " " (:query native))])
       (assoc effects :map/bound [(:map/ref effects) new-result]))))
 
+(defn- complete-directions-event
+  "takes the parameters passed to create a MapBox directions call and inserts the api
+   token into the events parameters to avoid overly long events calls"
+  [db [id coordinates handler]]
+  (let [token (:mapbox (:tokens db))]
+    [id "mapbox/driving" coordinates
+     {:access_token token :geometries "geojson"} ; :steps true}
+     handler]))
+
+(defn get-directions
+  "call mapbox directions api v5 with the provided parameters.
+  See https://www.mapbox.com/api-documentation/#directions"
+  [cofx event]
+  (let [[_ profile dst url-param handler] (complete-directions-event (:db cofx) event)
+        template "https://api.mapbox.com/directions/v5/{profile}/{coordinates}.json?{params}"
+        params  (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
+                           [] url-param)
+        gps     (:user/location (:db cofx))]
+    (if (nil? gps) {:app/toast ["ERROR: missing gps position"]}
+      (let [query   (str (geojson/uri gps) ";" (geojson/uri dst))
+            URL     (-> (str/replace template "{profile}" profile)
+                        (str/replace "{coordinates}" (js/encodeURIComponent query))
+                        (str/replace "{params}" (str/join "&" params)))]
+        {:fetch/json [URL {} handler]}))))
+
 ;; https://www.mapbox.com/api-documentation/#directions-response-object
 (defn show-directions
   "takes the result of mapbox directions api and causes both db and mapview
   to update accordingly"
   [cofx [_ directions]]
   (let [dirs    (js->clj directions :keywordize-keys true)
-        linestr (:geometry (first (:routes dirs)))
-        goal    (geojson/feature "Point" (last (:coordinates linestr))
-                                 {:title "goal" :id (str (last (:coordinates linestr)))})
-        route   (util/polyline {:type "Feature" :geometry linestr})]
-    {:db (assoc (:db cofx) :map/annotations [goal route];; remove all targets
+        route   (first (:routes dirs))
+        linestr (:geometry route)
+        dst     (last  (:waypoints dirs))
+        goal    (geojson/feature "Point" (:location dst)
+                                 {:title (:name dst) :id (str (:location dst))})
+        polyline (util/polyline {:type "Feature" :geometry linestr})]
+    {:db (assoc (:db cofx) :map/annotations [goal polyline];; remove all targets
                            :view.home/targets false
-                           :map/bound [(:map/ref (:db cofx)) linestr])}))
+                           :map/bound [(:map/ref (:db cofx)) linestr]
+                           :user.goal/route route)}))
