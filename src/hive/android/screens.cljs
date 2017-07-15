@@ -69,11 +69,22 @@
 
 (defn directions
   []
-  (let [route   (subs/subscribe [:user.goal/route])]
-        ;content (with-out-str (cljs.pprint/pprint @route))]
+  (let [route        (subs/subscribe [:user.goal/route])
+        instructions (sequence (comp (mapcat :steps)
+                                     (map :maneuver)
+                                     (map :instruction))
+                               (:legs @route))]
     [c/container
      [c/content
       [c/text "distance: " (:distance @route) " meters"]
       [c/text "duration: " (Math/round (/ (:duration @route) 60)) " minutes"]
-      [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]]]))
-      ;[c/text content]]]))
+      [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]
+      [c/text "INSTRUCTIONS: "]
+      [c/list-base
+       (for [text instructions]
+         ^{:key (hash text)}
+         [c/list-item
+          [c/body
+           [c/text text]]])]]]))
+
+;[c/text (with-out-str (cljs.pprint/pprint instructions))]

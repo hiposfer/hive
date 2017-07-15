@@ -119,7 +119,7 @@
   [db [id coordinates handler]]
   (let [token (:mapbox (:tokens db))]
     [id "mapbox/driving" coordinates
-     {:access_token token :geometries "geojson"} ; :steps true}
+     {:access_token token :geometries "geojson" :steps true} ;; steps -> turn by turn instructions
      handler]))
 
 (defn get-directions
@@ -141,7 +141,8 @@
            :firebase/report [:geocode/miss {:geocoded (:map/annotations (:db cofx))
                                             :selected dst
                                             :query (:user.input/place (:db cofx))
-                                            :location-bias  (:user/location (:db cofx))}]})))))
+                                            :location-bias  (:user/location (:db cofx))
+                                            :extra (:name (:user/city (:db cofx)))}]})))))
 
 ;; https://www.mapbox.com/api-documentation/#directions-response-object
 (defn show-directions
