@@ -43,6 +43,7 @@
   (fx/register :map/bound          mapbox/box-map!)
   (fx/register :mapbox/init        mapbox/init!)
   (fx/register :firebase/init      firebase/init!)
+  (fx/register :user.input/clear   effects/clear-search-box!)
   ;; ------------- event handlers -------------
   ;`db-handler` is a function: (db event) -> db
   (rf/reg-event-db :map/ref            hijack/validate events/assoc-rf)
@@ -52,6 +53,7 @@
   (rf/reg-event-db :view/screen        hijack/validate events/assoc-rf)
   (rf/reg-event-db :view/side-menu     hijack/validate events/assoc-rf)
   (rf/reg-event-db :user.goal/route    hijack/validate events/assoc-rf)
+  (rf/reg-event-db :user.input/ref     events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
   (rf/reg-event-fx :hive/state         hijack/validate effects/init)
   (rf/reg-event-fx :hive/services      events/start-services)

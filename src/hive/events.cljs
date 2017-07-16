@@ -31,7 +31,9 @@
 (defn on-search-place
   "store the current user search text and trigger a geocode for it"
   [cofx [_ text]]
-  (if (empty? text) {:db (assoc (:db cofx) :user.input/place text)}
+  (if (empty? text)
+    {:db (assoc (:db cofx) :user.input/place "" :view.home/targets false)
+     :user.input/clear (:user.input/ref (:db cofx))}
     {:db (assoc (:db cofx) :user.input/place text)
      :dispatch [:map.geocode/mapbox text :map/annotations]}))
 
