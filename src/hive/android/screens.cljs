@@ -44,9 +44,12 @@
                         :onTap                   #(router/dispatch [:view.home/targets false])
                         :ref                     #(router/dispatch [:map/ref %])}]
             (when (and @directions (seq @search-text))
-              [c/footer
-               [c/text {:on-press #(router/dispatch [:view/screen :directions])}
-                       "See trip details"]])]]))))
+              ;[c/footer {:transparent true}
+               [c/button {:full true
+                          :on-press #(router/dispatch [:view/side-menu (not @menu-open?)])}
+                [c/icon {:name "information-circle" :transparent true}]
+                [c/text {:on-press #(router/dispatch [:view/screen :directions])}
+                 "See trip details"]])]]))))
 
 (defn settings
   "currently only allows the user to change his current city"
@@ -77,7 +80,8 @@
   (let [route        (subs/subscribe [:user.goal/route])
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
-                                     (map :instruction))
+                                     (map :instruction)
+                                     (map-indexed vector))
                                (:legs @route))]
     [c/container
      [c/content
@@ -86,8 +90,8 @@
       [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]
       [c/text "INSTRUCTIONS: "]
       [c/list-base
-       (for [text instructions]
-         ^{:key (hash text)}
+       (for [[id text] instructions]
+         ^{:key id}
          [c/list-item
           [c/body
            [c/text text]]])]]]))

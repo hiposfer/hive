@@ -118,7 +118,7 @@
    token into the events parameters to avoid overly long events calls"
   [db [id coordinates handler]]
   (let [token (:mapbox (:tokens db))]
-    [id "mapbox/driving" coordinates
+    [id "mapbox/walking" coordinates
      {:access_token token :geometries "geojson" :steps true} ;; steps -> turn by turn instructions
      handler]))
 
