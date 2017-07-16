@@ -85,15 +85,23 @@
                                (:legs @route))]
     [c/container
      [c/content
-      [c/text "distance: " (:distance @route) " meters"]
-      [c/text "duration: " (Math/round (/ (:duration @route) 60)) " minutes"]
-      [c/text "time of arrival: " (js/Date (+ (js/Date.now) (* 1000 (:duration @route)))) " minutes"]
-      [c/text "INSTRUCTIONS: "]
-      [c/list-base
+      [c/card
+       [c/card-item [c/icon {:name "flag"}]
+                    [c/text "distance: " (:distance @route) " meters"]]
+       [c/card-item [c/icon {:name "information-circle"}]
+                    [c/text "duration: " (Math/round (/ (:duration @route) 60)) " minutes"]]
+       [c/card-item [c/icon {:name "time"}]
+                    [c/text "time of arrival: " (str (js/Date. (+ (js/Date.now)
+                                                                  (* 1000 (:duration @route)))))
+                            " minutes"]]]
+      [c/card
+       [c/card-item [c/icon {:name "map"}]
+                    [c/text "Instructions: "]]
        (for [[id text] instructions]
-         ^{:key id}
-         [c/list-item
-          [c/body
-           [c/text text]]])]]]))
+         (if (= id (first (last instructions)))
+           ^{:key id} [c/card-item [c/icon {:name "flag"}]
+                                   [c/text text]]
+           ^{:key id} [c/card-item [c/icon {:name "ios-navigate-outline"}]
+                                   [c/text text]]))]]]))
 
 ;[c/text (with-out-str (cljs.pprint/pprint instructions))]
