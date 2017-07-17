@@ -2,31 +2,30 @@
   (:require [hive.foreigns :as fl]
             [reagent.core :as r]
             [re-frame.router :as router]
-            [reagent.core :as reagent]
-            [re-frame.subs :as subs]
-            [hive.util :as util]))
+            [re-frame.subs :as subs]))
 
-(def view (r/adapt-react-class (.-View fl/ReactNative)))
+(defonce view       (r/adapt-react-class (.-View fl/ReactNative)))
+(defonce image      (r/adapt-react-class (.-Image fl/ReactNative)))
 
-(def container (r/adapt-react-class (.-Container fl/NativeBase)))
-(def header    (r/adapt-react-class (.-Header fl/NativeBase)))
-(def footer    (r/adapt-react-class (.-Footer fl/NativeBase)))
-(def left      (r/adapt-react-class (.-Left fl/NativeBase)))
-(def right     (r/adapt-react-class (.-Right fl/NativeBase)))
-(def card      (r/adapt-react-class (.-Card fl/NativeBase)))
-(def card-item (r/adapt-react-class (.-CardItem fl/NativeBase)))
-(def list-base (r/adapt-react-class (.-List fl/NativeBase)))
-(def list-item (r/adapt-react-class (.-ListItem fl/NativeBase)))
-(def button    (r/adapt-react-class (.-Button fl/NativeBase)))
-(def icon      (r/adapt-react-class (.-Icon fl/NativeBase)))
-(def body      (r/adapt-react-class (.-Body fl/NativeBase)))
-(def item      (r/adapt-react-class (.-Item fl/NativeBase)))
-(def content   (r/adapt-react-class (.-Content fl/NativeBase)))
-(def spinner   (r/adapt-react-class (.-Spinner fl/NativeBase)))
-(def input     (r/adapt-react-class (.-Input fl/NativeBase)))
-(def drawer    (r/adapt-react-class (.-Drawer fl/NativeBase)))
-(def text      (r/adapt-react-class (.-Text fl/NativeBase)))
-(def title     (r/adapt-react-class (.-Title fl/NativeBase)))
+(defonce container (r/adapt-react-class (.-Container fl/NativeBase)))
+(defonce header    (r/adapt-react-class (.-Header fl/NativeBase)))
+(defonce footer    (r/adapt-react-class (.-Footer fl/NativeBase)))
+(defonce left      (r/adapt-react-class (.-Left fl/NativeBase)))
+(defonce right     (r/adapt-react-class (.-Right fl/NativeBase)))
+(defonce card      (r/adapt-react-class (.-Card fl/NativeBase)))
+(defonce card-item (r/adapt-react-class (.-CardItem fl/NativeBase)))
+(defonce list-base (r/adapt-react-class (.-List fl/NativeBase)))
+(defonce list-item (r/adapt-react-class (.-ListItem fl/NativeBase)))
+(defonce button    (r/adapt-react-class (.-Button fl/NativeBase)))
+(defonce icon      (r/adapt-react-class (.-Icon fl/NativeBase)))
+(defonce body      (r/adapt-react-class (.-Body fl/NativeBase)))
+(defonce item      (r/adapt-react-class (.-Item fl/NativeBase)))
+(defonce content   (r/adapt-react-class (.-Content fl/NativeBase)))
+(defonce spinner   (r/adapt-react-class (.-Spinner fl/NativeBase)))
+(defonce input     (r/adapt-react-class (.-Input fl/NativeBase)))
+(defonce drawer    (r/adapt-react-class (.-Drawer fl/NativeBase)))
+(defonce text      (r/adapt-react-class (.-Text fl/NativeBase)))
+(defonce title     (r/adapt-react-class (.-Title fl/NativeBase)))
 
 (def mapview (r/adapt-react-class (.-MapView fl/MapBox)))
 

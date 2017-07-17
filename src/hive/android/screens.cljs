@@ -3,7 +3,8 @@
             [hive.components :as c]
             [reagent.core :as r]
             [re-frame.subs :as subs]
-            [hive.util :as util]))
+            [hive.util :as util]
+            [hive.foreigns :as fl]))
 
 (defn home
   "start screen. A simple screen with a map and an input text to search for a place"
@@ -103,5 +104,20 @@
                                    [c/text text]]
            ^{:key id} [c/card-item [c/icon {:name "ios-navigate-outline"}]
                                    [c/text text]]))]]]))
+
+(defn missing-internet
+  []
+  (let [dims (js->clj (. fl/dimensions (get "window")) :keywordize-keys true)]
+    [c/container
+     [c/content {:style {:padding 10}}
+      [c/card ;{:style {:width (* (:width dims) 0.95)}}
+       [c/card-item {:cardBody true}
+        [c/image {:style {:width (* (:width dims) 0.9)
+                          :height (* (:height dims) 0.8)
+                          :resizeMode "contain" :flex 1}
+                  :source fl/thumb-sign}]]]]]))
+       ;[c/card-item {:footer true}
+       ; [c/body
+       ;  [c/text {:style {:fontSize 20 :textAlign "center"}} "Error: enable your internet connection to continue"]]]]]]))
 
 ;[c/text (with-out-str (cljs.pprint/pprint instructions))]

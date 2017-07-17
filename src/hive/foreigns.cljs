@@ -17,8 +17,15 @@
 (defonce async-storage (.-AsyncStorage ReactNative))
 (defonce back-handler (.-BackHandler ReactNative))
 (defonce toast-android (.-ToastAndroid ReactNative))
+(defonce dimensions (.-Dimensions ReactNative))
+(defonce net-info    (.-NetInfo ReactNative))
 
 (defn on-back-button [f] (.addEventListener back-handler "hardwareBackPress" f))
 (defn alert [title] (.alert (.-Alert ReactNative) title))
+(defn on-internet-change
+  [f]
+  (-> (.-isConnected net-info)
+      (.addEventListener "change" f)))
 
-;; ------ images ------
+;; ------ images -----
+(defonce thumb-sign (js/require "./images/tb_sign2.png"))

@@ -23,6 +23,8 @@
 (s/def :user.goal.route/distance (s/and number? pos?))
 (s/def :user.goal.route/geometry :geojson/linestring)
 ;;(s/def :user.goal.route/legs     (s/and number? pos?)) ;TODO
+(s/def :user.goal/route (s/nilable (s/keys :req-un [:user.goal.route/distance :user.goal.route/duration
+                                                    :user.goal.route/geometry])))
 
 (s/def :user/location (s/nilable (geojson/limited-feature :geojson/point)))
 (s/def :map/annotations (s/coll-of (s/or :point      (geojson/limited-feature :geojson/point)
@@ -33,11 +35,11 @@
 (s/def :view/side-menu boolean?)
 (s/def :view/screen keyword?) ;; do we need more than this?
 (s/def :map/ref (s/nilable any?));; js object with custom constructor
-(s/def :user.goal/route (s/nilable (s/keys :req-un [:user.goal.route/distance :user.goal.route/duration
-                                                    :user.goal.route/geometry])))
+(s/def :app/internet boolean?)
 
 ;; spec of app-db
 (s/def :hive/state (s/keys :req [:map/ref
+                                 :app/internet
                                  :user/location
                                  :user.goal/route
                                  :user.input/place
@@ -47,7 +49,8 @@
                                  :view.home/targets]))
 
 ;; initial state of app-db
-(def state {:user.input/place ""
+(def state {:app/internet true ;; assume presence and prove absense
+            :user.input/place ""
             :user.input/ref    nil
             :user.goal/route   nil
             :user/location     nil

@@ -5,10 +5,11 @@
 
 ;; fixme: save tokens once received
 
-(def init-json-url "YOUR-API-KEY-HERE")
+(def init-json-url "https://firebasestorage.googleapis.com/v0/b/hive-6c54a.appspot.com/o/app%2Finit.json?alt=media&token=03675ebe-dc51-4ff8-8e80-f8fefdda2757")
 
 (defn init [_ _]
   {:db hive/state
+   :app.internet/enabled? :app/internet
    :fetch/json [init-json-url {} :hive/services]})
 
 (defonce debounces (atom {}))
@@ -51,5 +52,20 @@
 ;(retrieve "https://google.com" {} (cons res->json [#(println %)]))
 
 (defn show-toast!
+  "Display an Android Toast text with the specified duration or
+   SHORT otherwise"
   [[text duration]]
   (.show fl/toast-android text (or duration fl/toast-android.SHORT)))
+
+(defn clear-search-box!
+  "clears the text value of a NativeBase input text"
+  [input-ref]
+  (when (and (exists? input-ref) (not (nil? input-ref))) ;; root needed due to wrapping
+    (.clear (.-_root input-ref))))
+
+(defn get-internet-state
+  "fetches a boolean indicating whether or the app has access to internet"
+  [handler]
+  (-> (.-isConnected fl/net-info)
+      (.fetch)
+      (.then #(router/dispatch [handler %]))))

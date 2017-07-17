@@ -23,6 +23,7 @@
   (let [screen (subs/subscribe [:view/screen])]
     (case @screen
       :blockade [screens/blockade]
+      :404      [screens/missing-internet]
       :home     [screens/home]
       :setting  [screens/settings]
       :directions [screens/directions])))
@@ -30,12 +31,13 @@
 (defn init []
   ;;------------- effect handlers --------------
   ; effects is a function of [values] -> void
-  (fx/register :fetch/json         effects/retrieve->json!)
-  (fx/register :app/exit           effects/quit!)
-  (fx/register :app.storage/read   storage/read)
-  (fx/register :app.storage/write  storage/write!)
-  (fx/register :app.storage/remove storage/remove!)
-  (fx/register :app/toast          effects/show-toast!)
+  (fx/register :fetch/json            effects/retrieve->json!)
+  (fx/register :app/exit              effects/quit!)
+  (fx/register :app.storage/read      storage/read)
+  (fx/register :app.internet/enabled? effects/get-internet-state)
+  (fx/register :app.storage/write     storage/write!)
+  (fx/register :app.storage/remove    storage/remove!)
+  (fx/register :app/toast             effects/show-toast!)
   (fx/register :firebase.auth/anonymous firebase/sign-in-anonymously!)
   (fx/register :firebase.db/set         firebase/set-value!)
   (fx/register :firebase/report         firebase/report!)
@@ -55,6 +57,7 @@
   (rf/reg-event-db :user.goal/route    hijack/validate events/assoc-rf)
   (rf/reg-event-db :user.input/ref     events/assoc-rf)
   ;; fx-handlers is a function [coeffects event] -> effects
+  (rf/reg-event-fx :app/internet       hijack/validate events/on-internet-state)
   (rf/reg-event-fx :hive/state         hijack/validate effects/init)
   (rf/reg-event-fx :hive/services      events/start-services)
   (rf/reg-event-fx :user/goal          mapbox/show-directions)
@@ -76,6 +79,7 @@
   (subs/reg-sub :user.goal/route   get-rf)
   ;; App init
   (fl/on-back-button (fn [] (do (router/dispatch [:view/return]) true)))
+  (fl/on-internet-change #(router/dispatch [:app/internet %]))
   (router/dispatch-sync [:hive/state]);(dispatch-sync [:initialize-db])
   (.registerComponent fl/app-registry "Hive" #(r/reactify-component app-root)))
 
@@ -84,3 +88,5 @@
 
 ;; TODO: restore the latest targets whenever the text input get focus again
 ;; remove text input focus on any other component press
+
+;(router/dispatch [:view/screen :404])

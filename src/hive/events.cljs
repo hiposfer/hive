@@ -37,4 +37,11 @@
     {:db (assoc (:db cofx) :user.input/place text)
      :dispatch [:map.geocode/mapbox text :map/annotations]}))
 
+(defn on-internet-state
+  [cofx [id enabled?]]
+  (cond
+    (and (not (:app/internet (:db cofx))) enabled?) {:dispatch [:hive/state]}
+    (not enabled?) {:db (assoc (:db cofx) id enabled? :view/screen :404)}
+    :otherwise {}))
+
 ;;(cljs.pprint/pprint base)
