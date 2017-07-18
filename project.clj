@@ -9,7 +9,7 @@
                  ;; https://github.com/reagent-project/reagent/blob/master/CHANGELOG.md#070-2762017
                  [reagent "0.6.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server]]
                  [re-frame "0.9.4"]
-                 [expound "0.1.0"]]
+                 [expound "0.1.1"]]
   :plugins [[lein-cljsbuild "1.1.6"]]
             ;[lein-figwheel "0.5.9"]]
   :global-vars {*warn-on-infer* true
