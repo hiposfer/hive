@@ -4,10 +4,12 @@
             [re-frame.router :as router]
             [re-frame.subs :as subs]))
 
-(defonce view       (r/adapt-react-class (.-View fl/ReactNative)))
-(defonce image      (r/adapt-react-class (.-Image fl/ReactNative)))
+(defonce view   (r/adapt-react-class (.-View fl/ReactNative)))
+(defonce image  (r/adapt-react-class (.-Image fl/ReactNative)))
+(defonce modal  (r/adapt-react-class (.-Modal fl/ReactNative)))
 
 (defonce container (r/adapt-react-class (.-Container fl/NativeBase)))
+(defonce fab       (r/adapt-react-class (.-Fab fl/NativeBase)))
 (defonce header    (r/adapt-react-class (.-Header fl/NativeBase)))
 (defonce footer    (r/adapt-react-class (.-Footer fl/NativeBase)))
 (defonce left      (r/adapt-react-class (.-Left fl/NativeBase)))
@@ -46,10 +48,10 @@
   "side menu for the user to choose where to navigate to in Android"
   []
   (let [screen (subs/subscribe [:view/screen])
-        go-home (fn [] (when-not (= @screen :home)
-                         (router/dispatch [:view/screen :home])))
-        go-fix  (fn [] (when-not (= @screen :setting)
-                         (router/dispatch [:view/screen :setting])
+        go-home (fn [] (when-not (= @screen :view.screen/home)
+                         (router/dispatch [:view/screen :view.screen/home])))
+        go-fix  (fn [] (when-not (= @screen :view.screen/settings)
+                         (router/dispatch [:view/screen :view.screen/settings])
                          (router/dispatch [:view/side-menu false])))]
     [view {:activeOpacity 1}
       [button {:full true :on-press go-home}
@@ -69,7 +71,7 @@
         ^{:key id}
         [list-item {:on-press #(when-not (= (:city @current) city
                                             (router/dispatch [:user/city city])
-                                            (router/dispatch [:view/screen :home])))}
+                                            (router/dispatch [:view/screen :view.screen/home])))}
          [body
            [text (:name city)]
            [text {:note true :style {:color "gray"}}

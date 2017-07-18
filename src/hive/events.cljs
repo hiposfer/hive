@@ -6,7 +6,7 @@
   [cofx [_ secrets]]
   (let [tokens (js->clj secrets :keywordize-keys true)]
     {:db (assoc (:db cofx) :tokens tokens
-                           :view/screen :home)
+                           :view/screen :view.screen/home)
      :mapbox/init (:mapbox tokens)
      :firebase/init (:firebase tokens)}))
 
@@ -15,11 +15,12 @@
   currently active. It defaults to Exit app if no screen was found"
   [cofx _]
   (case (:view/screen (:db cofx))
-    :home (if (:view.home/targets (:db cofx))
-            {:db (assoc (:db cofx) :view.home/targets false)}
-            {:app/exit true})
-    :setting {:db (assoc (:db cofx) :view/screen :home)}
-    :directions {:db (assoc (:db cofx) :view/screen :home)}
+    :view.screen/home (if (:view.home/targets (:db cofx))
+                       {:db (assoc (:db cofx) :view.home/targets false)}
+                       {:app/exit true})
+    :view.screen/settings {:db (assoc (:db cofx) :view/screen :view.screen/home)}
+    :view.screen/directions {:db (assoc (:db cofx) :view/screen :view.screen/home)}
+    :view.screen.error/location {:db (assoc (:db cofx) :view/screen :view.screen/home)}
     {:app/exit true}))
 
 (defn assoc-rf
@@ -41,7 +42,13 @@
   [cofx [id enabled?]]
   (cond
     (and (not (:app/internet (:db cofx))) enabled?) {:dispatch [:hive/state]}
-    (not enabled?) {:db (assoc (:db cofx) id enabled? :view/screen :404)}
+    (not enabled?) {:db (assoc (:db cofx) id enabled? :view/screen :view.screen.error/internet)}
     :otherwise {}))
+
+(defn on-location-button-pressed
+  [cofx _]
+  (if (nil? (:user/location (:db cofx)))
+    {:db (assoc (:db cofx) :view/screen :view.screen.error/location)}
+    {:map/fly-to [(:map/ref (:db cofx)) (:user/location (:db cofx))]}))
 
 ;;(cljs.pprint/pprint base)

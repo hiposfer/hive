@@ -22,11 +22,12 @@
 (defn app-root []
   (let [screen (subs/subscribe [:view/screen])]
     (case @screen
-      :blockade [screens/blockade]
-      :404      [screens/missing-internet]
-      :home     [screens/home]
-      :setting  [screens/settings]
-      :directions [screens/directions])))
+      :view.screen/splash-screen [screens/blockade]
+      :view.screen/home [screens/home]
+      :view.screen/settings [screens/settings]
+      :view.screen/directions [screens/directions]
+      :view.screen.error/internet [screens/missing-internet]
+      :view.screen.error/location [screens/user-location-error])))
 
 (defn init []
   ;;------------- effect handlers --------------
@@ -67,6 +68,7 @@
   (rf/reg-event-fx :map.geocode/photon mapbox/get-photon-places)
   (rf/reg-event-fx :map/directions     mapbox/get-directions)
   (rf/reg-event-fx :map/camera         mapbox/move-camera);; effect proxy to allow calling dispatch on it
+  (rf/reg-event-fx :view.user/location events/on-location-button-pressed)
   (rf/reg-event-fx :view/return        hijack/validate events/on-back-button)
   ;; ------------- queries ---------------------------------
   (subs/reg-sub :view.home/targets get-rf)

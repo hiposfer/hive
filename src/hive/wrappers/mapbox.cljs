@@ -24,7 +24,7 @@
   [[map-ref feat-point]]
   (let [zoom      (:zoom (:properties feat-point))
         [lon lat] (:coordinates (:geometry feat-point))]
-    (.setCenterCoordinateZoomLevel map-ref lat lon (:zoom zoom))))
+    (.setCenterCoordinateZoomLevel map-ref lat lon (or zoom hive.core/default-zoom))))
 
 (defn- complete-geocode-event
   "takes the parameters passed to create a MapBox geocode call and inserts the api

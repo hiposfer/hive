@@ -49,20 +49,20 @@
                                  :view.home/targets]))
 
 ;; initial state of app-db
-(def state {:app/internet true ;; assume presence and prove absense
-            :user.input/place ""
-            :user.input/ref    nil
-            :user.goal/route   nil
+(def state {:map/ref           nil  ;; holds a reference to the mapview instance from mapbox
+            :app/internet      true ;; assume presence and prove absense
             :user/location     nil
-            :user/city         {:name    "Frankfurt am Main" :region "Hessen"
-                                :country "Deutschland"       :short_code "de"
-                                :bbox    [8.472715, 50.01552, 8.800496, 50.2269512]
-                                :type    "Feature"
+            :user.goal/route   nil
+            :user.input/place  ""
+            :user.input/ref    nil
+            :user/city         {:name     "Frankfurt am Main" :region "Hessen"
+                                :country  "Deutschland" :short_code "de"
+                                :bbox     [8.472715, 50.01552, 8.800496, 50.2269512]
+                                :type     "Feature"
                                 :geometry {:type "Point" :coordinates [8.67972 50.11361]}}
             :view.home/targets false ; whether or not to display those places to the user
             :view/side-menu    false
-            :view/screen       :blockade
-            :map/ref           nil  ;; holds a reference to the mapview instance from mapbox
+            :view/screen       :view.screen/splash-screen
             :map/annotations   []})
 
 ;;FIXME: this should come from the server, not being hardcoded

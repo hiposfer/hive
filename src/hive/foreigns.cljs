@@ -29,3 +29,4 @@
 
 ;; ------ images -----
 (defonce thumb-sign (js/require "./images/tb_sign2.png"))
+(defonce thumb-run  (js/require "./images/tbrun1.png"))
