@@ -22,7 +22,7 @@
 (defn app-root []
   (let [screen (subs/subscribe [:view/screen])]
     (case @screen
-      :view.screen/splash-screen [screens/blockade]
+      ;:view.screen/splash-screen [screens/blockade]
       :view.screen/home [screens/home]
       :view.screen/settings [screens/settings]
       :view.screen/directions [screens/directions]
@@ -60,7 +60,7 @@
   ;; fx-handlers is a function [coeffects event] -> effects
   (rf/reg-event-fx :app/internet       hijack/validate events/on-internet-state)
   (rf/reg-event-fx :hive/state         hijack/validate effects/init)
-  (rf/reg-event-fx :hive/services      events/start-services)
+  ;(rf/reg-event-fx :hive/services      events/start-services)
   (rf/reg-event-fx :user/goal          mapbox/show-directions)
   (rf/reg-event-fx :user.input/place   hijack/validate events/on-search-place)
   (rf/reg-event-fx :map/annotations    mapbox/on-geocode-result)

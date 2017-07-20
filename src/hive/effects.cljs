@@ -3,26 +3,24 @@
             [hive.foreigns :as fl]
             [hive.core :as hive]))
 
-;; fixme: save tokens once received
-
-(def init-json-url "https://firebasestorage.googleapis.com/v0/b/hive-6c54a.appspot.com/o/app%2Finit.json?alt=media&token=03675ebe-dc51-4ff8-8e80-f8fefdda2757")
-
 (defn init [_ _]
-  {:db hive/state
+  {:db (assoc hive/state :tokens fl/init-config)
    :app.internet/enabled? :app/internet
-   :fetch/json [init-json-url {} :hive/services]})
+   :mapbox/init (:mapbox fl/init-config)
+   :firebase/init (:firebase fl/init-config)})
+   ;:fetch/json [init-json-url {} :hive/services]})
 
-(defonce debounces (atom {}))
-;(defonce throttles (atom {})) ;; FIXME
+;(defonce debounces (atom {}))
+;(defonce throttles (atom {}))
 
 ;; https://github.com/Day8/re-frame/issues/233#issuecomment-252739068
-(defn debounce
-  [[id event-vec n]]
-  (js/clearTimeout (@debounces id))
-  (swap! debounces assoc id
-         (js/setTimeout (fn [] (router/dispatch event-vec)
-                               (swap! debounces dissoc id))
-                        n)))
+;(defn debounce
+;  [[id event-vec n]]
+;  (js/clearTimeout (@debounces id))
+;  (swap! debounces assoc id
+;         (js/setTimeout (fn [] (router/dispatch event-vec)
+;                               (swap! debounces dissoc id))
+;                        n)))
 
 (defn res->text [res] (.text res))
 (defn res->json [res] (.json res))

@@ -2,13 +2,12 @@
 
 ;; -- Handlers --------------------------------------------------------------
 
-(defn- start-services
-  [cofx [_ secrets]]
-  (let [tokens (js->clj secrets :keywordize-keys true)]
-    {:db (assoc (:db cofx) :tokens tokens
-                           :view/screen :view.screen/home)
-     :mapbox/init (:mapbox tokens)
-     :firebase/init (:firebase tokens)}))
+;(defn- start-services
+;  [cofx [_ secrets]]
+;  (let [tokens (js->clj secrets :keywordize-keys true)]
+;    {:db (assoc (:db cofx) :tokens tokens)
+;     :mapbox/init (:mapbox tokens)
+;     :firebase/init (:firebase tokens)}))
 
 (defn on-back-button
   "modifies the behavior of the back button on Android according to the view
@@ -40,9 +39,13 @@
 
 (defn on-internet-state
   [cofx [id enabled?]]
+  (println "internet: " enabled?)
   (cond
-    (and (not (:app/internet (:db cofx))) enabled?) {:dispatch [:hive/state]}
-    (not enabled?) {:db (assoc (:db cofx) id enabled? :view/screen :view.screen.error/internet)}
+    (and (not (:app/internet (:db cofx))) enabled?)
+    {:db (assoc (:db cofx) id enabled? :view/screen :view.screen/home)}
+
+    (not enabled?)
+    {:db (assoc (:db cofx) id enabled? :view/screen :view.screen.error/internet)}
     :otherwise {}))
 
 (defn on-location-button-pressed

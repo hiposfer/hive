@@ -5,8 +5,6 @@
 ;; by convention all foreign libraries are defined in MixedCase to show that they
 ;; dont follow Clojure's dash-naming-convention
 
-;; FIXME
-;(set! *warn-on-infer* true)
 
 (defonce ReactNative (js/require "react-native"))
 (defonce MapBox      (js/require "react-native-mapbox-gl"))
@@ -30,3 +28,8 @@
 ;; ------ images -----
 (defonce thumb-sign (js/require "./images/tb_sign2.png"))
 (defonce thumb-run  (js/require "./images/tbrun1.png"))
+
+;; ----- config files ----
+
+(defonce init-config (js->clj (js/require "./images/init.json")
+                              :keywordize-keys true))

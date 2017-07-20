@@ -62,7 +62,7 @@
                                 :geometry {:type "Point" :coordinates [8.67972 50.11361]}}
             :view.home/targets false ; whether or not to display those places to the user
             :view/side-menu    false
-            :view/screen       :view.screen/splash-screen
+            :view/screen       :view.screen/home
             :map/annotations   []})
 
 ;;FIXME: this should come from the server, not being hardcoded

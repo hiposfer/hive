@@ -16,7 +16,7 @@
         menu-open?    (subs/subscribe [:view/side-menu])
         directions    (subs/subscribe [:user.goal/route])
         location      (subs/subscribe [:user/location])
-        fab-color     (if (nil? @location) "red" "green")]
+        fab-color     (if (nil? @location) "red" "lightgray")]
     [c/drawer {:content (r/as-component (c/menu)) :open @menu-open?
                :type "displace" :tweenDuration 100
                :onClose (fn [_] (router/dispatch [:view/side-menu false]))}
@@ -42,7 +42,7 @@
                     :initialCenterCoordinate (util/feature->verbose @current-city)
                     :annotations             (clj->js (map util/feature->annotation @map-markers))
                     :showsUserLocation       true ;:ref (fn [this] (println "this: " this)) ;(when this (.keys this))))
-                    :onUpdateUserLocation    #(when % (router/dispatch [:user/location (util/verbose->feature (js->clj % :keywordize-keys true))]))
+                    :onUpdateUserLocation    #(router/dispatch [:user/location (util/verbose->feature (js->clj % :keywordize-keys true))])
                     :onTap                   #(router/dispatch [:view.home/targets false])
                     :ref                     #(router/dispatch [:map/ref %])}]
         (when (and @directions (seq @search-text))
@@ -54,7 +54,7 @@
              "See trip details"]])
         [c/fab {:style {:backgroundColor fab-color}
                 :on-press #(router/dispatch [:view.user/location])}
-         [c/icon {:name "ios-locate-outline"}]]]]))
+         [c/icon {:name "md-locate"}]]]]))
 
 (defn settings
   "currently only allows the user to change his current city"
