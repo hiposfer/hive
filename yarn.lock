@@ -2594,9 +2594,9 @@ react-native-keyboard-aware-scroll-view@0.2.7:
   dependencies:
     react-timer-mixin "^0.13.3"
 
-react-native-mapbox-gl@^5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/react-native-mapbox-gl/-/react-native-mapbox-gl-5.1.0.tgz#8035687b234960fa2a60f3deef7e277049a46860"
+"react-native-mapbox-gl@github:mapbox/react-native-mapbox-gl#bf741d5":
+  version "5.2.0"
+  resolved "https://codeload.github.com/mapbox/react-native-mapbox-gl/tar.gz/bf741d5"
   dependencies:
     babel-eslint "^6.1.2"
     lodash "^4.13.1"

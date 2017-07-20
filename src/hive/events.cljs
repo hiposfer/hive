@@ -39,7 +39,6 @@
 
 (defn on-internet-state
   [cofx [id enabled?]]
-  (println "internet: " enabled?)
   (cond
     (and (not (:app/internet (:db cofx))) enabled?)
     {:db (assoc (:db cofx) id enabled? :view/screen :view.screen/home)}
