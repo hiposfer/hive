@@ -46,15 +46,13 @@
                     :onTap                   #(router/dispatch [:view.home/targets false])
                     :ref                     #(router/dispatch [:map/ref %])}]
         (when (and @directions (seq @search-text))
-          ;[c/footer {:transparent true}
-           [c/button {:full true
-                      :on-press #(router/dispatch [:view/side-menu (not @menu-open?)])}
+          [c/button {:full true
+                     :on-press #(router/dispatch [:view/screen :view.screen/directions])}
             [c/icon {:name "information-circle" :transparent true}]
-            [c/text {:on-press #(router/dispatch [:view/screen :view.screen/directions])}
-             "See trip details"]])
+            [c/text "See trip details"]])
         [c/fab {:style {:backgroundColor fab-color}
                 :on-press #(router/dispatch [:view.user/location])}
-         [c/icon {:name "md-locate"}]]]]))
+          [c/icon {:name "md-locate"}]]]]))
 
 (defn settings
   "currently only allows the user to change his current city"

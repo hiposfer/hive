@@ -131,7 +131,7 @@
         params  (reduce-kv (fn [res k v] (conj res (str (name k) "=" (js/encodeURIComponent v))))
                            [] url-param)
         gps     (:user/location (:db cofx))]
-    (if (nil? gps) {:app/toast ["ERROR: missing gps position"]}
+    (if (nil? gps) {:db (assoc (:db cofx) :view/screen :view.screen.error/location)}
       (let [query   (str (geojson/uri gps) ";" (geojson/uri dst))
             URL     (-> (str/replace template "{profile}" profile)
                         (str/replace "{coordinates}" (js/encodeURIComponent query))
