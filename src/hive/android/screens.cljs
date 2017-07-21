@@ -73,13 +73,13 @@
         [c/content
           [c/city-selector hive.core/cities]]]]))
 
-(defn blockade
-  "our current splash screen"
-  []
-  [c/container
-    [c/content
-      [c/spinner {:color "blue"}]
-      [c/text "Fetching app information ... please wait"]]])
+;(defn blockade
+;  "our current splash screen"
+;  []
+;  [c/container
+;    [c/content
+;      [c/spinner {:color "blue"}]
+;      [c/text "Fetching app information ... please wait"]]])
 
 (defn directions
   "basic navigation directions"
