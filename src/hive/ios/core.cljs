@@ -2,7 +2,7 @@
   (:require [reagent.core :as r :refer [atom]]
             [re-frame.core :refer [subscribe dispatch dispatch-sync]]
             [hive.events]
-            [hive.subs]))
+            [hive.subscriptions]))
 
 (def ReactNative (js/require "react-native"))
 

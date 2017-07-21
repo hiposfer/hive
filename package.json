@@ -7,10 +7,10 @@
   },
   "dependencies": {
     "firebase": "^3.7.5",
-    "native-base": "^2.1.4",
+    "native-base": "2.2.0",
     "react": "16.0.0-alpha.6",
     "react-native": "0.44.0",
-    "react-native-mapbox-gl": "^5.1.0"
+    "react-native-mapbox-gl": "github:mapbox/react-native-mapbox-gl#bf741d5"
   },
   "devDependencies": {
     "babel-plugin-transform-es2015-block-scoping": "6.15.0",

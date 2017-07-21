@@ -27,7 +27,7 @@
   "
   [object]
   (let [extras (set/difference (set (keys object)) #{:coordinates})]
-    (condp = (:type object)
+    (case (:type object)
       "point"    (geojson/feature "Point"
                                   (reverse (:coordinates object))
                                   (select-keys object extras))
@@ -58,7 +58,7 @@
   (let [extras (set/difference (set (keys feature)) #{:id :bbox :type :properties})
         props  (merge (:properties feature) (select-keys feature extras))
         roots  (select-keys feature [:id :bbox])]
-    (condp = (:type (:geometry feature))
+    (case (:type (:geometry feature))
       "Point"      (merge {:coordinates (reverse (:coordinates (:geometry feature)))}
                           props roots {:type "point"})
       "LineString" (merge {:coordinates (map reverse (:coordinates (:geometry feature)))}
@@ -70,7 +70,7 @@
   "returns a {:latitude v1 :longitude v2} map. Accepts either a geojson feature
   or a Point as input"
   [geojson]
-  (condp = (:type geojson)
+  (case (:type geojson)
     "Point" {:latitude  (second (:coordinates geojson))
              :longitude (first  (:coordinates geojson))}
     "Feature" (feature->verbose (:geometry geojson))))
