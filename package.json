@@ -1,0 +1,15 @@
+{
+  "name": "hive",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "main": "main.js",
+  "dependencies": {
+    "create-react-class": "15.6.0",
+    "expo": "^21.0.0",
+    "native-base": "^2.3.3",
+    "react": "16.0.0-alpha.12",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-21.0.2.tar.gz"
+  }
+}
