@@ -1,8 +1,11 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [posh.reagent :as posh]
+            [com.stuartsierra.component :as component]
             [datascript.core :as data]
-            [cljs-react-navigation.reagent :as nav]))
+            [cljs-react-navigation.reagent :as nav]
+            [hive.foreigns :as fl]
+            [hive.state :as state]))
 
 (def ReactNative (js/require "react-native"))
 
@@ -15,49 +18,11 @@
 
 (defonce ReactNavigation (js/require "react-navigation"))
 
-(defonce schema {:user/id {:db.unique :db.unique/identity}
-                 :user/name {}
-                 :user/age {}
-                 :user/parent {:db.valueType :db.type/ref
-                               :db.cardinality :db.cardinality/many}})
-
-(defonce conn (data/create-conn schema))
-;conn
-
-(defonce trans
-  (data/transact! conn
-                  [{:user/id "1"
-                    :user/name "alice"
-                    :user/age 27}
-                   {:user/id "2"
-                    :user/name "bob"
-                    :user/age 29}
-                   {:user/id "3"
-                    :user/name "kim"
-                    :user/age 2
-                    :user/parent [[:user/id "1"]
-                                  [:user/id "2"]]}
-                   {:user/id "4"
-                    :user/name "aaron"
-                    :user/age 61}
-                   {:user/id "5"
-                    :user/name "john"
-                    :user/age 39
-                    :user/parent [[:user/id "4"]]}
-                   {:user/id "6"
-                    :user/name "mark"
-                    :user/age 34}
-                   {:user/id "7"
-                    :user/name "kris"
-                    :user/age 8
-                    :user/parent [[:user/id "4"]
-                                  [:user/id "5"]]}]))
-
 (defn alert [title]
   (.alert Alert title))
 
 (defn home
-  []
+  [{:keys [conn] :as system}]
   (let [name (posh/q '[:find ?name . :in $ ?age :where [?e :user/age ?age]
                                                        [?e :user/name ?name]]
                       conn 27)]
@@ -69,7 +34,7 @@
                              :height 200}}]
          [:> Text {:style {:font-size  30 :font-weight "100" :margin-bottom 20
                            :text-align "center"}}
-          @name] ;"Hello World"]
+          "Hello World"]
          [:> TouchableHighlight {:style {:background-color "#999" :padding 10
                                          :border-radius 5}
                                  :on-press #(navigate "Settings")}
@@ -85,18 +50,71 @@
                             :on-press #(goBack)}
      [:> Text {:style {:color "white" :text-align "center"
                        :font-weight "bold"}}
-      "Go Back"]]))
+      "Go Home"]]))
 
-(defn app-root []
-  (let [HomeScreen     (nav/stack-screen (home) {:title "Home"})
+(defn root-ui
+  [system]
+  (let [HomeScreen     (nav/stack-screen (home system) {:title "Home"})
         SettingsScreen (nav/stack-screen settings {:title "Settings"})
         HomeStack      (nav/stack-navigator {:Home {:screen HomeScreen}
                                              :Settings {:screen SettingsScreen}})]
-    [:> HomeStack]))
+    (fn [] [:> HomeStack])))
 
-(defn init []
-  (posh/posh! conn)
-  (.registerComponent app-registry "main" #(r/reactify-component app-root)))
+;; ---------------------------------
+;; populates the DataScript in-memory database
+(defrecord StateInitializer [conn init]
+  component/Lifecycle
+  (start [this]
+    (if (nil? init)
+      (assoc this :init (data/transact! conn state/defaults))
+      this))
+  (stop [this] (assoc this :init nil)))
+;; ---------------------------------
+;; encapsulates Posh initialization
+(defrecord PoshContainer [conn init]
+  component/Lifecycle
+  (start [this]
+    (if (nil? init)
+      (assoc this :init (posh/posh! conn)
+        this)))
+  (stop [this] (assoc this :registry nil)))
+;; ----------------------------------
+;; pass the necessary components around to create
+;; all the necessary bindings
+(defrecord UiContainer [conn posh state ui]
+  component/Lifecycle
+  (start [this]
+    (if (nil? ui)
+      (assoc this :ui (root-ui this))
+      this))
+  (stop [this] (assoc this :ui nil)))
+;; ------------------------------
+;; encapsulates the React Native registry
+;; dont start before state was created
+(defrecord RnRegistry [root-ui registry]
+  component/Lifecycle
+  (start [this]
+    (if (nil? registry)
+      (assoc this :registry (.registerComponent app-registry
+                              "main"
+                              #(r/reactify-component (:ui root-ui))))
+      this))
+  (stop [this]
+    (.unmountApplicationComponentAtRootTag app-registry "main")
+    (assoc this :registry nil)))
+
+(defn system
+  []
+  (component/system-map
+    :conn      (data/create-conn state/schema)
+    :state     (component/using (map->StateInitializer {})
+                                [:conn])
+    :posh      (component/using (map->PoshContainer {})
+                                [:conn])
+    :root-ui   (component/using (map->UiContainer {})
+                                [:conn :state :posh])
+    :registry  (component/using (map->RnRegistry {})
+                                [:root-ui])))
 
 ;conn
 
@@ -110,6 +128,7 @@
 
 ;(posh/pull conn [:user/name :user/age] [:user/id "1"])
 
-;(posh/transact! conn [{:user/id "1"
-;                       :user/name "hello"
-;                       :user/age 27}])
+;(posh/transact! (:conn @env.main/app)
+;                [{:user/id "1"
+;                  :user/name "hello world"
+;                  :user/age 27}])
