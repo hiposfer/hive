@@ -6,51 +6,16 @@
             [cljs-react-navigation.reagent :as nav]
             [hive.foreigns :as fl]
             [hive.components.core :refer [View Image Text TouchableHighlight]]
-            [hive.state :as state]))
+            [hive.state :as state]
+            [hive.components.screens :as screens]))
 
 ;; Holds the current state of the complete app
 (defonce app (atom nil))
 
-(def ReactNative (js/require "react-native"))
-
-(defonce ReactNavigation (js/require "react-navigation"))
-
-(defn home
-  []
-  (let [conn (:conn @app)
-        name (posh/q '[:find ?name . :in $ ?age :where [?e :user/age ?age]
-                                                       [?e :user/name ?name]]
-                      conn 27)]
-    (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation]
-        [:> View {:style {:flex-direction "column" :margin 40 :align-items "center"}}
-         [:> Image {:source (js/require "./assets/images/cljs.png")
-                    :style  {:width 200
-                             :height 200}}]
-         [:> Text {:style {:font-size  30 :font-weight "100" :margin-bottom 20
-                           :text-align "center"}}
-          "Hello"]
-         [:> TouchableHighlight {:style {:background-color "#999" :padding 10
-                                         :border-radius 5}
-                                 :on-press #(navigate "Settings")}
-          [:> Text {:style {:color "white" :text-align "center"
-                            :font-weight "bold"}}
-           "Click me"]]]))))
-
-(defn settings
-  [{:keys [screenProps navigation] :as props}]
-  (let [{:keys [navigate goBack]} navigation]
-    [:> TouchableHighlight {:style {:background-color "#999" :padding 10
-                                    :border-radius 5}
-                            :on-press #(goBack)}
-     [:> Text {:style {:color "white" :text-align "center"
-                       :font-weight "bold"}}
-      "Go Home"]]))
-
 (defn root-ui
   []
-  (let [HomeScreen     (nav/stack-screen home {:title "Home"})
-        SettingsScreen (nav/stack-screen settings {:title "Settings"})
+  (let [HomeScreen     (nav/stack-screen screens/home {:title "Home"})
+        SettingsScreen (nav/stack-screen screens/settings {:title "Settings"})
         HomeStack      (nav/stack-navigator {:Home {:screen HomeScreen}
                                              :Settings {:screen SettingsScreen}})]
     [:> HomeStack]))

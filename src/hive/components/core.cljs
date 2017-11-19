@@ -27,4 +27,4 @@
 (def Text      (.-Text fl/NativeBase))
 (def Title     (.-Title fl/NativeBase))
 
-(def Mapview   (.-MapView fl/Expo))
+(def MapView   (.-MapView fl/Expo))

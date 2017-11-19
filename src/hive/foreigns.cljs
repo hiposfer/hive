@@ -4,6 +4,8 @@
 (def Expo        (js/require "expo"))
 (def ReactNative (js/require "react-native"))
 (def NativeBase  (js/require "native-base"))
+(def ReactNavigation (js/require "react-navigation"))
+
 ;(def VectorIcons (js/require "@expo/vector-icons"));
 
 (def app-registry  (.-AppRegistry ReactNative))
