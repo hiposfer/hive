@@ -15,26 +15,36 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
+(defn search-bar
+  [opts]
+  (let [{:keys [open? drawer]} opts]
+    [:> Header {:searchBar true :rounded true}
+     [:> Item {}
+      [:> Button {:transparent true :full true
+                  :on-press #(if @open? (.close (.-_root @drawer))
+                                 (.open (.-_root @drawer)))}
+       [:> Icon {:name "ios-menu" :transparent true}]]
+      [:> Input {:placeholder "Where would you like to go?"}]
+      [:> Icon {:name "ios-search"}]]]))
+
 (defn home
-  [{:keys [screenProps navigation] :as props}]
-  (let [{:keys [navigate goBack]} navigation]
+  [props]
+  (let [{:keys [navigate]} (:navigation props)
+        dref   (volatile! nil)
+        dopen? (volatile! false)]
     [:> Drawer {:content (r/as-element (drawer-menu props))
-                :open true ;@menu-open?
-                :type "displace" :tweenDuration 100}
-               ;:onClose (fn [_] (router/dispatch [:view/side-menu false]))}
+                :type "displace" :tweenDuration 100
+                :on-close #(vreset! dopen? false)
+                :ref #(vreset! dref %)}
      [:> Container {}
-      [:> Header {:searchBar true :rounded true}
-        [:> Item {}
-         [:> Icon {:name "ios-menu" :transparent true}]
-         [:> Input {:placeholder "Where would you like to go?"}]
-         [:> Icon {:name "ios-search"}]]]
+      [search-bar {:drawer dref :open? dopen?}]
       [:> View {:style {:flex-direction "column" :margin 40 :align-items "center"}}
        [:> Image {:source (js/require "./assets/images/cljs.png")
                   :style  {:width 200
                            :height 200}}]
        [:> Text {:style {:font-size  30 :font-weight "100" :margin-bottom 20
                          :text-align "center"}}
-        "Hello"]
+        "Hello World"]
        [:> TouchableHighlight {:style {:background-color "#999" :padding 10
                                        :border-radius 5}
                                :on-press #(navigate "Settings")}

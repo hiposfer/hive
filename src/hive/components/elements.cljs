@@ -21,7 +21,7 @@
   [{:keys [navigation] :as props}]
   (let [{:keys [navigate goBack]} navigation]
     [:> View {:activeOpacity 1}
-     [:> Button {:full true} ;:on-press go-home}
+     [:> Button {:full true :on-press #(navigate "Home")}
       [:> Icon {:name "home"}]
       [:> Text {} "Home"]]
      [:> Button {:full true :on-press #(navigate "Settings")}
