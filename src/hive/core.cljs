@@ -1,9 +1,6 @@
 (ns hive.core
-  (:require [reagent.core :as r :refer [atom]]
-            [re-frame.core :refer [subscribe dispatch dispatch-sync]]
-            [hive.handlers]
+  (:require [reagent.core :as r]
             [posh.reagent :as posh]
-            [hive.subs]
             [datascript.core :as data]
             [cljs-react-navigation.reagent :as nav]))
 
@@ -99,7 +96,6 @@
 
 (defn init []
   (posh/posh! conn)
-  (dispatch-sync [:initialize-db])
   (.registerComponent app-registry "main" #(r/reactify-component app-root)))
 
 ;conn
