@@ -2,6 +2,6 @@
   (:require [hive.core :as core]))
 
 ;; init
-(reset! app (core/system))
+(reset! core/app (core/system))
 ;; start
-(reset! app (component/start @app))
+(reset! core/app (component/start @core/app))

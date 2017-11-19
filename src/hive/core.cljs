@@ -5,25 +5,20 @@
             [datascript.core :as data]
             [cljs-react-navigation.reagent :as nav]
             [hive.foreigns :as fl]
+            [hive.components.core :refer [View Image Text TouchableHighlight]]
             [hive.state :as state]))
+
+;; Holds the current state of the complete app
+(defonce app (atom nil))
 
 (def ReactNative (js/require "react-native"))
 
-(def app-registry (.-AppRegistry ReactNative))
-(def Text (.-Text ReactNative))
-(def View (.-View ReactNative))
-(def Image (.-Image ReactNative))
-(def TouchableHighlight (.-TouchableHighlight ReactNative))
-(def Alert (.-Alert ReactNative))
-
 (defonce ReactNavigation (js/require "react-navigation"))
 
-(defn alert [title]
-  (.alert Alert title))
-
 (defn home
-  [{:keys [conn] :as system}]
-  (let [name (posh/q '[:find ?name . :in $ ?age :where [?e :user/age ?age]
+  []
+  (let [conn (:conn @app)
+        name (posh/q '[:find ?name . :in $ ?age :where [?e :user/age ?age]
                                                        [?e :user/name ?name]]
                       conn 27)]
     (fn [{:keys [screenProps navigation] :as props}]
@@ -34,13 +29,13 @@
                              :height 200}}]
          [:> Text {:style {:font-size  30 :font-weight "100" :margin-bottom 20
                            :text-align "center"}}
-          "Hello World"]
+          "Hello"]
          [:> TouchableHighlight {:style {:background-color "#999" :padding 10
                                          :border-radius 5}
                                  :on-press #(navigate "Settings")}
           [:> Text {:style {:color "white" :text-align "center"
                             :font-weight "bold"}}
-           "press me"]]]))))
+           "Click me"]]]))))
 
 (defn settings
   [{:keys [screenProps navigation] :as props}]
@@ -53,12 +48,12 @@
       "Go Home"]]))
 
 (defn root-ui
-  [system]
-  (let [HomeScreen     (nav/stack-screen (home system) {:title "Home"})
+  []
+  (let [HomeScreen     (nav/stack-screen home {:title "Home"})
         SettingsScreen (nav/stack-screen settings {:title "Settings"})
         HomeStack      (nav/stack-navigator {:Home {:screen HomeScreen}
                                              :Settings {:screen SettingsScreen}})]
-    (fn [] [:> HomeStack])))
+    [:> HomeStack]))
 
 ;; ---------------------------------
 ;; populates the DataScript in-memory database
@@ -79,28 +74,18 @@
         this)))
   (stop [this] (assoc this :registry nil)))
 ;; ----------------------------------
-;; pass the necessary components around to create
-;; all the necessary bindings
-(defrecord UiContainer [conn posh state ui]
-  component/Lifecycle
-  (start [this]
-    (if (nil? ui)
-      (assoc this :ui (root-ui this))
-      this))
-  (stop [this] (assoc this :ui nil)))
-;; ------------------------------
 ;; encapsulates the React Native registry
 ;; dont start before state was created
-(defrecord RnRegistry [root-ui registry]
+(defrecord RnRegistry [conn state posh registry]
   component/Lifecycle
   (start [this]
     (if (nil? registry)
-      (assoc this :registry (.registerComponent app-registry
+      (assoc this :registry (.registerComponent fl/app-registry
                               "main"
-                              #(r/reactify-component (:ui root-ui))))
+                              #(r/reactify-component root-ui)))
       this))
   (stop [this]
-    (.unmountApplicationComponentAtRootTag app-registry "main")
+    (.unmountApplicationComponentAtRootTag fl/app-registry "main")
     (assoc this :registry nil)))
 
 (defn system
@@ -111,10 +96,8 @@
                                 [:conn])
     :posh      (component/using (map->PoshContainer {})
                                 [:conn])
-    :root-ui   (component/using (map->UiContainer {})
-                                [:conn :state :posh])
     :registry  (component/using (map->RnRegistry {})
-                                [:root-ui])))
+                                [:conn :state :posh])))
 
 ;conn
 

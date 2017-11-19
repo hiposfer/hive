@@ -4,6 +4,7 @@
 (def View   (.-View fl/ReactNative))
 (def Image  (.-Image fl/ReactNative))
 (def Modal  (.-Modal fl/ReactNative))
+(def TouchableHighlight (.-TouchableHighlight fl/ReactNative))
 
 (def Container (.-Container fl/NativeBase))
 (def Fab       (.-Fab fl/NativeBase))

@@ -5,19 +5,16 @@
             [env.dev]
             [com.stuartsierra.component :as component]))
 
-;; the system state holder
-;; use only in development
-(defonce app (atom nil))
 (enable-console-print!)
 ;; init
-(reset! app (core/system))
+(reset! core/app (core/system))
 ;; start
-(reset! app (component/start @app))
+(reset! core/app (component/start @core/app))
 
 ;; initialization required by fighwheel bridge to play well with
 ;; react native. Please omit the ugliness of this
 (def counter (r/atom 0))
-(defn reloader [] @counter [(:ui (:root-ui @app))])
+(defn reloader [] @counter [core/root-ui])
 (def root-el (r/as-element [reloader]))
 
 (figwheel/start {:websocket-url (str "ws://" env.dev/ip ":3449/figwheel-ws")
