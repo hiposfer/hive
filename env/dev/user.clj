@@ -194,15 +194,11 @@
     (spit path @m)
     (rebuild-env-index (flatten (vals @m)))))
 
-(defn init-external-modules
-  []
-  (rebuild-modules))
-
   ;; Lein
 (defn start-figwheel
   "Start figwheel for one or more builds"
   [& build-ids]
-  (init-external-modules)
+  (rebuild-modules)
   (enable-source-maps)
   (write-main-js)
   (write-env-dev)
@@ -230,12 +226,3 @@
     (rebuild-modules)
 
     (prn "You can run lein figwheel or lein rebuild-modules.")))
-
-  ;; Boot
-(defn prepare
-  []
-  (init-external-modules)
-  (enable-source-maps)
-  (write-main-js)
-  (write-env-dev)
-  (watch-for-external-modules))

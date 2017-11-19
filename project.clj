@@ -3,13 +3,14 @@
             :url "http://example.com/FIXME"
             :license {:name "Eclipse Public License"
                       :url  "http://www.eclipse.org/legal/epl-v10.html"}
-            :dependencies [[org.clojure/clojure "1.9.0-alpha16"]
-                           [org.clojure/clojurescript "1.9.854"]
+            :dependencies [[org.clojure/clojure "1.9.0-RC1"]
+                           [org.clojure/clojurescript "1.9.946"]
                            [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                            [re-frame "0.9.3"]
                            [posh "0.5.6"]
                            [datascript "0.16.2"]
                            [com.stuartsierra/component "0.3.2"]
+                           [cljs-react-navigation "0.1.1"]
                            [react-native-externs "0.1.0"]]
             :plugins [[lein-cljsbuild "1.1.4"]
                       [lein-figwheel "0.5.11"]]
