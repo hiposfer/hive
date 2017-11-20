@@ -65,6 +65,19 @@
    (let [result (inquire inquiry)]
      (data/transact! (:conn @app) (apply f result x more)))))
 
+(defn send
+  "takes a channel keyword (like :http), looks it up in the
+  app system and passes it to f for its use"
+  ([chann-name f]
+   (let [channel (:chann (chann-name @app))]
+     (f channel)))
+  ([chann-name f x]
+   (let [channel (:chann (chann-name @app))]
+     (f channel x)))
+  ([chann-name f x & more]
+   (let [channel (:chann (chann-name @app))]
+     (apply f channel x more))))
+
 
 ;(data/pull @conn [:user/name :user/age] [:user/id "1"])
 
