@@ -1,7 +1,5 @@
 (ns env.main
-  (:require [hive.core :as core]))
+  (:require [hive.core :as core]
+            [hive.rework.core :as rework]))
 
-;; init
-(reset! core/app (core/system))
-;; start
-(reset! core/app (component/start @core/app))
+(rework/init! (component/start (core/system)))

@@ -1,15 +1,14 @@
 (ns ^:figwheel-no-load env.main
   (:require [reagent.core :as r]
             [hive.core :as core]
+            [hive.rework.core :as rework]
             [figwheel.client :as figwheel :include-macros true]
             [env.dev]
             [com.stuartsierra.component :as component]))
 
 (enable-console-print!)
-;; init
-(reset! core/app (core/system))
 ;; start
-(reset! core/app (component/start @core/app))
+(rework/init! (component/start (core/system)))
 
 ;; initialization required by fighwheel bridge to play well with
 ;; react native. Please omit the ugliness of this

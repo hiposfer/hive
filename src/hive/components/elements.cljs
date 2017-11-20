@@ -29,7 +29,7 @@
       [:> Text {} "Settings"]]]))
 
 (defn city-selector
-  [cities]
+  [{:keys [cities]}]
   (for [city cities]
     [:> ListItem {}
       [:> Body {}
