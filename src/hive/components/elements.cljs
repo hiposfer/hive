@@ -1,7 +1,8 @@
 (ns hive.components.elements
-  (:require [hive.components.core :refer [View Button Icon Text ListItem
-                                          Body]]
-            [hive.foreigns :as fl]))
+  (:require [hive.components.core :refer [View Button Icon Text ListItem Body]]
+            [hive.rework.core :as rework]
+            [hive.queries :as queries]
+            [hive.effects :as fx]))
 
 
 ;(defn targets-list
@@ -28,11 +29,16 @@
       [:> Icon {:name "settings"}]
       [:> Text {} "Settings"]]]))
 
+(defn change-city!
+  [props name]
+  (rework/transact! queries/user-id fx/move-to name)
+  ((:navigate (:navigation props)) "Home"))
+
 (defn city-selector
-  [{:keys [cities]}]
-  (for [city cities]
-    [:> ListItem {}
-      [:> Body {}
-        [:> Text (:name city)]
-        [:> Text {:note true :style {:color "gray"}}
-                 (str (:region city) ", " (:country city))]]]))
+  [[name _ _ region country :as city] props]
+  ^{:key name}
+   [:> ListItem {:on-press #(change-city! props name)}
+     [:> Body {}
+       [:> Text name]
+       [:> Text {:note true :style {:color "gray"}}
+         (str region ", " country)]]])
