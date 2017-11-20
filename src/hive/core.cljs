@@ -17,8 +17,8 @@
   (let [HomeScreen     (nav/stack-screen screens/home {:title "Home"})
         SettingsScreen (nav/stack-screen screens/settings {:title "Settings"})
         HomeStack      (nav/stack-navigator {:Home {:screen HomeScreen}
-                                             :Settings {:screen SettingsScreen}}
-                                            {:headerMode "none"})]
+                                             :Settings {:screen SettingsScreen}})]
+                                            ;{:headerMode "none"})]
     [:> HomeStack]))
 
 ;; ---------------------------------
