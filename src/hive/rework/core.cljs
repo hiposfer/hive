@@ -10,6 +10,47 @@
             [hive.rework.reagent.tx :as rtx]
             [hive.queries :as queries]))
 
+;; Before creating this mini-framework I tried re-frame and
+;; Om.Next and I decided not to use either
+
+;; re-frame has the problem that it uses an internal registry for
+;; its event handlers. Since only a keyword is used to represent it
+;; the user is left blind with respect to "what does this subscription returns?"
+;; Furthermore since it is based on an eventful model, changing a little thing
+;; in the state can lead to a cascade of changes, leaving the user wondering
+;; "how did my app get into this state". There are plugins and devtools to figure
+;; that out, but in my opinion fighting against the system is never a good idea.
+
+;; Om.Next is a beast on its own. I think that the way that things are envision
+;; is the right way to go for a long and big project. However Om.Next is too raw!!
+;; It definitely doesnt feel natural to work with it. The user needs to define
+;; a UI through `defui` but this itself is not the UI; you still need to use
+;; om/factory to actually create something that you can use. Furthermore the
+;; reconciler is a pain in the ass to work with. There is a million ways to
+;; create, query and transact on your app state. Having to decide all that
+;; up front is just too much!
+
+;; Having said that, both frameworks have their strengths. Om.Next promotes
+;; the render tree but think in graph (app state) mentality. I think that is
+;; better than re-frame simple Clojure map. re-frame on the other hand uses
+;; reagent to achieve automatic updates and hiccup ui declaration. That is
+;; also great and it feels much more natural to work with. Also promoting
+;; pure functions by returning data both in the subcriptions and in the
+;; mutations is great.
+
+;; rework tries to combine the strengths of both while mitigating its weaknesses
+;; with an extra goal of trying not to reinvent the wheel. Therefore a couple
+;; of decision are made up front for the user.
+;; - the app state MUST be represented with a Datascript connection. This way
+;; we can think in graph while re-using the code from Datascript. Pulling as in
+;; Om.Next comes for free.
+;; - the app must use reagent. As described in reagent.tx, we dont want to recreate
+;; all the functionality that they have so reagent will server us as rendering model
+;; - the app must use Clojure's core.async in the form of permanent services; this
+;; way we can represent inherently asynchronous operations as sequential
+;; - the app state can only be "changed" through the use of pure functions
+;; - Stuart Sierra's component library although optional is highly recommended
+
 ;; TODO: there is still a piece missing in this mini-framework
 ;; the ability to pass messages to channels !!
 ;; it could be possible by having a simple
