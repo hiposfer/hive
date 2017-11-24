@@ -3,21 +3,26 @@
             [com.stuartsierra.component :as component]
             [hive.rework.reagent.tx :as rtx]
             [datascript.core :as data]
-            [cljs-react-navigation.reagent :as nav]
+            ;[cljs-react-navigation.reagent :as nav]
             [hive.foreigns :as fl]
-            [hive.components.core :refer [View Image Text TouchableHighlight]]
+            [hive.components.core :refer [View Image Text TouchableHighlight Icon]]
             [hive.state :as state]
-            [hive.components.screens :as screens]))
+            [hive.components.screens :as screens]
+            [hive.components.navigation :as nav]))
 
 ;; TODO: this should be a DrawerNavigation but it hasnt been wrapped yet in
 ;; https://github.com/seantempesta/cljs-react-navigation/issues/3
 (defn root-ui
   []
-  (let [HomeScreen     (nav/stack-screen screens/home {:title "Home"})
-        SettingsScreen (nav/stack-screen screens/settings {:title "Settings"})
-        HomeStack      (nav/stack-navigator {:Home {:screen HomeScreen}
-                                             :Settings {:screen SettingsScreen}})]
-                                            ;{:headerMode "none"})]
+  (let [HomeScreen     (nav/drawer-screen screens/home
+                         {:title "Home"
+                          :drawerIcon (r/as-element [:> Icon {:name "home"}])})
+        SettingsScreen (nav/drawer-screen screens/settings
+                         {:title "Settings"
+                          :drawerIcon (r/as-element [:> Icon {:name "settings"}])})
+        HomeStack      (nav/drawer-navigator {:Home {:screen HomeScreen}
+                                              :Settings {:screen SettingsScreen}}
+                                             {:headerMode "none"})]
     [:> HomeStack]))
 
 ;; ---------------------------------

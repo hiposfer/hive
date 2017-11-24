@@ -16,66 +16,42 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn toggle-drawer!
-  [drawer]
-  (if (:open? @drawer)
-    (.close (.-_root (:ref @drawer)))
-    (.open (.-_root (:ref @drawer)))))
-
 (defn search-bar
-  [drawer]
-  [:> Header {:searchBar true :rounded true}
-   [:> Item {}
-    [:> Button {:transparent true :full true
-                :on-press #(toggle-drawer! drawer)}
-     [:> Icon {:name "ios-menu" :transparent true}]]
-    [:> Input {:placeholder "Where would you like to go?"}]
-    [:> Icon {:name "ios-search"}]]])
+  [props]
+  (let [navigate (:navigate (:navigation props))]
+    [:> Header {:searchBar true :rounded true}
+     [:> Item {}
+      [:> Button {:transparent true :full true
+                  :on-press #(navigate "DrawerToggle")}
+       [:> Icon {:name "ios-menu" :transparent true}]]
+      [:> Input {:placeholder "Where would you like to go?"}]
+      [:> Icon {:name "ios-search"}]]]))
 
 (defn home
   [props]
   (let [[_ _ geometry] @(rework/q! queries/user-city)
-        [lon lat]      (:coordinates geometry)
-        dopts          (volatile! {:ref nil :open? false})]
-    [:> Drawer {:content (r/as-element (drawer-menu props))
-                :type "displace" :tweenDuration 100
-                :on-close #(vswap! dopts assoc :open? false)
-                :ref #(vswap! dopts assoc :ref %)}
+        [lon lat]      (:coordinates geometry)]
      [:> Container {}
-      [search-bar dopts]
+      [search-bar props]
       [:> MapView {:initialRegion {:latitude lat
                                    :longitude lon
                                    :latitudeDelta 0.02,
                                    :longitudeDelta 0.02}
                    :showsUserLocation true
-                   :style {:flex 1}}]]]))
-
-;(defn home
-;  [{:keys [screenProps navigation] :as props}]
-;  (let [;city      (:user/city (om/props this))
-;        bbox      [1 2 3 4];(:bbox city); [lon lat lon lat]
-;        dlat      (/ (- (nth bbox 2) (nth bbox 0))
-;                     6)
-;        dlon      (/ (- (nth bbox 3) (nth bbox 1))
-;                     6)
-;        [lon lat] [1 2]];(:coordinates (:geometry city))]
+                   :style {:flex 1}}]]))
 
 (defn settings
   [props]
   (let [cities (rework/q! queries/cities)
-        dopts  (volatile! {:ref nil :open? false})]
-    [:> Drawer {:content (r/as-element (drawer-menu props))
-                :type "displace" :tweenDuration 100
-                :on-close #(vswap! dopts assoc :open? false)
-                :ref #(vswap! dopts assoc :ref %)}
-     [:> Container
-      [:> Header
-        [:> Button {:transparent true :full true
-                    :on-press #(toggle-drawer! dopts)}
-         [:> Icon {:name "menu"}]]
-        [:> Body [:> Title "Settings"]]]
-      [:> Content
-       (map city-selector @cities (repeat props))]]]))
+        navigate (:navigate (:navigation props))]
+    [:> Container
+     [:> Header
+       [:> Button {:transparent true :full true
+                   :on-press #(navigate "DrawerToggle")}
+        [:> Icon {:name "menu"}]]
+       [:> Body [:> Title "Settings"]]]
+     [:> Content
+      (map city-selector @cities (repeat props))]]))
 
 ;;(defn blockade
 ;;  "our current splash screen"

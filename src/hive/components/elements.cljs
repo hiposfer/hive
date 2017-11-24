@@ -18,17 +18,6 @@
 ;       [text {:note true :style {:color "gray"}} (:subtitle target)]]])])
 
 
-(defn drawer-menu
-  [{:keys [navigation] :as props}]
-  (let [{:keys [navigate goBack]} navigation]
-    [:> View {:activeOpacity 1}
-     [:> Button {:full true :on-press #(navigate "Home")}
-      [:> Icon {:name "home"}]
-      [:> Text {} "Home"]]
-     [:> Button {:full true :on-press #(navigate "Settings")}
-      [:> Icon {:name "settings"}]
-      [:> Text {} "Settings"]]]))
-
 (defn change-city!
   [props name]
   (rework/transact! queries/user-id fx/move-to name)
