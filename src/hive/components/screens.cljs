@@ -3,7 +3,6 @@
                                           Text Icon Input MapView ListItem Body
                                           Left Content Button Title TouchableHighlight]]
             [hive.components.elements :refer [drawer-menu city-selector]]
-            [hive.rework.core :refer [query!]]
             [hive.queries :as queries]
             [reagent.core :as r]
             [hive.rework.core :as rework]))
@@ -17,7 +16,7 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn toggle-drawer
+(defn toggle-drawer!
   [drawer]
   (if (:open? @drawer)
     (.close (.-_root (:ref @drawer)))
@@ -28,28 +27,28 @@
   [:> Header {:searchBar true :rounded true}
    [:> Item {}
     [:> Button {:transparent true :full true
-                :on-press #(toggle-drawer drawer)}
+                :on-press #(toggle-drawer! drawer)}
      [:> Icon {:name "ios-menu" :transparent true}]]
     [:> Input {:placeholder "Where would you like to go?"}]
     [:> Icon {:name "ios-search"}]]])
 
 (defn home
   [props]
-  (let [[_ _ geometry] @(query! queries/user-city)
-        dopts  (volatile! {:ref nil :open? false})]
-    (fn []
-      [:> Drawer {:content (r/as-element (drawer-menu props))
-                  :type "displace" :tweenDuration 100
-                  :on-close #(vswap! dopts assoc :open? false)
-                  :ref #(vswap! dopts assoc :ref %)}
-       [:> Container {}
-        [search-bar dopts]
-        [:> MapView {:initialRegion {:latitude (second (:coordinates geometry))
-                                     :longitude (first (:coordinates geometry))
-                                     :latitudeDelta 0.02,
-                                     :longitudeDelta 0.02}
-                     :showsUserLocation true
-                     :style {:flex 1}}]]])))
+  (let [[_ _ geometry] @(rework/q! queries/user-city)
+        [lon lat]      (:coordinates geometry)
+        dopts          (volatile! {:ref nil :open? false})]
+    [:> Drawer {:content (r/as-element (drawer-menu props))
+                :type "displace" :tweenDuration 100
+                :on-close #(vswap! dopts assoc :open? false)
+                :ref #(vswap! dopts assoc :ref %)}
+     [:> Container {}
+      [search-bar dopts]
+      [:> MapView {:initialRegion {:latitude lat
+                                   :longitude lon
+                                   :latitudeDelta 0.02,
+                                   :longitudeDelta 0.02}
+                   :showsUserLocation true
+                   :style {:flex 1}}]]]))
 
 ;(defn home
 ;  [{:keys [screenProps navigation] :as props}]
@@ -63,21 +62,20 @@
 
 (defn settings
   [props]
-  (let [cities @(rework/query! queries/cities)
+  (let [cities (rework/q! queries/cities)
         dopts  (volatile! {:ref nil :open? false})]
-    (fn []
-      [:> Drawer {:content (r/as-element (drawer-menu props))
-                  :type "displace" :tweenDuration 100
-                  :on-close #(vswap! dopts assoc :open? false)
-                  :ref #(vswap! dopts assoc :ref %)}
-       [:> Container
-        [:> Header
-          [:> Button {:transparent true :full true
-                      :on-press #(toggle-drawer dopts)}
-           [:> Icon {:name "menu"}]]
-          [:> Body [:> Title "Settings"]]]
-        [:> Content
-         (map city-selector cities (repeat props))]]])))
+    [:> Drawer {:content (r/as-element (drawer-menu props))
+                :type "displace" :tweenDuration 100
+                :on-close #(vswap! dopts assoc :open? false)
+                :ref #(vswap! dopts assoc :ref %)}
+     [:> Container
+      [:> Header
+        [:> Button {:transparent true :full true
+                    :on-press #(toggle-drawer! dopts)}
+         [:> Icon {:name "menu"}]]
+        [:> Body [:> Title "Settings"]]]
+      [:> Content
+       (map city-selector @cities (repeat props))]]]))
 
 ;;(defn blockade
 ;;  "our current splash screen"

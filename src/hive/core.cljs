@@ -1,8 +1,7 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [com.stuartsierra.component :as component]
-            [posh.reagent :as posh]
-            [posh.plugin-base :as pbase]
+            [hive.rework.reagent.tx :as rtx]
             [datascript.core :as data]
             [cljs-react-navigation.reagent :as nav]
             [hive.foreigns :as fl]
@@ -23,26 +22,19 @@
 
 ;; ---------------------------------
 ;; populates the DataScript in-memory database
-(defrecord StateInitializer [conn init]
+(defrecord StateContainer [schema conn ratom]
   component/Lifecycle
   (start [this]
-    (if (nil? init)
-      (assoc this :init (data/transact! conn state/defaults))
-      this))
-  (stop [this] (assoc this :init nil)))
-;; ---------------------------------
-;; encapsulates Posh initialization
-(defrecord PoshContainer [conn init]
-  component/Lifecycle
-  (start [this]
-    (if (nil? init)
-      (assoc this :init (pbase/posh! posh/dcfg conn)
-        this)))
-  (stop [this] (assoc this :registry nil)))
+    (if-not (nil? conn) this
+      (let [conn (data/create-conn schema)]
+        (data/transact! conn state/defaults)
+        (assoc this :conn conn
+                    :ratom (rtx/listen! conn)))))
+  (stop [this] (assoc this :conn nil :ratom nil)))
 ;; ----------------------------------
 ;; encapsulates the React Native registry
 ;; dont start before state was created
-(defrecord RnRegistry [conn state posh registry]
+(defrecord RnRegistry [state registry]
   component/Lifecycle
   (start [this]
     (if (nil? registry)
@@ -58,10 +50,8 @@
 (defn system
   []
   (component/system-map
-    :conn      (data/create-conn state/schema)
-    :state     (component/using (map->StateInitializer {})
-                                [:conn])
-    :posh      (component/using (map->PoshContainer {})
-                                [:conn])
+    :schema    state/schema
+    :state     (component/using (map->StateContainer {})
+                                [:schema])
     :registry  (component/using (map->RnRegistry {})
-                                [:conn :state :posh])))
+                                [:state])))

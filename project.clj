@@ -6,7 +6,6 @@
             :dependencies [[org.clojure/clojure "1.9.0-RC1"]
                            [org.clojure/clojurescript "1.9.946"]
                            [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
-                           [posh "0.5.6"]
                            [datascript "0.16.2"]
                            [com.stuartsierra/component "0.3.2"]
                            [cljs-react-navigation "0.1.1"]

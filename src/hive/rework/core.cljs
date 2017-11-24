@@ -6,10 +6,8 @@
 
   Furthermore since they are independent of the context of their
   invocation, generative testing is even possible"
-  (:require [datascript.query :as datascript]
-            [posh.plugin-base :as pbase]
-            [posh.reagent :as posh]
-            [datascript.core :as data]
+  (:require [datascript.core :as data]
+            [hive.rework.reagent.tx :as rtx]
             [hive.queries :as queries]))
 
 ;; TODO: there is still a piece missing in this mini-framework
@@ -24,26 +22,23 @@
 
 (defn init! [value] (when (nil? @app) (reset! app value)))
 
-(defn query
+(defn q
   "Returns the data stored in the app state according to query"
-  ([query]
-   (datascript/q query @(:conn @app)))
-  ([query params]
-   (datascript/q query @(:conn @app) params)))
+  [query & inputs]
+  (apply data/q query @(:conn (:state @app)) inputs))
 
-(defn query!
-  "Returns a reagent/atom whose value will be updated anytime that
-  its app state values are updated"
-  ([query]
-   (pbase/q posh/dcfg query (:conn @app)))
-  ([query params]
-   (pbase/q posh/dcfg query (:conn @app) params)))
+(defn q!
+  "Returns a reagent/atom with the result of the query.
+  The value of the ratom will be automatically updated whenever
+  a change is detected"
+  [query & inputs]
+  (apply rtx/q query (:conn (:state @app)) inputs))
 
 (defn- inquire
   [inquiry]
   (if (vector? inquiry)
-    (query inquiry)
-    (query (:query inquiry) (:params inquiry))))
+    (q inquiry)
+    (q (:query inquiry) (:args inquiry))))
 
 (defn transact!
   "'Updates' the DataScript state, where f is a function that will take
@@ -52,18 +47,18 @@
 
    inquiry can either be a query vector like [:find ?foo :where [_ :bar ?foo]]
    or a map with {:query [datascript-query]
-                  :params [parameters to use :in query]}"
+                  :args  [parameters to use :in query]}"
   ([tx-data]
-   (data/transact! (:conn @app) tx-data))
+   (data/transact! (:conn (:state @app)) tx-data))
   ([inquiry f]
    (let [result (inquire inquiry)]
-     (data/transact! (:conn @app) (f result))))
+     (data/transact! (:conn (:state @app)) (f result))))
   ([inquiry f x]
    (let [result (inquire inquiry)]
-     (data/transact! (:conn @app) (f result x))))
+     (data/transact! (:conn (:state @app)) (f result x))))
   ([inquiry f x & more]
    (let [result (inquire inquiry)]
-     (data/transact! (:conn @app) (apply f result x more)))))
+     (data/transact! (:conn (:state @app)) (apply f result x more)))))
 
 (defn send
   "takes a channel keyword (like :http), looks it up in the
@@ -101,17 +96,21 @@
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
-;(query '[:find ?name ?bbox ?geometry
-;         :where [_ :user/city ?city]
-;                [?city :city/name ?name]
-;                [?city :bbox ?bbox]
-;                [?city :geometry ?geometry]])
-
+;(q! '[:find ?name ?bbox ?geometry
+;      :where [_ :user/city ?city]
+;             [?city :city/name ?name]
+;             [?city :bbox ?bbox]
+;             [?city :geometry ?geometry]])
+;
 ;(transact! queries/user-id
 ;  (fn [result city-name]
-;    [{:user/id result
-;      :user/city [:city/name city-name]}])
+;   [{:user/id result
+;     :user/city [:city/name city-name]}])
 ;  "Offenburg")
 
 ;(query queries/cities)
 ;(query)
+
+;(::rtx/ratom @(:conn (:state @app)))
+
+;(q queries/user-city)
