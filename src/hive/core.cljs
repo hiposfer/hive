@@ -22,7 +22,7 @@
                           :drawerIcon (r/as-element [:> Icon {:name "settings"}])})
         HomeStack      (nav/drawer-navigator {:Home {:screen HomeScreen}
                                               :Settings {:screen SettingsScreen}}
-                                             {:headerMode "none"})]
+                                             {})]
     [:> HomeStack]))
 
 ;; ---------------------------------

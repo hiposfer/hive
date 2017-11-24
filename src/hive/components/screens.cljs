@@ -2,7 +2,7 @@
   (:require [hive.components.core :refer [Drawer Container Header Item View Image
                                           Text Icon Input MapView ListItem Body
                                           Left Content Button Title TouchableHighlight]]
-            [hive.components.elements :refer [drawer-menu city-selector]]
+            [hive.components.elements :refer [city-selector]]
             [hive.queries :as queries]
             [reagent.core :as r]
             [hive.rework.core :as rework]))
