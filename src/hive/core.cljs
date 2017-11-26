@@ -3,15 +3,13 @@
             [com.stuartsierra.component :as component]
             [hive.rework.reagent.tx :as rtx]
             [datascript.core :as data]
-            ;[cljs-react-navigation.reagent :as nav]
             [hive.foreigns :as fl]
             [hive.components.core :refer [View Image Text TouchableHighlight Icon]]
             [hive.state :as state]
             [hive.components.screens :as screens]
-            [hive.components.navigation :as nav]))
+            [hive.components.navigation :as nav]
+            [hive.services.http :as http]))
 
-;; TODO: this should be a DrawerNavigation but it hasnt been wrapped yet in
-;; https://github.com/seantempesta/cljs-react-navigation/issues/3
 (defn root-ui
   []
   (let [HomeScreen     (nav/drawer-screen screens/home
@@ -58,5 +56,6 @@
     :schema    state/schema
     :state     (component/using (map->StateContainer {})
                                 [:schema])
+    ::http/service (http/->Service nil)
     :registry  (component/using (map->RnRegistry {})
-                                [:state])))
+                                [:state ::http/service])))

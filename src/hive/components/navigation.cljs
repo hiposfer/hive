@@ -3,6 +3,9 @@
             [cljs-react-navigation.base :as nav-base]
             [cljs-react-navigation.reagent :as nav]))
 
+;; TODO: waiting to get this merge in cljs-react.navigation
+;; https://github.com/seantempesta/cljs-react-navigation/issues/3
+
 ;; Screen Navigation Options
 (s/def :react-navigation.drawerNavigationOptions/title string?)
 

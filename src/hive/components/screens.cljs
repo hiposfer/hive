@@ -4,8 +4,10 @@
                                           Left Content Button Title TouchableHighlight]]
             [hive.components.elements :refer [city-selector]]
             [hive.queries :as queries]
-            [reagent.core :as r]
-            [hive.rework.core :as rework]))
+            [hive.rework.core :as rework]
+            [cljs.core.async :refer-macros [go go-loop]]
+            [cljs.core.async :as async]
+            [hive.services.http :as http]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -120,3 +122,12 @@
 ;           [text "ERROR: we couldn't find your current position. This might be due to:"]
 ;           [text {:style {:textAlign "left"}} "\u2022 no gps connection enabled"]
 ;           [text "\u2022 bad signal reception"]]]]]]))
+
+;(let [success (async/chan)]
+;  (go (rework/using ::http/service http/request!
+;        {::http/text "https://google.com"
+;         ::http/success success})
+;    ;(println (js-keys (.then (.text (async/<! success))
+;    ;                         #(println %)})))
+;    (let [result (async/<! success)]
+;      (cljs.pprint/pprint result))))
