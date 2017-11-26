@@ -19,7 +19,7 @@
 
 (def http-types #{::json ::text ::raw})
 
-(defn handle-http!
+(defn- handle!
   [request]
   (let [command   (select-keys request http-types)
         success   (get request ::success)
@@ -39,20 +39,20 @@
       ;(cljs.pprint/pprint request))))
 
 ;; ---------------------------------
-(defrecord Service [chann]
+(defrecord Service [chan]
   component/Lifecycle
   (start [this]
-    (if-not (nil? chann) this
-      (let [chann (async/chan 10)]
+    (if-not (nil? chan) this
+      (let [chan (async/chan 10)]
         (go-loop [_ nil]
-         (let [request (async/<! chann)]
+         (let [request (async/<! chan)]
            (if (nil? request) nil ;; stops looping
              (if (s/valid? ::request request)
-               (recur (handle-http! request))
+               (recur (handle! request))
                (recur (s/explain ::request request))))))
-        (assoc this :chan chann))))
+        (assoc this :chan chan))))
   (stop [this]
-    (async/close! chann)
+    (async/close! chan)
     (assoc this :chan nil)))
 
 (defn request!

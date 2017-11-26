@@ -8,7 +8,8 @@
             [hive.state :as state]
             [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
-            [hive.services.http :as http]))
+            [hive.services.http :as http]
+            [hive.services.geocoding :as geocode]))
 
 (defn root-ui
   []
@@ -54,8 +55,12 @@
   []
   (component/system-map
     :schema    state/schema
+    :config    fl/init-config
     :state     (component/using (map->StateContainer {})
                                 [:schema])
     ::http/service (http/->Service nil)
+    ::geocode/service (component/using (geocode/map->Service {})
+                                       {:config :config
+                                        :http ::http/service})
     :registry  (component/using (map->RnRegistry {})
-                                [:state ::http/service])))
+                                [:state ::http/service ::geocode/service])))

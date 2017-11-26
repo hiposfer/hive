@@ -10,5 +10,6 @@
 (def user-id '[:find ?uid .
                :where [_ :user/id ?uid]])
 
+;; TODO: get the actual route
 (def route '[:find city?
              :where [_ :user/city ?city]])
