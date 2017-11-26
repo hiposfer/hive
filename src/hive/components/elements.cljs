@@ -3,7 +3,6 @@
                                           Container Content Card CardItem Image]]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
-            [hive.effects :as fx]
             [hive.foreigns :as fl]))
 
 
@@ -19,10 +18,14 @@
 ;       [text (:title target)]
 ;       [text {:note true :style {:color "gray"}} (:subtitle target)]]])])
 
+(defn move-to
+  [user-id city-name]
+  [{:user/id user-id
+    :user/city [:city/name city-name]}])
 
 (defn change-city!
   [props name]
-  (rework/transact! queries/user-id fx/move-to name)
+  (rework/transact! queries/user-id move-to name)
   ((:navigate (:navigation props)) "Home"))
 
 (defn city-selector
