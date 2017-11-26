@@ -63,6 +63,20 @@
 
 (defn init! [value] (when (nil? @app) (reset! app value)))
 
+(defn pull
+  "same as datascript/pull but returns a ratom which will be updated
+  every time that the value of conn changes. It takes a connection
+  not a value database"
+  [selector eid]
+  (rtx/pull (:conn (:state @app)) selector eid))
+
+(defn entity
+  "same as datascript/entity but returns a ratom which will be updated
+  every time that the value of conn changes. It takes a connection
+  not a value database"
+  [eid]
+  (rtx/entity (:conn (:state @app)) eid))
+
 (defn q
   "Returns the data stored in the app state according to query"
   [query & inputs]
@@ -108,43 +122,12 @@
   [chann-name f & args]
   (apply f (get-in @app [chann-name :chann]) args))
 
-;(data/pull @conn [:user/name :user/age] [:user/id "1"])
-
-;(data/q '[:find ?name ?geometry ?bbox
-;          :where [?entity :name]
-;                 [?entity :bbox ?bbox]
-;                 [?entity :name ?name]
-;                 [?entity :geometry ?geometry]]
-;        @(:conn @app))
-
-;(query '[:find ?entity .
-;         :in $ ?name
-;         :where [?entity :name ?name]
-;                [?entity :bbox]
-;                [?entity :geometry]]
-;       "Frankfurt am Main")
-
-;(data/entity @(:conn @app) 1)
-
-;(:conn @app)
-
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
-;(q! '[:find ?name ?bbox ?geometry
-;      :where [_ :user/city ?city]
-;             [?city :city/name ?name]
-;             [?city :bbox ?bbox]
-;             [?city :geometry ?geometry]])
+;(:conn (:state @app))
+
+;(q '[:find (pull ?city [*]) .
+;     :where [_ :user/city ?city]])
 ;
-;(transact! queries/user-id
-;  (fn [result city-name]
-;   [{:user/id result
-;     :user/city [:city/name city-name]}])
-;  "Offenburg")
-
-;(query queries/cities)
-;(query)
-
-;(::rtx/ratom @(:conn (:state @app)))
-
-;(q queries/user-city)
+;(q '[:find [(pull ?entity [*]) ...]
+;     :where [?entity :city/name ?name]))

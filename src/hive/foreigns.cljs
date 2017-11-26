@@ -12,7 +12,7 @@
 ;(def async-storage (.-AsyncStorage ReactNative))
 ;(def back-handler (.-BackHandler ReactNative))
 ;(def toast-android (.-ToastAndroid ReactNative))
-;(def dimensions    (.-Dimensions ReactNative))
+(def dimensions    (.-Dimensions ReactNative))
 ;(def net-info      (.-NetInfo ReactNative))
 
 ;(defn on-back-button [f] (.addEventListener back-handler "hardwareBackPress" f))

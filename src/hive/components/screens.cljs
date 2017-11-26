@@ -1,13 +1,12 @@
 (ns hive.components.screens
-  (:require [hive.components.core :refer [Drawer Container Header Item View Image
-                                          Text Icon Input MapView ListItem Body
-                                          Left Content Button Title TouchableHighlight]]
+  (:require [hive.components.core :refer [Container Header Item Image
+                                          Text Icon Input MapView Body
+                                          Content Button Title Card
+                                          CardItem]]
             [hive.components.elements :refer [city-selector]]
             [hive.queries :as queries]
             [hive.rework.core :as rework]
-            [cljs.core.async :refer-macros [go go-loop]]
-            [cljs.core.async :as async]
-            [hive.services.http :as http]))
+            [cljs.core.async :refer-macros [go go-loop]]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -31,8 +30,8 @@
 
 (defn home
   [props]
-  (let [[_ _ geometry] @(rework/q! queries/user-city)
-        [lon lat]      (:coordinates geometry)]
+  (let [city      @(rework/q! queries/user-city)
+        [lon lat] (:coordinates (:geometry city))]
      [:> Container {}
       [search-bar props]
       [:> MapView {:initialRegion {:latitude lat
@@ -55,73 +54,35 @@
      [:> Content
       (map city-selector @cities (repeat props))]]))
 
-;;(defn blockade
-;;  "our current splash screen"
-;;  []
-;;  [container
-;;    [content
-;;      [spinner {:color "blue"}]
-;;      [text "Fetching app information ... please wait"]]])
-;
-;(defn directions
-;    "basic navigation directions"
-;    []
-;    #_(let [route        (subs/subscribe [:user.goal/route])
-;            instructions (sequence (comp (mapcat :steps)
-;                                       (map :maneuver)
-;                                       (map :instruction)
-;                                       (map-indexed vector))
-;                                 (:legs @route))])
-;    [container
-;     [content
-;      [card
-;       [card-item [icon {:name "flag"}]
-;        [text "distance: " 5 " meters"]] ;(:distance @route)
-;       [card-item [icon {:name "information-circle"}]
-;        [text "duration: " (Math/round (/ 10 60)) " minutes"]] ;(:duration @route)
-;       [card-item [icon {:name "time"}]
-;        [text "time of arrival: " (str (js/Date. (+ (js/Date.now
-;                                                      (* 1000 20))))) ;(:duration @route))))))
-;         " minutes"]]]
-;      [card
-;       [card-item [icon {:name "map"}]
-;        [text "Instructions: "]]
-;       #_(for [[id text] instructions]
-;           (if (= id (first (last instructions)))
-;             ^{:key id} [card-item [icon {:name "flag"}]
-;                         [text text]]
-;             ^{:key id} [card-item [icon {:name "ios-navigate-outline"}]
-;                         [text text]]))]]])
-;
-;(defn missing-internet
-;    "display a nice little monster asking for internet connection"
-;    []
-;    (let [dims (js->clj (. fl/dimensions (get "window")) :keywordize-keys true)]
-;      [container
-;       [content {:style {:padding 10}}
-;        [card ;{:style {:width (* (:width dims) 0.95)}}
-;         [card-item {:cardBody true}
-;          [image {:style {:width (* (:width dims) 0.9)
-;                            :height (* (:height dims) 0.8)
-;                            :resizeMode "contain" :flex 1}
-;                    :source fl/thumb-sign}]]]]]))
-;
-;(defn user-location-error
-;    []
-;    (let [dims (js->clj (. fl/dimensions (get "window")) :keywordize-keys true)]
-;      [container
-;       [content {:style {:padding 10}}
-;        [card
-;         [card-item {:cardBody true}
-;          [image {:style {:width (* (:width dims) 0.9)
-;                            :height (* (:height dims) 0.7)
-;                            :resizeMode "contain" :flex 1}
-;                    :source fl/thumb-run}]]
-;         [card-item
-;          [body
-;           [text "ERROR: we couldn't find your current position. This might be due to:"]
-;           [text {:style {:textAlign "left"}} "\u2022 no gps connection enabled"]
-;           [text "\u2022 bad signal reception"]]]]]]))
+(defn directions
+    "basic navigation directions"
+    []
+    (let [route        (rework/q! queries/route)
+          instructions (sequence (comp (mapcat :steps)
+                                       (map :maneuver)
+                                       (map :instruction)
+                                       (map-indexed vector))
+                                 (:legs @route))]
+      [:> Container
+       [:> Content
+        [:> Card
+         [:> CardItem [:> Icon {:name "flag"}]
+          [:> Text "distance: " 5 " meters"]] ;(:distance @route)
+         [:> CardItem [:> Icon {:name "information-circle"}]
+          [:> Text "duration: " (Math/round (/ 10 60)) " minutes"]] ;(:duration @route)
+         [:> CardItem [:> Icon {:name "time"}]
+          [:> Text "time of arrival: " (str (js/Date. (+ (js/Date.now)
+                                                        (* 1000 20)))) ;(:duration @route))))))
+           " minutes"]]]
+        [:> Card
+         [:> CardItem [:> Icon {:name "map"}]
+          [:> Text "Instructions: "
+           (for [[id text] instructions]
+             (if (= id (first (last instructions)))
+               ^{:key id} [:> CardItem [:> Icon {:name "flag"}]
+                           [text text]]
+               ^{:key id} [:> CardItem [:> Icon {:name "ios-navigate-outline"}]
+                           [text text]]))]]]]]))
 
 ;(let [success (async/chan)]
 ;  (go (rework/using ::http/service http/request!
