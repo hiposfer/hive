@@ -120,7 +120,7 @@
   app system and passes it to f for its use with any extra
   arguments given"
   [chann-name f & args]
-  (apply f (get-in @app [chann-name :chann]) args))
+  (apply f (get-in @app [chann-name :chan]) args))
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 

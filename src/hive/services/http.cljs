@@ -4,7 +4,7 @@
             [com.stuartsierra.component :as component]
             [cljs.spec.alpha :as s]))
 
-(defn- chann?
+(defn- chan?
   [x]
   (satisfies? cljs.core.async.impl.protocols/Channel x))
 
@@ -12,8 +12,8 @@
 (s/def ::json string?)
 (s/def ::raw string?)
 (s/def ::text string?)
-(s/def ::success chann?)
-(s/def ::error chann?)
+(s/def ::success chan?)
+(s/def ::error chan?)
 (s/def ::request (s/keys :req [(or ::json ::raw ::text) ::success]
                          :opt [::error]))
 
@@ -45,15 +45,15 @@
     (if-not (nil? chann) this
       (let [chann (async/chan 10)]
         (go-loop [_ nil]
-          (let [request (async/<! chann)]
-            (if (nil? request) nil ;; stops looping
-              (if (s/valid? ::request request)
-                (recur (handle-http! request))
-                (recur (s/explain ::request request))))))
-        (assoc this :chann chann))))
+         (let [request (async/<! chann)]
+           (if (nil? request) nil ;; stops looping
+             (if (s/valid? ::request request)
+               (recur (handle-http! request))
+               (recur (s/explain ::request request))))))
+        (assoc this :chan chann))))
   (stop [this]
     (async/close! chann)
-    (assoc this :chann nil)))
+    (assoc this :chan nil)))
 
 (defn request!
   "takes an http channel and a request shaped according to
