@@ -21,6 +21,7 @@
     [:> HomeStack]))
 
 (defn init!
+  "register the main UI component in React Native"
   []
   (rework/init! state/schema state/defaults)
   (.registerComponent fl/app-registry "main"
