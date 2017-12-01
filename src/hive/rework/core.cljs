@@ -8,7 +8,7 @@
   invocation, generative testing is even possible"
   (:require [datascript.core :as data]
             [hive.rework.reagent.tx :as rtx]
-            [hive.queries :as queries]))
+            [reagent.core :as r]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -49,45 +49,55 @@
 ;; - the app must use Clojure's core.async in the form of permanent services; this
 ;; way we can represent inherently asynchronous operations as sequential
 ;; - the app state can only be "changed" through the use of pure functions
-;; - Stuart Sierra's component library although optional is highly recommended
-
-;; TODO: there is still a piece missing in this mini-framework
-;; the ability to pass messages to channels !!
-;; it could be possible by having a simple
-;; `send :chann-name` function which takes a
-;; channel name as declared by system and passes it
-;; to the given function
 
 ;; Holds the current state of the complete app
-(defonce ^:private app (atom nil))
+(defonce ^:private conn (data/create-conn))
 
-(defn init! [value] (when (nil? @app) (reset! app value)))
+(defn init!
+  ([schema init-data]
+   (rtx/unlisten! conn)
+   (let [result (data/create-conn schema)]
+     (data/transact! result init-data) ;; populates the DataScript in-memory database
+     (rtx/listen! result)
+     (set! conn result)))
+  ([schema]
+   (rtx/unlisten! conn)
+   (set! conn (data/conn-from-datoms (data/datoms @conn :eavt) schema))
+   (rtx/listen! conn)))
 
 (defn pull
-  "same as datascript/pull but returns a ratom which will be updated
-  every time that the value of conn changes. It takes a connection
-  not a value database"
+  "same as datascript pull but uses the app state as connection"
   [selector eid]
-  (rtx/pull (:conn (:state @app)) selector eid))
+  (data/pull @conn selector eid))
+
+(defn pull!
+  "same as datascript/pull but returns a ratom which will be updated
+  every time that the value of conn changes"
+  [selector eid]
+  (r/track rtx/pull* (::ratom @conn) selector eid))
 
 (defn entity
-  "same as datascript/entity but returns a ratom which will be updated
-  every time that the value of conn changes. It takes a connection
-  not a value database"
+  "same as datascript/entity but uses the app state as connection"
   [eid]
-  (rtx/entity (:conn (:state @app)) eid))
+  (data/entity @conn eid))
+
+(defn entity!
+  "same as datascript/entity but returns a ratom which will be updated
+  every time that the value of conn changes"
+  [eid]
+  (r/track rtx/entity* (::ratom @conn) eid))
 
 (defn q
-  "Returns the data stored in the app state according to query"
+  "same as datascript/q but uses the app state as connection"
   [query & inputs]
-  (apply data/q query @(:conn (:state @app)) inputs))
+  (apply data/q query @conn inputs))
 
 (defn q!
   "Returns a reagent/atom with the result of the query.
   The value of the ratom will be automatically updated whenever
   a change is detected"
   [query & inputs]
-  (apply rtx/q query (:conn (:state @app)) inputs))
+  (r/track rtx/q* query (::ratom @conn) inputs))
 
 (defn- inquire
   [inquiry]
@@ -102,25 +112,15 @@
 
    inquiry can either be a query vector like [:find ?foo :where [_ :bar ?foo]]
    or a map with {:query [datascript-query]
-                  :args  [parameters to use :in query]}"
+                  :args  [parameters to use :in query]}
+   Returns the result of the result of the query with the new state"
   ([tx-data]
-   (data/transact! (:conn (:state @app)) tx-data))
-  ([inquiry f]
+   (data/transact! conn tx-data)
+   @conn)
+  ([inquiry f & args]
    (let [result (inquire inquiry)]
-     (data/transact! (:conn (:state @app)) (f result))))
-  ([inquiry f x]
-   (let [result (inquire inquiry)]
-     (data/transact! (:conn (:state @app)) (f result x))))
-  ([inquiry f x & more]
-   (let [result (inquire inquiry)]
-     (data/transact! (:conn (:state @app)) (apply f result x more)))))
-
-(defn using
-  "takes a service name (like :http), looks it up in the
-  app system and passes it to f for its use with any extra
-  arguments given"
-  [chann-name f & args]
-  (apply f (get-in @app [chann-name :chan]) args))
+     (data/transact! conn (apply f result args))
+     (inquire inquiry))))
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
@@ -131,3 +131,10 @@
 ;
 ;(q '[:find [(pull ?entity [*]) ...]
 ;     :where [?entity :city/name ?name]))
+
+(defn inject
+  "runs query with provided inputs and associates its result into m
+  under key"
+  [m key query & inputs]
+  (let [result (apply q query inputs)]
+    (assoc m key result)))

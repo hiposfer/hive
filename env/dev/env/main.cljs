@@ -1,14 +1,19 @@
 (ns ^:figwheel-no-load env.main
-  (:require [reagent.core :as r]
-            [hive.core :as core]
-            [hive.rework.core :as rework]
+  (:require [cljs.spec.alpha :as s]
+            [clojure.spec.test.alpha :as st]
+            [expound.alpha :as expound]
             [figwheel.client :as figwheel :include-macros true]
-            [env.dev]
-            [com.stuartsierra.component :as component]))
+            [reagent.core :as r]
+            [hive.core :as core]
+            [env.dev]))
+
 
 (enable-console-print!)
-;; start
-(rework/init! (component/start (core/system)))
+;; Setting *explain-out* does not work correctly in ClojureScript versions prior
+;; to 1.9.562 due to differences in explain-data
+(set! s/*explain-out* expound/printer)
+(st/instrument)
+(core/init!)
 
 ;; initialization required by fighwheel bridge to play well with
 ;; react native. Please omit the ugliness of this

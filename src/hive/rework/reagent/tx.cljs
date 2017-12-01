@@ -7,7 +7,7 @@
   it recreates the reagent/atom implementation internally.
 
   This bring other problems with it:
-  - all queries much be cached (but reagent is capable of doing that
+  - all queries must be cached (but reagent is capable of doing that
      with reagent/track)
   - whenever the state changes, posh must figure out which query result
     should be updated (but reagent is capable of doing that by diffing
@@ -40,35 +40,20 @@
   (data/unlisten! conn ::tx)
   (swap! conn dissoc ::ratom))
 
-(defn- q*
+(defn q*
+  "same as datascript/q but takes a reagent/atom as connection.
+  Useful to use with reagent/track"
   [query ratom inputs]
   (apply data/q query @ratom inputs))
 
-(defn q
-  "same as datascript/q but returns a ratom which will be updated
-  every time that the value of conn changes. It takes a connection
-  not a value database"
-  [query conn & inputs]
-  (r/track q* query (::ratom @conn) inputs))
-
-(defn- pull*
+(defn pull*
+  "same as datascript/pull but takes a reagent/atom as connection.
+   Useful to use with reagent/track"
   [ratom selector eid]
   (data/pull @ratom selector eid))
 
-(defn pull
-  "same as datascript/pull but returns a ratom which will be updated
-  every time that the value of conn changes. It takes a connection
-  not a value database"
-  [conn selector eid]
-  (r/track pull* (::ratom @conn) selector eid))
-
-(defn- entity*
+(defn entity*
+  "same as datascript/entity but takes a reagent/atom as connection.
+   Useful to use with reagent/track"
   [ratom eid]
   (data/entity @ratom eid))
-
-(defn entity
-  "same as datascript/entity but returns a ratom which will be updated
-  every time that the value of conn changes. It takes a connection
-  not a value database"
-  [conn eid]
-  (r/track (::ratom @conn) eid))
