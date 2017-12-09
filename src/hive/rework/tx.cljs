@@ -1,4 +1,4 @@
-(ns hive.rework.reagent.tx
+(ns hive.rework.tx
   "A reagent reactive wrapper around a datascript transactor
 
   Although this is a rewrite of mpdairy/posh library it is much

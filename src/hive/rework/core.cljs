@@ -7,7 +7,7 @@
   Furthermore since they are independent of the context of their
   invocation, generative testing is even possible"
   (:require [datascript.core :as data]
-            [hive.rework.reagent.tx :as rtx]
+            [hive.rework.tx :as rtx]
             [reagent.core :as r]))
 
 ;; Before creating this mini-framework I tried re-frame and
@@ -53,7 +53,7 @@
 ;; Holds the current state of the complete app
 (defonce ^:private conn (data/create-conn))
 
-(defn init!
+(defn reset!
   ([schema init-data]
    (rtx/unlisten! conn)
    (let [result (data/create-conn schema)]
@@ -131,10 +131,3 @@
 ;
 ;(q '[:find [(pull ?entity [*]) ...]
 ;     :where [?entity :city/name ?name]))
-
-(defn inject
-  "runs query with provided inputs and associates its result into m
-  under key"
-  [m key query & inputs]
-  (let [result (apply q query inputs)]
-    (assoc m key result)))

@@ -1,4 +1,4 @@
-(ns hive.services.util
+(ns hive.rework.util
   (:require [clojure.core.async :as async]))
 
 (defn- throw-err [e]
