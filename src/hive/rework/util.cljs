@@ -17,8 +17,8 @@ comp
 
 (defn pipe
   "Takes a set of functions and returns a fn that is the composition of those fns.
-   The returned fn takes a variable number of args, applies the leftmost of fns to
-   the args, the next fn (left-to-right) to the result, etc (like transducer composition).
+   The returned fn takes a single argument (request), applies the leftmost of fns to
+   it, the next fn (left-to-right) to the result, etc (like transducer composition).
 
    Returns a channel which will receive the result of the body when completed
 
@@ -26,16 +26,13 @@ comp
 
    Both sync and async functions are accepted"
   [f g & more]
-  (fn [& args]
+  (fn [request]
     (go
       (loop [stack   (concat [f g] more)
-             result  args]
-        (if (instance? js/Error result) result
+             result  request]
+        (if (instance? js/Error result) result ;; short-circuit
           (let [ff     (first stack)
-                rr     (apply ff result)]
-            (if (empty? (rest stack))
-              (if-not (chan? rr) rr
-                (async/<! rr))
-              (if (chan? rr)
-                (recur (rest stack) (async/<! rr))
-                (recur (rest stack) rr)))))))))
+                rr     (try (ff result) (catch js/Error e e))
+                rr2    (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
+            (if (empty? (rest stack)) rr2
+              (recur (rest stack) rr2))))))))
