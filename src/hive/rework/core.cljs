@@ -8,7 +8,8 @@
   invocation, generative testing is even possible"
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [cljs.core.async :as async]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -31,7 +32,7 @@
 ;; up front is just too much!
 
 ;; Having said that, both frameworks have their strengths. Om.Next promotes
-;; the render tree but think in graph (app state) mentality. I think that is
+;; the "render a tree but think in graphs (app state)" mentality. I think that is
 ;; better than re-frame simple Clojure map. re-frame on the other hand uses
 ;; reagent to achieve automatic updates and hiccup ui declaration. That is
 ;; also great and it feels much more natural to work with. Also promoting
@@ -46,9 +47,11 @@
 ;; Om.Next comes for free.
 ;; - the app must use reagent. As described in reagent.tx, we dont want to recreate
 ;; all the functionality that they have so reagent will server us as rendering model
-;; - the app must use Clojure's core.async in the form of permanent services; this
-;; way we can represent inherently asynchronous operations as sequential
+;; - the app should use Clojure's core.async to handle all asynchronous operations
 ;; - the app state can only be "changed" through the use of pure functions
+
+;; the way to combine functionality in REWORK is with "pipes". See below for a
+;; full description
 
 ;; Holds the current state of the complete app
 (defonce ^:private conn (data/create-conn))
@@ -113,14 +116,116 @@
    inquiry can either be a query vector like [:find ?foo :where [_ :bar ?foo]]
    or a map with {:query [datascript-query]
                   :args  [parameters to use :in query]}
-   Returns the result of the result of the query with the new state"
+   See Datomic's API documentation for more information.
+
+   Returns the result of the query with the new state"
   ([tx-data]
    (data/transact! conn tx-data)
-   @conn)
+   tx-data)
   ([inquiry f & args]
    (let [result (inquire inquiry)]
      (data/transact! conn (apply f result args))
      (inquire inquiry))))
+
+(defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
+
+(defn inject
+  "runs query with provided inputs and associates its result into m
+  under key"
+  [m key query & inputs]
+  (let [result (apply q query inputs)]
+    (assoc m key result)))
+
+;; Pipes are a combination of 3 concepts:
+;; - UNIX pipes
+;; - Haskell's Maybe Monad
+;; - Haskell's IO Monads
+;; Pipes are a sequence of functions executed one after the other with each
+;; function receiving the result of the previous one
+;; Pipes have 3 main purposes:
+;; - allow the combination of sync and async code into a single go loop
+;; - separate effectful code from pure functions
+;; - provide a way to convey errors during the process without silently
+;;   throwing on the background
+;; The problem with normal effectful code is that is it is not possible to
+;; use it without the user-function becoming effectful itself. This leads to
+;; a propagation of impure-functions for every action that the user wants to
+;; perform. With pipes, it is possible to separate the effectful functions from
+;; the pure ones. Furthermore since the input to each function is synchronous
+;; there is no need for glue code in synchronous functions.
+;; Finally, there should be a way to stop a pipe execution in case something goes
+;; wrong. Therefore, pipes are short-circuited if a js/Error is returned by any
+;; function. In that case, the js/Error is returned as the result of the pipe i.e.
+;; it is NOT thrown.
+
+;(defprotocol Pipe*
+;  (unfold [this] "unfold (disassemble) this pipe into its constituents parts recursively"))
+;
+;(defn pipe?
+;  "a pipe should behave just like a callable collection; with the exception of
+;  implementing the Pipe* marker protocol"
+;  [x]
+;  (and (satisfies? cljs.core/IFn x)
+;       (satisfies? cljs.core/ICollection x)
+;       (satisfies? Pipe* x)))
+;
+;;; TODO: allow returning pipes to have dynamic pipe dispatch
+;(defrecord Pipe [sections]
+;  cljs.core/IFn
+;  (-invoke [this request]
+;    (go
+;      (loop [queue     (unfold this)
+;             result    request]
+;        (if (instance? js/Error result) result ;; short-circuit
+;          (let [ff     (peek queue)
+;                rr     (ff result)
+;                rr2    (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
+;            (if (empty? (pop queue)) rr2
+;              (recur (pop queue) rr2)))))))
+;  cljs.core/ICollection
+;  (-conj [coll o] (update coll :sections conj o))
+;  Pipe*
+;  (unfold [this]
+;    (flatten ;; unroll the individual pipes into a bigger one
+;      (for [p (:sections this)]
+;        (if-not (pipe? p) p
+;                          (unfold p))))))
+;
+;(defn pipe
+;  "Takes a set of functions and returns a fn that is the composition of those fns.
+;  The returned fn takes a single argument (request), applies the leftmost of fns to
+;  it, the next fn (left-to-right) to the result, etc (like transducer composition).
+;
+;  Returns a channel which will receive the result of the body when completed
+;
+;  If any function returns an exception, the execution will stop and returns it
+;
+;  Both sync and async functions are accepted"
+;  [f g & more]
+;  (reduce conj (->Pipe nil) (concat [f g] more)))
+
+(defn pipe
+  "Takes a set of functions and returns a fn that is the composition of those fns.
+   The returned fn takes a single argument (request), applies the leftmost of fns to
+   it, the next fn (left-to-right) to the result, etc (like transducer composition).
+
+   Returns a channel which will receive the result of the body when completed
+
+   If any function returns an exception, the execution will stop and returns it
+
+   Both sync and async functions are accepted"
+  [f g & more]
+  (fn [request]
+    (go
+      (loop [stack   (concat [f g] more)
+             result  request]
+        (if (instance? js/Error result) result ;; short-circuit
+          (let [ff     (first stack)
+                rr     (try (ff result) (catch js/Error e e))
+                rr2    (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
+            (if (empty? (rest stack)) rr2
+              (recur (rest stack) rr2))))))))
+
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
