@@ -58,13 +58,11 @@
 
 (defn init!
   ([schema init-data]
-   (rtx/unlisten! conn)
    (let [result (data/create-conn schema)]
      (data/transact! result init-data) ;; populates the DataScript in-memory database
      (rtx/listen! result)
      (set! conn result)))
   ([schema]
-   (rtx/unlisten! conn)
    (set! conn (data/conn-from-datoms (data/datoms @conn :eavt) schema))
    (rtx/listen! conn)))
 
