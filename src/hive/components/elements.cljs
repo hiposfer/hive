@@ -7,7 +7,8 @@
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
             [hive.rework.util :as tool]
-            [cljs.core.async :as async]))
+            [cljs.core.async :as async]
+            [clojure.string :as str]))
 
 (defn move-to
   [user-id city-name]
@@ -72,7 +73,7 @@
                ;tool/log
                #(rework/transact! queries/user-id update-places (:features %))))
 
-(defn targets-list
+(defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
@@ -81,8 +82,11 @@
      ^{:key (:id target)}
      [:> ListItem ;{:on-press #(router/dispatch [:map/directions target :user/goal])}
       [:> Body
-       [:> Text (:title target)]
-       [:> Text {:note true :style {:color "gray"}} (:subtitle target)]]])])
+       [:> Text (:text target)]
+       [:> Text {:note true :style {:color "gray"}}
+                (str/join ", " (map :text (:context target)))]]])])
 
 ;(go (async/<! (autocomplete! {::geocoding/query "Cartagena, Colombia"
 ;                              ::geocoding/mode  "mapbox.places"]]])])
+
+;(rework/transact! queries/user-db-index (fn [id] [[:db.fn/retractAttribute id :user/places]]))

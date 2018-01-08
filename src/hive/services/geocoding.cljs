@@ -7,17 +7,17 @@
             [hive.rework.util :as tool]))
 
 (s/def ::coordinate (s/tuple number? number?))
-(s/def ::query (s/or :location string?
+f(s/def ::query (s/or :location (s/and string? not-empty)
                      :coordinate ::coordinate))
 (s/def ::mode #{"mapbox.places" "mapbox.places-permanent"})
-(s/def ::country string?)
+(s/def ::country (s/and string? not-empty))
 (s/def ::proximity ::coordinate)
 (s/def ::types string?)
 (s/def ::autocomplete boolean?)
 (s/def ::bbox (s/tuple number? number? number? number?))
 (s/def ::limit number?)
-(s/def ::language string?)
-(s/def ::access_token string?)
+(s/def ::language (s/and string? not-empty))
+(s/def ::access_token (s/and string? not-empty))
 
 (s/def ::request (s/keys :req [::query ::mode ::access_token]
                          :opt [::country ::proximity ::types
@@ -46,6 +46,7 @@
   https://www.mapbox.com/api-documentation/#request-format"
   (rework/pipe #(rework/inject % ::access_token queries/mapbox-token)
                #(assoc % ::autocomplete true)
+               #(tool/validate ::request ::invalid-input %)
                autocomplete
                http/request!
                tool/keywordize))

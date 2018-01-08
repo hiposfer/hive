@@ -1,6 +1,7 @@
 (ns hive.rework.util
   (:require [cljs.core.async :refer-macros [go go-loop]]
-            [cljs.core.async :as async]))
+            [cljs.core.async :as async]
+            [clojure.spec.alpha :as s]))
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
 
@@ -51,3 +52,12 @@
   [o]
   (do (cljs.pprint/pprint o)
       o))
+
+(defn validate
+  "validates the request against the provided spec. Returns the request if valid
+  or an ex-info with cause otherwise."
+  [spec cause request]
+  (if (s/valid? spec request) request
+    (ex-info (s/explain-str spec request)
+             (s/explain-data spec request)
+             cause)))
