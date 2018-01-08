@@ -70,3 +70,5 @@ crashlytics-build.properties
 fabric.properties
 /.idea/
 /assets/init.json
+
+.lan-ip
