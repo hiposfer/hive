@@ -9,7 +9,8 @@
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
-            [hive.rework.util :as tool]))
+            [hive.rework.util :as tool]
+            [hive.queries :as queries]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -75,7 +76,7 @@
   "same as datascript/pull but returns a ratom which will be updated
   every time that the value of conn changes"
   [selector eid]
-  (r/track rtx/pull* (::ratom @conn) selector eid))
+  (r/track rtx/pull* (::rtx/ratom @conn) selector eid))
 
 (defn entity
   "same as datascript/entity but uses the app state as connection"
@@ -86,7 +87,7 @@
   "same as datascript/entity but returns a ratom which will be updated
   every time that the value of conn changes"
   [eid]
-  (r/track rtx/entity* (::ratom @conn) eid))
+  (r/track rtx/entity* (::rtx/ratom @conn) eid))
 
 (defn q
   "same as datascript/q but uses the app state as connection"
@@ -98,8 +99,10 @@
   The value of the ratom will be automatically updated whenever
   a change is detected"
   [query & inputs]
-  (r/track rtx/q* query (::ratom @conn) inputs))
+  (r/track rtx/q* query (::rtx/ratom @conn) inputs))
 
+;; TODO: is this even needed? or is it handle by Datascript like in Datomic
+;; api?
 (defn- inquire
   [inquiry]
   (if (vector? inquiry)
