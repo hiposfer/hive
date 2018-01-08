@@ -9,7 +9,7 @@
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
-            [cljs.core.async :as async]))
+            [hive.rework.util :as tool]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -56,7 +56,7 @@
 ;; Holds the current state of the complete app
 (defonce ^:private conn (data/create-conn))
 
-(defn reset!
+(defn init!
   ([schema init-data]
    (rtx/unlisten! conn)
    (let [result (data/create-conn schema)]
@@ -127,8 +127,6 @@
      (data/transact! conn (apply f result args))
      (inquire inquiry))))
 
-(defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
-
 (defn inject
   "runs query with provided inputs and associates its result into m
   under key"
@@ -158,38 +156,6 @@
 ;; function. In that case, the js/Error is returned as the result of the pipe i.e.
 ;; it is NOT thrown.
 
-(defprotocol Pipe*
-  (unfold [this] "unfold (disassemble) this pipe into its constituents parts recursively"))
-
-(defn pipe?
-  "a pipe should behave just like a callable collection; with the exception of
-  implementing the Pipe* marker protocol"
-  [x]
-  (and (satisfies? cljs.core/IFn x)
-       (satisfies? cljs.core/ICollection x)
-       (satisfies? Pipe* x)))
-
-;; TODO: allow returning pipes to have dynamic pipe dispatch
-(defrecord Pipe [sections]
-  cljs.core/IFn
-  (-invoke [this request]
-    (go
-      (loop [queue     (unfold this)
-             result    request]
-        (if (instance? js/Error result) result ;; short-circuit
-          (let [ff     (peek queue)
-                rr     (ff result)
-                rr2    (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
-            (if (empty? (pop queue)) rr2
-              (recur (pop queue) rr2)))))))
-  cljs.core/ICollection
-  (-conj [coll o] (update coll :sections conj o))
-  Pipe*
-  (unfold [this]
-    (flatten ;; unroll the individual pipes into a bigger one
-      (for [p (:sections this)]
-        (if-not (pipe? p) p
-                          (unfold p))))))
 
 (defn pipe
   "Takes a set of functions and returns a fn that is the composition of those fns.
@@ -202,7 +168,18 @@
 
   Both sync and async functions are accepted"
   [f g & more]
-  (reduce conj (->Pipe nil) (concat [f g] more)))
+  (reduce conj (tool/->Pipe nil) (concat [f g] more)))
+
+(defn- throw-err
+  [e]
+  (if (instance? js/Error e) (throw e)
+    e))
+
+#?(:clj
+   (defmacro <?
+     "Like <! but throws errors."
+     [ch]
+     `(throw-err (cljs.core.async/<! ~ch))))
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
