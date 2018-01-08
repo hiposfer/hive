@@ -1,7 +1,7 @@
 (ns hive.components.elements
   (:require [cljs.core.async :refer-macros [go go-loop]]
-            [hive.components.core :refer [View Button Icon Text ListItem Body
-                                          Container Content Card CardItem Image]]
+            [hive.components.core :refer [View Button Icon Text ListItem ListBase
+                                          Body Container Content Card CardItem Image]]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
@@ -72,17 +72,17 @@
                ;tool/log
                #(rework/transact! queries/user-id update-places (:features %))))
 
-;(defn targets-list
-;  "list of items resulting from a geocode search, displayed to the user to choose his
-;  destination"
-;  [features]
-;  [list-base
-;   (for [target features]
-;     ^{:key (:id target)}
-;     [list-item ;{:on-press #(router/dispatch [:map/directions target :user/goal])}
-;      [body
-;       [text (:title target)]
-;       [text {:note true :style {:color "gray"}} (:subtitle target)]]])])
+(defn targets-list
+  "list of items resulting from a geocode search, displayed to the user to choose his
+  destination"
+  [features]
+  [:> ListBase
+   (for [target features]
+     ^{:key (:id target)}
+     [:> ListItem ;{:on-press #(router/dispatch [:map/directions target :user/goal])}
+      [:> Body
+       [:> Text (:title target)]
+       [:> Text {:note true :style {:color "gray"}} (:subtitle target)]]])])
 
-;(go (async/<! (autocomplete! {::query "Cartagena, Colombia"
-;                              ::mode  "mapbox.places")))
+;(go (async/<! (autocomplete! {::geocoding/query "Cartagena, Colombia"
+;                              ::geocoding/mode  "mapbox.places"]]])])
