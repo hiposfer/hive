@@ -1,6 +1,5 @@
 (ns hive.services.http
-  (:require [cljs.core.async :refer-macros [go go-loop]]
-            [cljs.core.async :as async]
+  (:require [cljs.core.async :as async]
             [cljs.spec.alpha :as s]))
 
 (s/def ::json string?)
@@ -11,6 +10,8 @@
 
 (def http-types #{::json ::text ::raw})
 
+
+;; TODO: make raw, json and text be pipes
 (defn request!
   "takes an http channel and a request shaped according to
   spec's ::request and executes it asynchronously. Extra http

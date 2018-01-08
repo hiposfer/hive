@@ -23,6 +23,6 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (rework/reset! state/schema state/defaults)
+  (rework/init! state/schema state/defaults)
   (.registerComponent fl/app-registry "main"
                       #(r/reactify-component root-ui)))

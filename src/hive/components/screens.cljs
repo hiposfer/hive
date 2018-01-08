@@ -30,12 +30,12 @@
 
 (defn home
   [props]
-  (let [city      @(rework/q! queries/user-city)
-        [lon lat] (:coordinates (:geometry city))]
+  (let [];city      @(rework/q! queries/user-city)
+        ;[lon lat] (:coordinates (:geometry city))]
      [:> Container {}
       [search-bar props]
-      [:> MapView {:initialRegion {:latitude lat
-                                   :longitude lon
+      [:> MapView {:initialRegion {:latitude 0;lat
+                                   :longitude 0;lon
                                    :latitudeDelta 0.02,
                                    :longitudeDelta 0.02}
                    :showsUserLocation true
