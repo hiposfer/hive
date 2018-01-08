@@ -1,22 +1,13 @@
 (ns hive.components.elements
-  (:require [hive.components.core :refer [View Button Icon Text ListItem Body
+  (:require [cljs.core.async :refer-macros [go go-loop]]
+            [hive.components.core :refer [View Button Icon Text ListItem Body
                                           Container Content Card CardItem Image]]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
-            [hive.foreigns :as fl]))
-
-
-;(defn targets-list
-;  "list of items resulting from a geocode search, displayed to the user to choose his
-;  destination"
-;  [features]
-;  [list-base
-;   (for [target features]
-;     ^{:key (:id target)}
-;     [list-item ;{:on-press #(router/dispatch [:map/directions target :user/goal])}
-;      [body
-;       [text (:title target)]
-;       [text {:note true :style {:color "gray"}} (:subtitle target)]]])])
+            [hive.foreigns :as fl]
+            [hive.services.geocoding :as geocoding]
+            [hive.rework.util :as tool]
+            [cljs.core.async :as async]))
 
 (defn move-to
   [user-id city-name]
@@ -66,3 +57,32 @@
          [:> Text "ERROR: we couldn't find your current position. This might be due to:"]
          [:> Text {:style {:textAlign "left"}} "\u2022 no gps connection enabled"]
          [:> Text "\u2022 bad signal reception"]]]]]]))
+
+
+(defn- update-places
+  "transact the geocoding result under the user id"
+  [id features]
+  [{:user/id id
+    :user/places features}])
+
+(def autocomplete!
+  "request an autocomplete geocoding result from mapbox and adds its result to the
+   app state"
+  (rework/pipe geocoding/autocomplete!
+               ;tool/log
+               #(rework/transact! queries/user-id update-places (:features %))))
+
+;(defn targets-list
+;  "list of items resulting from a geocode search, displayed to the user to choose his
+;  destination"
+;  [features]
+;  [list-base
+;   (for [target features]
+;     ^{:key (:id target)}
+;     [list-item ;{:on-press #(router/dispatch [:map/directions target :user/goal])}
+;      [body
+;       [text (:title target)]
+;       [text {:note true :style {:color "gray"}} (:subtitle target)]]])])
+
+;(go (async/<! (autocomplete! {::query "Cartagena, Colombia"
+;                              ::mode  "mapbox.places")))

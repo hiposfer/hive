@@ -36,3 +36,18 @@
       (for [p (:sections this)]
         (if-not (pipe? p) p
           (unfold p))))))
+
+(defn with-ns
+  "modify a map keys to be namespaced with ns"
+  [ns m]
+  (zipmap (map #(keyword ns %) (keys m))
+          (vals m)))
+
+(defn keywordize
+  [o]
+  (js->clj o :keywordize-keys true))
+
+(defn log
+  [o]
+  (do (cljs.pprint/pprint o)
+      o))

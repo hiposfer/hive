@@ -191,3 +191,5 @@
 ;
 ;(q '[:find [(pull ?entity [*]) ...]
 ;     :where [?entity :city/name ?name]))
+
+;conn

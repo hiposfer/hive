@@ -17,7 +17,7 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn search-bar
+(defn- search-bar
   [props]
   (let [navigate (:navigate (:navigation props))]
     [:> Header {:searchBar true :rounded true}
@@ -28,18 +28,22 @@
       [:> Input {:placeholder "Where would you like to go?"}]
       [:> Icon {:name "ios-search"}]]]))
 
-(defn home
-  [props]
+(defn- home-content
+  []
   (let [city      @(rework/q! queries/user-city)
         [lon lat]  (:coordinates (:city/geometry city))]
-     [:> Container {}
-      [search-bar props]
-      [:> MapView {:initialRegion {:latitude lat
-                                   :longitude lon
-                                   :latitudeDelta 0.02,
-                                   :longitudeDelta 0.02}
-                   :showsUserLocation true
-                   :style {:flex 1}}]]))
+    [:> MapView {:initialRegion {:latitude lat
+                                 :longitude lon
+                                 :latitudeDelta 0.02,
+                                 :longitudeDelta 0.02}
+                 :showsUserLocation true
+                 :style {:flex 1}}]))
+
+(defn home
+  [props]
+  [:> Container {}
+   [search-bar props]
+   [home-content]])
 
 (defn settings
   [props]

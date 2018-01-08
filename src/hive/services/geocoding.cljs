@@ -1,11 +1,10 @@
 (ns hive.services.geocoding
-  (:require [cljs.core.async :refer-macros [go go-loop]]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [cljs.spec.alpha :as s]
             [hive.services.http :as http]
-            [cljs.core.async :as async]
             [hive.rework.core :as rework]
-            [hive.queries :as queries]))
+            [hive.queries :as queries]
+            [hive.rework.util :as tool]))
 
 (s/def ::coordinate (s/tuple number? number?))
 (s/def ::query (s/or :location string?
@@ -37,7 +36,6 @@
                 (str/replace "{params}" (str/join "&" params)))]
     {::http/json URL}))
 
-(s/fdef autocomplete :args (s/cat :request ::request))
 
 (def autocomplete!
   "takes an autocomplete geocoding channel and a request shaped
@@ -48,8 +46,8 @@
   https://www.mapbox.com/api-documentation/#request-format"
   (rework/pipe #(rework/inject % ::access_token queries/mapbox-token)
                #(assoc % ::autocomplete true)
-                autocomplete
-                http/request!))
+               autocomplete
+               http/request!
+               tool/keywordize))
 
-;(go (println (async/<! (autocomplete! {::query "bruchfeldplatz 7a"
-;                                       ::mode "mapbox.places"))
+(s/fdef autocomplete :args (s/cat :request ::request))
