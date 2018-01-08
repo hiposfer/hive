@@ -2,7 +2,10 @@
   (:require [cljs.core.async :refer-macros [go go-loop]]
             [clojure.string :as str]
             [cljs.spec.alpha :as s]
-            [hive.services.http :as http]))
+            [hive.services.http :as http]
+            [cljs.core.async :as async]
+            [hive.rework.core :as rework]
+            [hive.queries :as queries]))
 
 (s/def ::coordinate (s/tuple number? number?))
 (s/def ::query (s/or :location string?
@@ -23,26 +26,30 @@
 
 (def template "https://api.mapbox.com/geocoding/v5/{mode}/{query}.json?{params}")
 
-(defn autocomplete!
+(defn- autocomplete
+  "takes a map with the items required by ::request and replaces their values into
+   the Mapbox URL template. Returns the full url to use with an http service"
+  [request]
+  (let [params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
+                     (dissoc request ::query ::mode))
+        URL (-> (str/replace template "{mode}" (::mode request))
+                (str/replace "{query}" (js/encodeURIComponent (::query request)))
+                (str/replace "{params}" (str/join "&" params)))]
+    {::http/json URL}))
+
+(s/fdef autocomplete :args (s/cat :request ::request))
+
+(def autocomplete!
   "takes an autocomplete geocoding channel and a request shaped
    according to MapBox geocode API v5 and executes it asynchronously.
    Returns a channel with the result or an exception. Throws on invalid
    request
 
   https://www.mapbox.com/api-documentation/#request-format"
-  [request]
-  (let [request (assoc request ::autocomplete true)
-        params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
-                     (dissoc request ::query ::mode))
-        URL (-> (str/replace template "{mode}" (::mode request))
-                (str/replace "{query}" (js/encodeURIComponent (::query request)))
-                (str/replace "{params}" (str/join "&" params)))]
-    (http/request! {::http/json URL})))
+  (rework/pipe #(rework/inject % ::access_token queries/mapbox-token)
+               #(assoc % ::autocomplete true)
+                autocomplete
+                http/request!))
 
-(s/fdef autocomplete! :args (s/cat :request ::request))
-
-;(let [success (async/chan)]
-;  (go (rework/using ::service autocomplete! {::query "bruchfeldplatz 7a"
-;                                             ::http/success success
-;                                             ::mode "mapbox.places"})
-;      (println (async/<! success))))
+;(go (println (async/<! (autocomplete! {::query "bruchfeldplatz 7a"
+;                                       ::mode "mapbox.places"))

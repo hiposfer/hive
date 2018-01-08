@@ -11,5 +11,8 @@
                :where [_ :user/id ?uid]])
 
 ;; TODO: get the actual route
-(def route '[:find city?
+(def route '[:find ?city
              :where [_ :user/city ?city]])
+
+(def mapbox-token '[:find ?token .
+                    :where [_ :token/mapbox ?token]])

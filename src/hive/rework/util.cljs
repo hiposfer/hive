@@ -20,14 +20,14 @@
   cljs.core/IFn
   (-invoke [this request]
     (go
-      (loop [queue     (unfold this)
-             result    request]
-        (if (instance? js/Error result) result ;; short-circuit
-          (let [ff     (peek queue)
-                rr     (ff result)
-                rr2    (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
-            (if (empty? (pop queue)) rr2
-                                     (recur (pop queue) rr2)))))))
+      (loop [queue  (unfold this)
+             value  request]
+        (if (instance? js/Error value) value ;; short-circuit
+          (let [f   (first queue)
+                rr  (f value)
+                rr2 (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
+            (if (empty? (rest queue)) rr2
+              (recur (rest queue) rr2)))))))
   cljs.core/ICollection
   (-conj [coll o] (update coll :sections conj o))
   Pipe*
@@ -35,5 +35,4 @@
     (flatten ;; unroll the individual pipes into a bigger one
       (for [p (:sections this)]
         (if-not (pipe? p) p
-                          (unfold p))))))
-
+          (unfold p))))))

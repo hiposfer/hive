@@ -169,7 +169,7 @@
 
   Both sync and async functions are accepted"
   [f g & more]
-  (reduce conj (tool/->Pipe nil) (concat [f g] more)))
+  (tool/->Pipe (concat [f g] more)))
 
 (defn- throw-err
   [e]
