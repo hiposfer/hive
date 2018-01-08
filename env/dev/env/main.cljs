@@ -12,7 +12,9 @@
 ;; Setting *explain-out* does not work correctly in ClojureScript versions prior
 ;; to 1.9.562 due to differences in explain-data
 (set! s/*explain-out* expound/printer)
-(st/instrument)
+
+;; TODO: https://github.com/seantempesta/cljs-react-navigation/issues/7
+;;(st/instrument)
 (core/init!)
 
 ;; initialization required by fighwheel bridge to play well with
