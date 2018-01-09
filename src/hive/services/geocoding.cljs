@@ -30,8 +30,7 @@
   "takes a map with the items required by ::request and replaces their values into
    the Mapbox URL template. Returns the full url to use with an http service"
   [request]
-  (let [request (rework/inject request ::access_token queries/mapbox-token)
-        request (assoc request ::autocomplete true
+  (let [request (assoc request ::autocomplete true
                                ::mode  "mapbox.places")
         params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
                      (dissoc request ::query ::mode))
@@ -46,8 +45,9 @@
    Returns a channel with the result or an exception
 
   https://www.mapbox.com/api-documentation/#request-format"
-  (rework/pipe autocomplete
-               http/request!
+  (rework/pipe #(rework/inject % ::access_token queries/mapbox-token)
+               autocomplete
+               http/json!
                tool/keywordize))
 
 (s/fdef autocomplete :args (s/cat :request ::request))

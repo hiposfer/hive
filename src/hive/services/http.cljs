@@ -1,18 +1,14 @@
 (ns hive.services.http
   (:require [cljs.core.async :as async]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [hive.rework.core :as rework]
+            [hive.rework.util :as tool]))
 
-(s/def ::json string?)
-(s/def ::raw string?)
-(s/def ::text string?)
-(s/def ::request (s/keys :req [(or ::json ::raw ::text)]
-                         :opt [::error]))
+(s/def ::init (s/map-of keyword? any?))
+(s/def ::url (s/and string? not-empty))
+(s/def ::request (s/cat :URL ::url :options (s/? ::init)))
 
-(def http-types #{::json ::text ::raw})
-
-
-;; TODO: make raw, json and text be pipes
-(defn request!
+(defn- request!
   "takes an http channel and a request shaped according to
   spec's ::request and executes it asynchronously. Extra http
   properties can be passed as per fetch documentation.
@@ -20,19 +16,33 @@
   or a Promise if ::http/raw is chosen. Throws on invalid request
 
   https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch"
-  [request]
-  (let [result    (async/chan)
-        command   (select-keys request http-types)
-        [res url] (first command)
-        promise   (-> (js/fetch url (clj->js request))
-                      (.catch #(async/put! result %)))
-        report    #(async/put! result %)]
-    (case res
-      ::raw  (-> promise (.then report))
-      ::json (-> promise (.then #(.json %))
-                         (.then report))
-      ::text (-> promise (.then #(.text %))
-                         (.then report)))
+  [[url init]]
+  (js/fetch url (clj->js init)))
+
+(defn- json
+  [promise]
+  (let [result (async/chan)]
+    (-> promise
+        (.then #(.json %))
+        (.then #(async/put! result %))
+        (.catch #(async/put! result (ex-info "network error" %
+                                             ::network-error))))
     result))
+
+(defn- text
+  [promise]
+  (let [result (async/chan)]
+    (-> promise
+        (.then #(.text %))
+        (.then #(async/put! result %))
+        (.catch #(async/put! result (ex-info "network error" %
+                                             ::network-error))))
+    result))
+
+(def json! (rework/pipe request!
+                        json))
+
+(def text! (rework/pipe request!
+                        text))
 
 (s/fdef request! :args (s/cat :request ::request))
