@@ -1,13 +1,13 @@
 (ns hive.components.screens
-  (:require [hive.components.core :refer [Container Header Item Image
-                                          Text Icon Input MapView Body
+  (:require [hive.components.core :refer [Container Header Text Icon MapView Body
                                           Content Button Title Card
-                                          CardItem]]
+                                          CardItem MapMarker]]
             [hive.components.elements :as els]
             [hive.queries :as queries]
             [hive.rework.core :as rework]
             [hive.services.geocoding :as geocoding]
-            [cljs.core.async :refer-macros [go go-loop]]))
+            [cljs.core.async :refer-macros [go go-loop]]
+            [clojure.string :as str]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -18,39 +18,28 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-;; todo: handle autocomplete errors
-(defn- search-bar
-  [props]
-  (let [navigate (:navigate (:navigation props))]
-    [:> Header {:searchBar true :rounded true}
-     [:> Item {}
-      [:> Button {:transparent true :full true
-                  :on-press #(navigate "DrawerToggle")}
-       [:> Icon {:name "ios-menu" :transparent true}]]
-      [:> Input {:placeholder "Where would you like to go?"
-                 :onChangeText #(els/autocomplete! {::geocoding/query %
-                                                    ::geocoding/mode  "mapbox.places"})}]
-      [:> Icon {:name "ios-search"}]]]))
-
-(defn- home-content
-  []
-  (let [city      @(rework/q! queries/user-city)
-        features  @(rework/q! queries/user-places)
-        [lon lat]  (:coordinates (:city/geometry city))]
-    (if (empty? features)
-      [:> MapView {:initialRegion {:latitude lat
-                                   :longitude lon
-                                   :latitudeDelta 0.02,
-                                   :longitudeDelta 0.02}
-                   :showsUserLocation true
-                   :style {:flex 1}}]
-      [els/places features])))
+(defn latlng
+  [coordinates]
+  {:latitude (second coordinates) :longitude (first coordinates)})
 
 (defn home
   [props]
-  [:> Container {}
-   [search-bar props]
-   [home-content]])
+  (let [city      @(rework/q! queries/user-city)
+        features  @(rework/q! queries/user-places)
+        goal      @(rework/q! queries/user-goal)]
+    [:> Container {}
+     [els/search-bar props]
+     (if (empty? features)
+       [:> MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry city)))
+                                          {:latitudeDelta 0.02,
+                                           :longitudeDelta 0.02})
+                    :showsUserLocation true
+                    :style {:flex 1}}
+        (when-not (nil? goal)
+          [:> MapMarker {:title       (:text goal)
+                         :coordinate  (latlng (:coordinates (:geometry goal)))
+                         :description (str/join ", " (map :text (:context goal)))}])]
+       [els/places features])]))
 
 (defn settings
   [props]

@@ -1,7 +1,8 @@
 (ns hive.components.elements
   (:require [cljs.core.async :refer-macros [go go-loop]]
             [hive.components.core :refer [View Button Icon Text ListItem ListBase
-                                          Body Container Content Card CardItem Image]]
+                                          Body Container Content Card CardItem Image
+                                          Header Item Input]]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
@@ -70,8 +71,26 @@
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   (rework/pipe geocoding/autocomplete!
-               ;tool/log
                #(rework/transact! queries/user-id update-places (:features %))))
+
+;; todo: handle autocomplete errors
+(defn- search-bar
+  [props]
+  (let [navigate (:navigate (:navigation props))]
+    [:> Header {:searchBar true :rounded true}
+     [:> Item {}
+      [:> Button {:transparent true :full true
+                  :on-press #(navigate "DrawerToggle")}
+       [:> Icon {:name "ios-menu" :transparent true}]]
+      [:> Input {:placeholder "Where would you like to go?"
+                 :onChangeText #(autocomplete! {::geocoding/query %
+                                                ::geocoding/mode  "mapbox.places"})}]
+      [:> Icon {:name "ios-search"}]]]))
+
+(defn set-goal
+  [id feature]
+  [{:user/id id :user/goal feature}
+   [:db.fn/retractAttribute [:user/id id] :user/places]])
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
@@ -80,13 +99,11 @@
   [:> ListBase
    (for [target features]
      ^{:key (:id target)}
-     [:> ListItem ;{:on-press #(router/dispatch [:map/directions target :user/goal])}
+     [:> ListItem {:on-press #(rework/transact! queries/user-id set-goal target)}
       [:> Body
        [:> Text (:text target)]
        [:> Text {:note true :style {:color "gray"}}
-                (str/join ", " (map :text (:context target)))]]])])
+        (str/join ", " (map :text (:context target)))]]])])
 
 ;(go (async/<! (autocomplete! {::geocoding/query "Cartagena, Colombia"
 ;                              ::geocoding/mode  "mapbox.places"]]])])
-
-;(rework/transact! queries/user-db-index (fn [id] [[:db.fn/retractAttribute id :user/places]]))

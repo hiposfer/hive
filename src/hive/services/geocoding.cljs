@@ -5,18 +5,18 @@
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.rework.util :as tool]))
-
+(s/def ::input (s/and string? not-empty))
 (s/def ::coordinate (s/tuple number? number?))
-f(s/def ::query (s/or :location (s/and string? not-empty)
+(s/def ::query (s/or :location ::input
                      :coordinate ::coordinate))
 (s/def ::mode #{"mapbox.places" "mapbox.places-permanent"})
-(s/def ::country (s/and string? not-empty))
+(s/def ::country ::input)
 (s/def ::proximity ::coordinate)
 (s/def ::types string?)
 (s/def ::autocomplete boolean?)
 (s/def ::bbox (s/tuple number? number? number? number?))
 (s/def ::limit number?)
-(s/def ::language (s/and string? not-empty))
+(s/def ::language ::input)
 (s/def ::access_token (s/and string? not-empty))
 
 (s/def ::request (s/keys :req [::query ::mode ::access_token]

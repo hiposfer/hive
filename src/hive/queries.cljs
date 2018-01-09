@@ -10,9 +10,6 @@
 (def user-id '[:find ?uid .
                :where [_ :user/id ?uid]])
 
-(def user-db-index '[:find ?id .
-                     :where [?id :user/id]])
-
 ;; TODO: get the actual route
 (def route '[:find ?city
              :where [_ :user/city ?city]])
@@ -23,3 +20,7 @@
 (def user-places '[:find ?places .
                    :where [?id :user/id]
                           [?id :user/places ?places]])
+
+(def user-goal '[:find ?goal .
+                 :where [?id :user/id]
+                        [?id :user/goal ?goal]])

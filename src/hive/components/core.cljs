@@ -28,3 +28,4 @@
 (def Title     (.-Title fl/NativeBase))
 
 (def MapView   (.-MapView fl/Expo))
+(def MapMarker (.-Marker MapView))
