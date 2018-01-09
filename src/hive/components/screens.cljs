@@ -1,6 +1,6 @@
 (ns hive.components.screens
   (:require [hive.components.core :refer [Container Header Text Icon MapView Body
-                                          Content Button Title Card
+                                          Content Button Title Card MapPolyline
                                           CardItem MapMarker View]]
             [hive.components.elements :as els]
             [hive.queries :as queries]
@@ -24,7 +24,7 @@
 (defn directions
   "basic navigation directions"
   [props]
-  (let [route        @(rework/q! queries/route) ;; todo
+  (let [route        @(rework/q! queries/user-route)
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
@@ -55,7 +55,8 @@
   [props]
   (let [city      @(rework/q! queries/user-city)
         features  @(rework/q! queries/user-places)
-        goal      @(rework/q! queries/user-goal)]
+        goal      @(rework/q! queries/user-goal)
+        route     @(rework/q! queries/user-route)]
     [:> Container {}
      [els/search-bar props]
      (if (empty? features)
@@ -64,11 +65,16 @@
                                            {:latitudeDelta 0.02,
                                             :longitudeDelta 0.02})
                      :showsUserLocation true :style {:flex 1}}
-          (when-not (nil? goal)
+          (when goal
             [:> MapMarker {:title       (:text goal)
                            :coordinate  (latlng (:coordinates (:geometry goal)))
-                           :description (str/join ", " (map :text (:context goal)))}])]
-        (when-not (nil? goal)
+                           :description (str/join ", " (map :text (:context goal)))}])
+          (when route
+            (let [path (map latlng (:coordinates (:geometry (first (:routes route)))))]
+              [:> MapPolyline {:coordinates path
+                               :strokeColor "#3bb2d0" ;; light
+                               :strokeWidth 4}]))]
+        (when goal
           [:> Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> Icon {:name "information-circle" :transparent true}]
            [:> Text (:text goal)]])]

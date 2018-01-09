@@ -10,7 +10,8 @@
             [cljs.core.async :as async]
             [clojure.string :as str]
             [hive.rework.util :as tool]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [hive.services.directions :as directions]))
 
 (defn change-city
   [data]
@@ -93,12 +94,31 @@
   "set feature as the user goal and removes the :user/places attributes from the app
   state"
   [data]
-  [{:user/id (:user/id data) :user/goal (dissoc data :user/id)}
+  [{:user/id (:user/id data)
+    :user/goal (dissoc data :user/id)}
    [:db.fn/retractAttribute [:user/id (:user/id data)] :user/places]])
 
-(def set-goal! (rework/pipe #(rework/inject % :user/id queries/user-id)
-                            set-goal
-                            rework/transact!))
+(defn- prepare-path
+  [goal]
+  {::directions/coordinates
+   (cons [8.645373 50.087545] [(:coordinates (:geometry goal))])})
+
+(defn- set-path
+  [path]
+  [{:user/id (:user/id path)
+    :user/directions (dissoc path :user/id)}])
+
+(def update-path! (rework/pipe prepare-path
+                               directions/request!
+                               #(rework/inject % :user/id queries/user-id)
+                               set-path
+                               rework/transact!))
+
+(def update-places! (rework/pipe #(rework/inject % :user/id queries/user-id)
+                                 set-goal
+                                 rework/transact!))
+
+(def update-map! (juxt update-places! update-path!))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
@@ -107,7 +127,7 @@
   [:> ListBase
    (for [target features]
      ^{:key (:id target)}
-     [:> ListItem {:on-press #(set-goal! target)}
+     [:> ListItem {:on-press #(update-map! target)}
       [:> Body
        [:> Text (:text target)]
        [:> Text {:note true :style {:color "gray"}}

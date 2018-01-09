@@ -29,3 +29,4 @@
 
 (def MapView   (.-MapView fl/Expo))
 (def MapMarker (.-Marker MapView))
+(def MapPolyline (.-Polyline MapView))
