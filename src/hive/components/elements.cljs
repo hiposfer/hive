@@ -94,7 +94,7 @@
   state"
   [data]
   [{:user/id (:user/id data) :user/goal (dissoc data :user/id)}
-   [:db.fn/retractAttribute [:user/id (:user/id data) :user/places]]])
+   [:db.fn/retractAttribute [:user/id (:user/id data)] :user/places]])
 
 (def set-goal! (rework/pipe #(rework/inject % :user/id queries/user-id)
                             set-goal
