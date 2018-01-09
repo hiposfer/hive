@@ -37,7 +37,7 @@
         URL (-> (str/replace template "{mode}" (::mode request))
                 (str/replace "{query}" (js/encodeURIComponent (::query request)))
                 (str/replace "{params}" (str/join "&" params)))]
-    {::http/json URL}))
+    [URL]))
 
 (def autocomplete!
   "takes an autocomplete geocoding channel and a request shaped

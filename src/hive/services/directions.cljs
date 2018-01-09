@@ -37,7 +37,7 @@
         URL (-> (str/replace template "{profile}" (::profile request))
                 (str/replace "{coordinates}" (js/encodeURIComponent (::coordinates request)))
                 (str/replace "{params}" (str/join "&" params)))]
-    {::http/json URL}))
+    [URL]))
 
 (def request!
   "takes an autocomplete geocoding channel and a request shaped
