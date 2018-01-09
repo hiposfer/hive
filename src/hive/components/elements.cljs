@@ -12,15 +12,18 @@
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]))
 
-(defn move-to
-  [user-id city]
-  [{:user/id user-id
-    :user/city [:city/name (:city/name city)]}])
+(defn change-city
+  [data]
+  [{:user/id (:user/id data)
+    :user/city [:city/name (:city/name data)]}])
 
+(def move-to! (rework/pipe #(rework/inject % :user/id queries/user-id)
+                           change-city
+                           rework/transact!))
 (defn city-selector
   [city props]
   ^{:key (:city/name city)}
-   [:> ListItem {:on-press #(do (rework/transact! queries/user-id move-to city)
+   [:> ListItem {:on-press #(do (move-to! city)
                                 ((:navigate (:navigation props)) "Home"))}
      [:> Body {}
        [:> Text (:city/name city)]
@@ -60,16 +63,18 @@
 
 (defn- update-places
   "transact the geocoding result under the user id"
-  [id features]
-  [{:user/id id
-    :user/places features}])
+  [data]
+  [{:user/id (:user/id data)
+    :user/places (:features data)}])
 
 (def autocomplete!
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   (rework/pipe #(tool/validate (s/keys :req [::geocoding/query]) % ::invalid-input)
                geocoding/autocomplete!
-               #(rework/transact! queries/user-id update-places (:features %))))
+               #(rework/inject % :user/id queries/user-id)
+               update-places
+               rework/transact!))
 
 ;; todo: handle autocomplete errors
 (defn- search-bar
@@ -87,9 +92,13 @@
 (defn- set-goal
   "set feature as the user goal and removes the :user/places attributes from the app
   state"
-  [id feature]
-  [{:user/id id :user/goal feature}
-   [:db.fn/retractAttribute [:user/id id] :user/places]])
+  [data]
+  [{:user/id (:user/id data) :user/goal (dissoc data :user/id)}
+   [:db.fn/retractAttribute [:user/id (:user/id data) :user/places]]])
+
+(def set-goal! (rework/pipe #(rework/inject % :user/id queries/user-id)
+                            set-goal
+                            rework/transact!))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
@@ -98,7 +107,7 @@
   [:> ListBase
    (for [target features]
      ^{:key (:id target)}
-     [:> ListItem {:on-press #(rework/transact! queries/user-id set-goal target)}
+     [:> ListItem {:on-press #(set-goal! target)}
       [:> Body
        [:> Text (:text target)]
        [:> Text {:note true :style {:color "gray"}}

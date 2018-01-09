@@ -71,7 +71,7 @@
         (when-not (nil? goal)
           [:> Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> Icon {:name "information-circle" :transparent true}]
-           [:> Text (:place_name goal)]])]
+           [:> Text (:text goal)]])]
        [els/places features])]))
 
 (defn settings

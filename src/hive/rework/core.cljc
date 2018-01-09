@@ -101,16 +101,6 @@
   [query & inputs]
   (r/track rtx/q* query (::rtx/ratom @conn) inputs))
 
-;; TODO: is this even needed? or is it handle by Datascript like in Datomic
-;; api?
-(defn- inquire
-  [inquiry]
-  (if (vector? inquiry)
-    (q inquiry)
-    (q (:query inquiry) (:args inquiry))))
-
-;; todo: should transact be a pipe? there is still no way to stop
-;; a transaction if the result of the query is not what the user expected :(
 (defn transact!
   "'Updates' the DataScript state, where f is a function that will take
    the result of the inquiry and any supplied args and return tx-data
@@ -122,13 +112,9 @@
    See Datomic's API documentation for more information.
 
    Returns the result of the query with the new state"
-  ([tx-data]
-   (data/transact! conn tx-data)
-   tx-data)
-  ([inquiry f & args]
-   (let [result (inquire inquiry)]
-     (data/transact! conn (apply f result args))
-     (inquire inquiry))))
+  [tx-data]
+  (do (data/transact! conn tx-data)
+      tx-data))
 
 (defn inject
   "runs query with provided inputs and associates its result into m
