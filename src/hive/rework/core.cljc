@@ -186,12 +186,9 @@
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
-;(:conn (:state @app))
-
-;(q '[:find (pull ?city [*]) .
-;     :where [_ :user/city ?city]])
-;
 ;(q '[:find [(pull ?entity [*]) ...]
 ;     :where [?entity :city/name ?name]))
+
+;(q queries/cities)
 
 ;conn

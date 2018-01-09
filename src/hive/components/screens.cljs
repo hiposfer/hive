@@ -23,13 +23,13 @@
 
 (defn directions
   "basic navigation directions"
-  []
-  (let [route        (rework/q! queries/route) ;; todo
+  [props]
+  (let [route        @(rework/q! queries/route) ;; todo
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
                                      (map-indexed vector))
-                               (:legs @route))]
+                               (:legs route))]
     [:> Container
      [:> Content
       [:> Card
@@ -69,15 +69,14 @@
                            :coordinate  (latlng (:coordinates (:geometry goal)))
                            :description (str/join ", " (map :text (:context goal)))}])]
         (when-not (nil? goal)
-          [:> Button {:full true} ;:on-press #(:view/screen :view.screen/directions)}
+          [:> Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> Icon {:name "information-circle" :transparent true}]
            [:> Text (:place_name goal)]])]
-       [:> View {:style {:flex 1}}
-         [els/places features]])]))
+       [els/places features])]))
 
 (defn settings
   [props]
-  (let [cities (rework/q! queries/cities)
+  (let [cities @(rework/q! queries/cities)
         navigate (:navigate (:navigation props))]
     [:> Container
      [:> Header
@@ -86,4 +85,4 @@
         [:> Icon {:name "menu"}]]
        [:> Body [:> Title "Settings"]]]
      [:> Content
-      (map els/city-selector @cities (repeat props))]]))
+      (map els/city-selector cities (repeat props))]]))

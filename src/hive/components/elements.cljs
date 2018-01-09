@@ -13,19 +13,19 @@
             [cljs.spec.alpha :as s]))
 
 (defn move-to
-  [user-id city-name]
+  [user-id city]
   [{:user/id user-id
-    :user/city [:city/name city-name]}])
+    :user/city [:city/name (:city/name city)]}])
 
 (defn city-selector
-  [{:keys [city/name region country]} props]
-  ^{:key name}
-   [:> ListItem {:on-press #(do (rework/transact! queries/user-id move-to name)
+  [city props]
+  ^{:key (:city/name city)}
+   [:> ListItem {:on-press #(do (rework/transact! queries/user-id move-to city)
                                 ((:navigate (:navigation props)) "Home"))}
      [:> Body {}
-       [:> Text name]
+       [:> Text (:city/name city)]
        [:> Text {:note true :style {:color "gray"}}
-         (str region ", " country)]]])
+         (str (:city/region city) ", " (:city/country city))]]])
 
 (defn no-internet
   "display a nice little monster asking for internet connection"
