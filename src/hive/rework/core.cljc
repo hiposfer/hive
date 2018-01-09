@@ -109,6 +109,8 @@
     (q inquiry)
     (q (:query inquiry) (:args inquiry))))
 
+;; todo: should transact be a pipe? there is still no way to stop
+;; a transaction if the result of the query is not what the user expected :(
 (defn transact!
   "'Updates' the DataScript state, where f is a function that will take
    the result of the inquiry and any supplied args and return tx-data
