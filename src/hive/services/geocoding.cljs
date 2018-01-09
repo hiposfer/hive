@@ -5,6 +5,7 @@
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.rework.util :as tool]))
+
 (s/def ::input (s/and string? not-empty))
 (s/def ::coordinate (s/tuple number? number?))
 (s/def ::query (s/or :location ::input
@@ -29,24 +30,22 @@
   "takes a map with the items required by ::request and replaces their values into
    the Mapbox URL template. Returns the full url to use with an http service"
   [request]
-  (let [params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
+  (let [request (rework/inject request ::access_token queries/mapbox-token)
+        request (assoc request ::autocomplete true)
+        params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
                      (dissoc request ::query ::mode))
         URL (-> (str/replace template "{mode}" (::mode request))
                 (str/replace "{query}" (js/encodeURIComponent (::query request)))
                 (str/replace "{params}" (str/join "&" params)))]
     {::http/json URL}))
 
-
 (def autocomplete!
   "takes an autocomplete geocoding channel and a request shaped
    according to MapBox geocode API v5 and executes it asynchronously.
-   Returns a channel with the result or an exception. Throws on invalid
-   request
+   Returns a channel with the result or an exception
 
   https://www.mapbox.com/api-documentation/#request-format"
-  (rework/pipe #(rework/inject % ::access_token queries/mapbox-token)
-               #(assoc % ::autocomplete true)
-               #(tool/validate ::request ::invalid-input %)
+  (rework/pipe #(tool/validate ::query (::query %) ::invalid-input)
                autocomplete
                http/request!
                tool/keywordize))

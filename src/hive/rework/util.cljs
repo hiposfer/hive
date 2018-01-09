@@ -45,18 +45,20 @@
           (vals m)))
 
 (defn keywordize
+  "transforms a js object into a clojure version with keywords as keys"
   [o]
   (js->clj o :keywordize-keys true))
 
 (defn log
+  "pretty prints the input and returns it"
   [o]
   (do (cljs.pprint/pprint o)
       o))
 
 (defn validate
   "validates the request against the provided spec. Returns the request if valid
-  or an ex-info with cause otherwise."
-  [spec cause request]
+  or an ex-info with cause otherwise"
+  [spec request cause]
   (if (s/valid? spec request) request
     (ex-info (s/explain-str spec request)
              (s/explain-data spec request)

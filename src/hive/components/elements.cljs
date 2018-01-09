@@ -7,7 +7,6 @@
             [hive.queries :as queries]
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
-            [hive.rework.util :as tool]
             [cljs.core.async :as async]
             [clojure.string :as str]))
 
@@ -16,15 +15,11 @@
   [{:user/id user-id
     :user/city [:city/name city-name]}])
 
-(defn change-city!
-  [props name]
-  (rework/transact! queries/user-id move-to name)
-  ((:navigate (:navigation props)) "Home"))
-
 (defn city-selector
   [{:keys [city/name region country]} props]
   ^{:key name}
-   [:> ListItem {:on-press #(change-city! props name)}
+   [:> ListItem {:on-press #(do (rework/transact! queries/user-id move-to name)
+                                ((:navigate (:navigation props)) "Home"))}
      [:> Body {}
        [:> Text name]
        [:> Text {:note true :style {:color "gray"}}
@@ -87,7 +82,9 @@
                                                 ::geocoding/mode  "mapbox.places"})}]
       [:> Icon {:name "ios-search"}]]]))
 
-(defn set-goal
+(defn- set-goal
+  "set feature as the user goal and removes the :user/places attributes from the app
+  state"
   [id feature]
   [{:user/id id :user/goal feature}
    [:db.fn/retractAttribute [:user/id id] :user/places]])

@@ -30,7 +30,6 @@
     (case res
       ::raw  (-> promise (.then report))
       ::json (-> promise (.then #(.json %))
-                         (.then #(js->clj % :keywordize-keys true))
                          (.then report))
       ::text (-> promise (.then #(.text %))
                          (.then report)))
