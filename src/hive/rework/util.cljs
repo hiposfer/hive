@@ -16,7 +16,7 @@
        (satisfies? cljs.core/ICollection x)
        (satisfies? Pipe* x)))
 
-;; TODO: allow returning pipes to have dynamic pipe dispatch
+;; TODO: allow returning pipes to have dynamic pipe dispatch?
 (defrecord Pipe [sections]
   cljs.core/IFn
   (-invoke [this request]
