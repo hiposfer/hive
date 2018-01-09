@@ -8,7 +8,9 @@
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
             [cljs.core.async :as async]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [hive.rework.util :as tool]
+            [cljs.spec.alpha :as s]))
 
 (defn move-to
   [user-id city-name]
@@ -65,7 +67,8 @@
 (def autocomplete!
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  (rework/pipe geocoding/autocomplete!
+  (rework/pipe #(tool/validate (s/keys :req [::geocoding/query]) % ::invalid-input)
+               geocoding/autocomplete!
                #(rework/transact! queries/user-id update-places (:features %))))
 
 ;; todo: handle autocomplete errors
@@ -78,8 +81,7 @@
                   :on-press #(navigate "DrawerToggle")}
        [:> Icon {:name "ios-menu" :transparent true}]]
       [:> Input {:placeholder "Where would you like to go?"
-                 :onChangeText #(autocomplete! {::geocoding/query %
-                                                ::geocoding/mode  "mapbox.places"})}]
+                 :onChangeText #(autocomplete! {::geocoding/query %})}]
       [:> Icon {:name "ios-search"}]]]))
 
 (defn- set-goal
