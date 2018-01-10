@@ -3,10 +3,12 @@
             [hive.foreigns :as fl]
             [hive.components.core :refer [View Image Text TouchableHighlight Icon]]
             [hive.state :as state]
+            [hive.services.location :as location]
             [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.rework.core :as rework]))
+            [hive.rework.core :as rework]
+            [datascript.core :as data]))
 
 (defn root-ui
   []
@@ -33,5 +35,8 @@
   "register the main UI component in React Native"
   []
   (rework/init! state/schema state/defaults)
+  (rework/transact! [{:app/session (data/squuid)}])
+  (location/watch! {::location/enableHighAccuracy true
+                    ::location/timeInterval 3000})
   (.registerComponent fl/app-registry "main"
                       #(r/reactify-component root-ui)))

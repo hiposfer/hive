@@ -19,6 +19,5 @@
   (concat (map #(tool/with-ns "city" %) cities)
           [{:user/id -1 ;; dummy
             :user/city [:city/name "Frankfurt am Main"]}
-           (tool/with-ns "token" tokens)
-           {:app/session (data/squuid)}]))
+           (tool/with-ns "token" tokens)]))
 
