@@ -64,10 +64,11 @@
         [:> MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry city)))
                                            {:latitudeDelta 0.02,
                                             :longitudeDelta 0.02})
-                     :showsUserLocation true :style {:flex 1}}
+                     :showsUserLocation true :style {:flex 1}
+                     :showsMyLocationButton true}
           (when goal
-            [:> MapMarker {:title       (:text goal)
-                           :coordinate  (latlng (:coordinates (:geometry goal)))
+            [:> MapMarker {:title (:text goal)
+                           :coordinate (latlng (:coordinates (:geometry goal)))
                            :description (str/join ", " (map :text (:context goal)))}])
           (when route
             (let [path (map latlng (:coordinates (:geometry (first (:routes route)))))]

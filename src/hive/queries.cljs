@@ -26,3 +26,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def mapbox-token '[:find ?token .
                     :where [_ :token/mapbox ?token]])
+
+(def session '[:find ?session .
+               :where [_ :app/session ?session]])
