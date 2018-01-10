@@ -9,8 +9,7 @@
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
-            [hive.rework.util :as tool]
-            [hive.queries :as queries]))
+            [hive.rework.util :as tool]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -102,16 +101,12 @@
   (r/track rtx/q* query (::rtx/ratom @conn) inputs))
 
 (defn transact!
-  "'Updates' the DataScript state, where f is a function that will take
-   the result of the inquiry and any supplied args and return tx-data
-   to use with DataScript transact!
+  "'Updates' the DataScript state with tx-data.
 
-   inquiry can either be a query vector like [:find ?foo :where [_ :bar ?foo]]
-   or a map with {:query [datascript-query]
-                  :args  [parameters to use :in query]}
    See Datomic's API documentation for more information.
+   http://docs.datomic.com/transactions.html
 
-   Returns the result of the query with the new state"
+   Returns tx-data"
   [tx-data]
   (do (data/transact! conn tx-data)
       tx-data))
