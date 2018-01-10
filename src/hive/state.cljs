@@ -1,6 +1,5 @@
 (ns hive.state
-  (:require [hive.rework.util :as tool]
-            [datascript.core :as data]))
+  (:require [hive.rework.util :as tool]))
 
 ;;FIXME: this should come from the server, not being hardcoded
 (def cities (js->clj (js/require "./assets/cities.json")

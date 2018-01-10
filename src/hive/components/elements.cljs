@@ -18,14 +18,13 @@
   [{:user/id (:user/id data)
     :user/city [:city/name (:city/name data)]}])
 
-(def move-to! (rework/pipe #(rework/inject % :user/id queries/user-id)
-                           change-city
-                           rework/transact!))
+(def move-to (comp change-city #(rework/inject % :user/id queries/user-id)))
+
 (defn city-selector
   [city props]
   ^{:key (:city/name city)}
-   [:> ListItem {:on-press #(do (move-to! city)
-                                ((:navigate (:navigation props)) "Home"))}
+  [:> ListItem {:on-press #(do (rework/transact! (move-to city))
+                               ((:navigate (:navigation props)) "Home"))}
      [:> Body {}
        [:> Text (:city/name city)]
        [:> Text {:note true :style {:color "gray"}}
