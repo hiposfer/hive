@@ -18,7 +18,7 @@
   [{:user/id (:user/id data)
     :user/city [:city/name (:city/name data)]}])
 
-(def move-to (comp change-city #(rework/inject % :user/id queries/user-id)))
+(defn move-to [city] (change-city (rework/inject city :user/id queries/user-id)))
 
 (defn city-selector
   [city props]

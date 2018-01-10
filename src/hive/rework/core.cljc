@@ -56,6 +56,8 @@
 ;; Holds the current state of the complete app
 (defonce ^:private conn (data/create-conn))
 
+;; TODO: it might be useful to allow the user to create this and pass it to the framework
+;; that way some extra listeners can be created in advance
 (defn init!
   ([schema init-data]
    (let [result (data/create-conn schema)]
