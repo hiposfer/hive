@@ -1,13 +1,12 @@
 (ns hive.components.elements
-  (:require [cljs.core.async :refer-macros [go go-loop]]
-            [hive.components.core :refer [View Button Icon Text ListItem ListBase
+  (:require [hive.components.core :refer [View Button Icon Text ListItem ListBase
                                           Body Container Content Card CardItem Image
                                           Header Item Input]]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
-            [cljs.core.async :as async]
+            [cljs.core.async :as async :refer [go]]
             [clojure.string :as str]
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
@@ -134,3 +133,5 @@
 
 ;(go (async/<! (autocomplete! {::geocoding/query "Cartagena, Colombia"
 ;                              ::geocoding/mode  "mapbox.places"]]])])
+
+;(rework/q queries/user-position)

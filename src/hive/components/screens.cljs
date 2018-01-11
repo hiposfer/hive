@@ -5,7 +5,7 @@
             [hive.components.elements :as els]
             [hive.queries :as queries]
             [hive.rework.core :as rework]
-            [cljs.core.async :refer-macros [go go-loop]]
+            [cljs.core.async :as async :refer [go]]
             [clojure.string :as str]))
 
 "Each Screen will receive two props:

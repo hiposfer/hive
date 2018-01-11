@@ -1,6 +1,5 @@
 (ns hive.rework.util
-  (:require [cljs.core.async :refer-macros [go go-loop]]
-            [cljs.core.async :as async]
+  (:require [cljs.core.async :as async :refer [go]]
             [clojure.spec.alpha :as s]))
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
