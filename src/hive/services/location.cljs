@@ -41,7 +41,7 @@
           (.then #((:watchPositionAsync fl/Location) js-opts update-position!))
           (.then #(async/put! result %))
           (.catch #(async/put! result (ex-info "error in request"
-                                        % ::malformed-request))))
+                                        % ::no-location-provider))))
       result)))
 
 (defn- set-watcher
