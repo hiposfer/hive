@@ -46,8 +46,9 @@
       (try
         (<? (location/watch! {::location/enableHighAccuracy true
                               ::location/timeInterval 3000}))
-        (catch :default e
-          (println e))))))
+        (catch :default error
+          (cljs.pprint/pprint error)
+          (fl/toast! (ex-message error)))))))
 
 ;; this also works but it is not as clear
 ;(async/take! (location/watch! {::location/enableHighAccuracy true
