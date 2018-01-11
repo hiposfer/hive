@@ -2,6 +2,7 @@
   (:require [hive.components.core :refer [View Button Icon Text ListItem ListBase
                                           Body Container Content Card CardItem Image
                                           Header Item Input]]
+            [hive.rework.core :refer-macros [<?]]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
@@ -98,15 +99,20 @@
 
 (defn- prepare-path
   [goal]
-  {::directions/coordinates
-   (cons [8.645373 50.087545] [(:coordinates (:geometry goal))])})
+  (if (nil? (:user/position goal))
+    (ex-info "missing user location" goal ::user-position-unknown)
+    (let [pos    (:coords (:user/position goal))
+          lnglat [(:longitude pos) (:latitude pos)]]
+      {::directions/coordinates [lnglat
+                                 (:coordinates (:geometry goal))]})))
 
 (defn- set-path
   [path]
   [{:user/id (:user/id path)
     :user/directions (dissoc path :user/id)}])
 
-(def update-path! (rework/pipe prepare-path
+(def update-path! (rework/pipe #(rework/inject % :user/position queries/user-position)
+                               prepare-path
                                directions/request!
                                #(rework/inject % :user/id queries/user-id)
                                set-path
@@ -116,7 +122,14 @@
                                  set-goal
                                  rework/transact!))
 
-(def update-map! (juxt update-places! update-path!))
+(defn update-map!
+  [target]
+  (go
+    (try
+      (<? (update-path! target))
+      (<? (update-places! target))
+      (catch :default error
+        (fl/toast! (ex-message error))))))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his

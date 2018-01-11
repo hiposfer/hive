@@ -8,7 +8,7 @@
             [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.rework.core :as rework]
+            [hive.rework.core :as rework :refer [<?]]
             [datascript.core :as data]
             [cljs.core.async :as async :refer [go]]))
 

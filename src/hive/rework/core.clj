@@ -8,5 +8,5 @@
 
 (defmacro <?
   "Like <! but throws errors."
-  [ch]
-  `(throw-err (cljs.core.async/<! ~ch)))
+  [port]
+  `(throw-err (cljs.core.async/<! ~port)))

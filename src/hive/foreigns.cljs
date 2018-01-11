@@ -13,7 +13,7 @@
 
 (def app-registry  (.-AppRegistry ReactNative))
 ;(def async-storage (.-AsyncStorage ReactNative))
-;(def toast-android (.-ToastAndroid ReactNative))
+(def toast-android (.-ToastAndroid ReactNative))
 (def dimensions    (.-Dimensions ReactNative))
 
 (defn alert [title] (.alert (.-Alert ReactNative) title))
@@ -26,3 +26,9 @@
 
 (def init-config (js->clj (js/require "./assets/init.json")
                    :keywordize-keys true))
+
+;;; - - -- - - - - - -
+(defn toast!
+  ([text] (toast! text nil))
+  ([text duration]
+   (.show toast-android text (or duration toast-android.SHORT))))
