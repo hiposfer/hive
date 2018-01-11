@@ -54,19 +54,16 @@
 ;; full description
 
 ;; Holds the current state of the complete app
-(defonce ^:private conn (data/create-conn))
+(defonce ^:private conn nil)
 
-;; TODO: it might be useful to allow the user to create this and pass it to the framework
-;; that way some extra listeners can be created in advance
 (defn init!
-  ([schema init-data]
-   (let [result (data/create-conn schema)]
-     (data/transact! result init-data) ;; populates the DataScript in-memory database
-     (rtx/listen! result)
-     (set! conn result)))
-  ([schema]
-   (set! conn (data/conn-from-datoms (data/datoms @conn :eavt) schema))
-   (rtx/listen! conn)))
+  "takes a Datascript conn and starts listening to its transactor for changes"
+  [dsconn]
+  (when conn ;; just in case
+    (rtx/unlisten! conn)
+    (rtx/unlisten! dsconn))
+  (set! conn dsconn)
+  (rtx/listen! conn))
 
 (defn pull
   "same as datascript pull but uses the app state as connection"

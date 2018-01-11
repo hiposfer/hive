@@ -34,9 +34,13 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (rework/init! state/schema state/defaults)
-  (rework/transact! [{:app/session (data/squuid)}])
-  (location/watch! {::location/enableHighAccuracy true
-                    ::location/timeInterval 3000})
-  (.registerComponent fl/app-registry "main"
-                      #(r/reactify-component root-ui)))
+  (let [conn (data/create-conn state/schema)
+        data (cons {:app/session (data/squuid)} state/defaults)
+        _    (data/transact! conn data)]
+    ;; todo: add https://github.com/reagent-project/historian
+    (rework/init! conn)
+    (rework/transact! [{:app/session (data/squuid)}])
+    (location/watch! {::location/enableHighAccuracy true
+                      ::location/timeInterval 3000})
+    (.registerComponent fl/app-registry "main"
+                        #(r/reactify-component root-ui))))
