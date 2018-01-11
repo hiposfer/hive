@@ -153,17 +153,6 @@
   [f g & more]
   (tool/->Pipe (concat [f g] more)))
 
-(defn- throw-err
-  [e]
-  (if (instance? js/Error e) (throw e)
-    e))
-
-#?(:clj
-   (defmacro <?
-     "Like <! but throws errors."
-     [ch]
-     `(throw-err (cljs.core.async/<! ~ch))))
-
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
 ;(q '[:find [(pull ?entity [*]) ...]
