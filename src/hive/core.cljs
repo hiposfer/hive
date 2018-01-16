@@ -7,7 +7,7 @@
             [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.rework.core :as work]
+            [hive.rework.core :as work :refer [go-try <?]]
             [datascript.core :as data]))
 
 (defn root-ui
@@ -42,9 +42,9 @@
                  ::location/callback cb}]
     (data/transact! conn data)
     (work/init! conn)
-    (work/go-try
+    (go-try
       (let [remover (location/watch! opts)]
-        (work/transact! (work/<? remover)))
+        (work/transact! (<? remover)))
       (catch :default error
         (fl/toast! (ex-message error))))
     (.registerComponent fl/app-registry "main"

@@ -2,7 +2,7 @@
   (:require [hive.components.core :refer [View Button Icon Text ListItem ListBase
                                           Body Container Content Card CardItem Image
                                           Header Item Input]]
-            [hive.rework.core :as work]
+            [hive.rework.core :as work :refer [go-try <?]]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
@@ -11,12 +11,12 @@
             [cljs.spec.alpha :as s]
             [hive.services.directions :as directions]))
 
-(defn change-city
+(defn update-city
   [data]
   [{:user/id (:user/id data)
     :user/city [:city/name (:city/name data)]}])
 
-(defn move-to [city] (change-city (work/inject city :user/id queries/user-id)))
+(defn move-to [city] (update-city (work/inject city :user/id queries/user-id)))
 
 (defn city-selector
   [city props]
@@ -101,30 +101,28 @@
     (ex-info "missing user location" goal ::user-position-unknown)
     (let [pos    (:coords (:user/position goal))
           lnglat [(:longitude pos) (:latitude pos)]]
-      {::directions/coordinates [lnglat
-                                 (:coordinates (:geometry goal))]})))
+      {::directions/coordinates
+       [lnglat (:coordinates (:geometry goal))]})))
 
 (defn- set-path
   [path]
   [{:user/id (:user/id path)
     :user/directions (dissoc path :user/id)}])
 
-(def update-path! (work/pipe #(work/inject % :user/position queries/user-position)
-                             prepare-path
-                             directions/request!
-                             #(work/inject % :user/id queries/user-id)
-                             set-path
-                             work/transact!))
+(def set-path! (work/pipe #(work/inject % :user/position queries/user-position)
+                          prepare-path
+                          directions/request!
+                          #(work/inject % :user/id queries/user-id)
+                          set-path))
 
-(def update-places! (work/pipe #(work/inject % :user/id queries/user-id)
-                               set-goal
-                               work/transact!))
+(def set-places (comp set-goal #(work/inject % :user/id queries/user-id)))
 
 (defn update-map!
   [target]
-  (work/go-try
-    (work/<? (update-path! target))
-    (work/<? (update-places! target))
+  (go-try
+    (let [places (set-places target)
+          paths  (set-path!)]
+      (work/transact! (concat (<? paths) places)))
     (catch :default error
       (fl/toast! (ex-message error)))))
 
