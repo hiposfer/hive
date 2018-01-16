@@ -7,7 +7,7 @@ Your go-to public transport routing app
 - [yarn](https://yarnpkg.com/lang/en/docs/install/)
 - [lein](http://leiningen.org/#install)
 
-## installation
+## development
 
 ``` shell
 # install js modules
@@ -26,14 +26,26 @@ in another terminal
 yarn run exp start
 ```
 
+## usage
+
+Once you have a figwheel and exp server running. Open the
+expo app in your mobile device and scan the QR code shown
+in the terminal where `exp` is running.
+
+From now on everytime that you make a change to the source
+code, figwheel will automatically reload the changes
+
+beware that react native shows warning as small yellow boxes
+at the bottom of the screen and error as a full red screen
+
 ## how to
-- add new assets or external modules
-  
+add new assets or external modules
+- require the module  
 ``` clj
 (def cljs-logo (js/require "./assets/images/cljs.png"))
 (def FontAwesome (js/require "@expo/vector-icons/FontAwesome"))
 ```
-now reload simulator or device
+- reload simulator or device
 
 ## Notes
 - make sure you disable live reload from the Developer Menu, also turn off Hot Module Reload.
@@ -44,3 +56,11 @@ Since Figwheel already does those.
 ``` shell
 lein prod-build
 ```
+
+- this project uses the fantastic [expo template](https://github.com/seantempesta/expo-cljs-template)
+  from @seantempesta. In case of any doubt about the build process,
+  please refer to his documentation
+  
+- check the [React Native](https://facebook.github.io/react-native/) docs when in doubt
+
+- the [Expo](https://expo.io/) documentation will become your best friend
