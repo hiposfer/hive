@@ -9,21 +9,20 @@
 (s/def ::enableHighAccuracy boolean?)
 (s/def ::timeInterval (s/and number? pos?))
 (s/def ::distanceInterval (s/and number? pos?))
+(s/def ::callback ifn?)
 
-(s/def ::opts (s/keys :opt [::enableHighAccuracy
-                            ::timeInterval
+(s/def ::opts (s/keys :req [::callback]
+                      :opt [::enableHighAccuracy ::timeInterval
                             ::distanceInterval]))
 
-(defn- update-position
+(defn- tx-position
   [data]
   [{:user/id (:user/id data)
     :user/position (dissoc data :user/id)}])
 
-(def update-position! (comp ;tool/log
-                            rework/transact!
-                            update-position
-                            #(rework/inject % :user/id queries/user-id)
-                            tool/keywordize))
+(def update-position (comp tx-position
+                           #(rework/inject % :user/id queries/user-id)
+                           tool/keywordize))
 
 (defn- watch
   [opts]
@@ -36,12 +35,12 @@
       (-> ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
           (.then tool/keywordize)
           (.then #(when (not= (:status %) "granted")
-                    (async/put! result (ex-info "permission denied"
-                                         % ::permission-denied))))
-          (.then #((:watchPositionAsync fl/Location) js-opts update-position!))
+                    (async/put! result
+                      (ex-info "permission denied" % ::permission-denied))))
+          (.then #((:watchPositionAsync fl/Location) js-opts (::callback opts)))
           (.then #(async/put! result %))
-          (.catch #(async/put! result (ex-info "error in request"
-                                        % ::no-location-provider))))
+          (.catch #(async/put! result
+                     (ex-info "no location provider" % ::no-location-provider))))
       result)))
 
 (defn- set-watcher
@@ -56,15 +55,12 @@
                tool/keywordize
                #(hash-map ::watcher %)
                #(rework/inject % :app/session queries/session)
-               set-watcher
-               rework/transact!))
+               set-watcher))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"
-  []
-  (let [sub (rework/q '[:find ?watcher .
-                        :where [?ss :app/session]
-                               [?ss :app.location/watcher ?watcher]])
+  [query]
+  (let [sub (rework/q query)
         f (:remove sub)]
     (when f ;;todo: is it necessary to remove it from the state?
       (f))))
@@ -73,4 +69,3 @@
 
 ;(async/take! (watch! {:enableHighAccuracy true :timeInterval 3000})
 ;             tool/log]])
-

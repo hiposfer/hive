@@ -2,12 +2,10 @@
   (:require [hive.components.core :refer [View Button Icon Text ListItem ListBase
                                           Body Container Content Card CardItem Image
                                           Header Item Input]]
-            [hive.rework.core :refer-macros [<?]]
-            [hive.rework.core :as rework]
+            [hive.rework.core :as work]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
-            [cljs.core.async :as async :refer [go]]
             [clojure.string :as str]
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
@@ -18,12 +16,12 @@
   [{:user/id (:user/id data)
     :user/city [:city/name (:city/name data)]}])
 
-(defn move-to [city] (change-city (rework/inject city :user/id queries/user-id)))
+(defn move-to [city] (change-city (work/inject city :user/id queries/user-id)))
 
 (defn city-selector
   [city props]
   ^{:key (:city/name city)}
-  [:> ListItem {:on-press #(do (rework/transact! (move-to city))
+  [:> ListItem {:on-press #(do (work/transact! (move-to city))
                                ((:navigate (:navigation props)) "Home"))}
      [:> Body {}
        [:> Text (:city/name city)]
@@ -70,11 +68,11 @@
 (def autocomplete!
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  (rework/pipe #(tool/validate (s/keys :req [::geocoding/query]) % ::invalid-input)
-               geocoding/autocomplete!
-               #(rework/inject % :user/id queries/user-id)
-               update-places
-               rework/transact!))
+  (work/pipe #(tool/validate (s/keys :req [::geocoding/query]) % ::invalid-input)
+             geocoding/autocomplete!
+             #(work/inject % :user/id queries/user-id)
+             update-places
+             work/transact!))
 
 ;; todo: handle autocomplete errors
 (defn- search-bar
@@ -111,25 +109,24 @@
   [{:user/id (:user/id path)
     :user/directions (dissoc path :user/id)}])
 
-(def update-path! (rework/pipe #(rework/inject % :user/position queries/user-position)
-                               prepare-path
-                               directions/request!
-                               #(rework/inject % :user/id queries/user-id)
-                               set-path
-                               rework/transact!))
+(def update-path! (work/pipe #(work/inject % :user/position queries/user-position)
+                             prepare-path
+                             directions/request!
+                             #(work/inject % :user/id queries/user-id)
+                             set-path
+                             work/transact!))
 
-(def update-places! (rework/pipe #(rework/inject % :user/id queries/user-id)
-                                 set-goal
-                                 rework/transact!))
+(def update-places! (work/pipe #(work/inject % :user/id queries/user-id)
+                               set-goal
+                               work/transact!))
 
 (defn update-map!
   [target]
-  (go
-    (try
-      (<? (update-path! target))
-      (<? (update-places! target))
-      (catch :default error
-        (fl/toast! (ex-message error))))))
+  (work/go-try
+    (work/<? (update-path! target))
+    (work/<? (update-places! target))
+    (catch :default error
+      (fl/toast! (ex-message error)))))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his

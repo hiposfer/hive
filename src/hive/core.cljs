@@ -1,6 +1,5 @@
 (ns hive.core
-  (:require [hive.rework.core :refer-macros [<?]]
-            [reagent.core :as r]
+  (:require [reagent.core :as r]
             [hive.foreigns :as fl]
             [hive.components.core :refer [View Image Text TouchableHighlight Icon]]
             [hive.state :as state]
@@ -8,9 +7,8 @@
             [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.rework.core :as rework :refer [<?]]
-            [datascript.core :as data]
-            [cljs.core.async :as async :refer [go]]))
+            [hive.rework.core :as work]
+            [datascript.core :as data]))
 
 (defn root-ui
   []
@@ -37,18 +35,21 @@
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
   (let [conn (data/create-conn state/schema)
-        data (cons {:app/session (data/squuid)} state/defaults)]
+        data (cons {:app/session (data/squuid)} state/defaults)
+        cb      (comp work/transact! location/update-position)
+        opts    {::location/enableHighAccuracy true
+                 ::location/timeInterval 3000
+                 ::location/callback cb}]
     (data/transact! conn data)
-    (rework/init! conn)
+    (work/init! conn)
+    (work/go-try
+      (let [remover (location/watch! opts)]
+        (work/transact! (work/<? remover)))
+      (catch :default error
+        (fl/toast! (ex-message error))))
     (.registerComponent fl/app-registry "main"
-                        #(r/reactify-component root-ui))
-    (go
-      (try
-        (<? (location/watch! {::location/enableHighAccuracy true
-                              ::location/timeInterval 3000}))
-        (catch :default error
-          (cljs.pprint/pprint error)
-          (fl/toast! (ex-message error)))))))
+      #(r/reactify-component root-ui))))
+
 
 ;; this also works but it is not as clear
 ;(async/take! (location/watch! {::location/enableHighAccuracy true

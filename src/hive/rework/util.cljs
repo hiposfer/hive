@@ -15,6 +15,32 @@
        (satisfies? cljs.core/ICollection x)
        (satisfies? Pipe* x)))
 
+(defn channel
+  "transforms a promise into a channel. Catches js/Errors and puts them in the
+  channel as well. If the catch value is not an error, yields an ex-info with
+  ::promise-rejected as cause otherwise yields the js/Error provided"
+  ([promise]
+   (channel promise ::promise-rejected))
+  ([promise cause]
+   (let [result (async/chan 1)]
+     (-> promise
+         (.then #(async/put! result %))
+         (.catch #(if (instance? js/Error %)
+                    (async/put! result %)
+                    (async/put! result (ex-info "oops" % cause)))))
+     result)))
+
+;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
+(defn promise?
+  [value]
+  (exists? (.-then value)))
+
+(defn- print-warning!
+  [e]
+  (let [error (if (instance? js/Error (ex-data e)) (ex-data e) e)]
+    (.warn js/console error)))
+
+;; TODO: only print stacktrace if we are in DEBUG mode
 ;; TODO: allow returning pipes to have dynamic pipe dispatch?
 (defrecord Pipe [sections]
   cljs.core/IFn
@@ -22,14 +48,15 @@
     (go
       (loop [queue  (unfold this)
              value  request]
-        (if (instance? js/Error value) value ;; short-circuit
+        (if (instance? js/Error value)
+          (do (print-warning! value) value) ;; short-circuit
           (let [f   (first queue)
                 rr  (f value)
-                rr2 (if (chan? rr) (async/<! rr) rr)] ;; get the value sync or async
-            (if (empty? (rest queue)) rr2
-              (recur (rest queue) rr2)))))))
-  cljs.core/ICollection
-  (-conj [coll o] (update coll :sections conj o))
+                rr2 (if (promise? rr) (channel value) rr)
+                ;; get the value sync or async
+                rr3 (if (chan? rr) (async/<! rr2) rr2)]
+            (if (empty? (rest queue)) rr3
+              (recur (rest queue) rr3)))))))
   Pipe*
   (unfold [this]
     (flatten ;; unroll the individual pipes into a bigger one

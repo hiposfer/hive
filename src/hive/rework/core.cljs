@@ -141,7 +141,7 @@
 
 
 (defn pipe
-  "Takes a set of functions and returns a fn that is the composition of those fns.
+  "Takes a sequence of functions and returns a fn that is the composition of those fns.
   The returned fn takes a single argument (request), applies the leftmost of fns to
   it, the next fn (left-to-right) to the result, etc (like transducer composition).
 
@@ -149,7 +149,8 @@
 
   If any function returns an exception, the execution will stop and returns it
 
-  Both sync and async functions are accepted"
+  The function composition handles async channels, promises and sync values
+  transparently"
   [f g & more]
   (tool/->Pipe (concat [f g] more)))
 
