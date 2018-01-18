@@ -2,7 +2,7 @@
   (:require [hive.components.core :refer [View Button Icon Text ListItem ListBase
                                           Body Container Content Card CardItem Image
                                           Header Item Input]]
-            [hive.rework.core :as work :refer [go-try <?]]
+            [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.queries :as queries]
             [hive.foreigns :as fl]
             [hive.services.geocoding :as geocoding]
@@ -143,3 +143,6 @@
 ;                              ::geocoding/mode  "mapbox.places"]]])])
 
 ;(rework/q queries/user-position)
+
+;(s/explain ::geojson/linestring {:type "LineString"
+;                                 :coordinates [[1 2] [3 4]]))]]])])

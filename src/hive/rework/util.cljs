@@ -1,6 +1,7 @@
 (ns hive.rework.util
   (:require [cljs.core.async :as async :refer [go]]
-            [clojure.spec.alpha :as s]))
+            [clojure.spec.alpha :as s]
+            [cljs.pprint :as print]))
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
 
@@ -78,7 +79,7 @@
 (defn log
   "pretty prints the input and returns it"
   [o]
-  (do (cljs.pprint/pprint o)
+  (do (print/pprint o)
       o))
 
 (defn validate
