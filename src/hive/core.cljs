@@ -11,8 +11,7 @@
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [datascript.core :as data]))
 
-(defn root-ui
-  []
+(defn root-ui []
   (let [HomeDirections (rn-nav/stack-screen screens/directions
                          {:title "directions"})
         HomeMap        (rn-nav/stack-screen screens/home

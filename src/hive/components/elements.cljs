@@ -8,7 +8,6 @@
             [hive.services.geocoding :as geocoding]
             [clojure.string :as str]
             [hive.rework.util :as tool]
-            [hiposfer.geojson.specs :as geojson]
             [cljs.spec.alpha :as s]
             [hive.services.directions :as directions]))
 
@@ -32,7 +31,7 @@
 (defn no-internet
   "display a nice little monster asking for internet connection"
   []
-  (let [dims (js->clj (. fl/dimensions (get "window")) :keywordize-keys true)]
+  (let [dims (js->clj (.get fl/dimensions "window") :keywordize-keys true)]
     [:> Container
      [:> Content {:style {:padding 10}}
       [:> Card {:style {:width (* (:width dims) 0.95)}}
@@ -44,7 +43,7 @@
 
 (defn user-location-error
   []
-  (let [dims (js->clj (. fl/dimensions (get "window")) :keywordize-keys true)]
+  (let [dims (js->clj (.get fl/dimensions "window") :keywordize-keys true)]
     [:> Container
      [:> Content {:style {:padding 10}}
       [:> Card
@@ -58,7 +57,6 @@
          [:> Text "ERROR: we couldn't find your current position. This might be due to:"]
          [:> Text {:style {:textAlign "left"}} "\u2022 no gps connection enabled"]
          [:> Text "\u2022 bad signal reception"]]]]]]))
-
 
 (defn- update-places
   "transact the geocoding result under the user id"
