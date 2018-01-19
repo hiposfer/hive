@@ -65,47 +65,39 @@
   [{:user/id (:user/id data)
     :user/places (:features data)}])
 
-(defn- update-input-text
-  [data]
-  [{:app/session (:app/session data)
-    :app.searc 2}])
-
 (def geocode! (work/pipe (tool/validate (s/keys :req [::geocoding/query]) ::invalid-input)
                          geocoding/autocomplete!
                          (work/inject :user/id queries/user-id)
                          update-places))
+
+(defn- clear-places! []
+  (work/transact! [{:user/places []
+                    :user/id (work/q queries/user-id)}]))
 
 (defn autocomplete!
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   [query]
   (go-try (work/transact! (<? (geocode! query)))
-    (catch :default error
-      (case (ex-cause error)
-        ::invalid-input (work/transact! [{:user/id (work/q queries/user-id)
-                                          :user/places []}])))))
-
-(defn- clear-input! []
-  (work/transact! [{:user/places []
-                    :user/id (work/q queries/user-id)}]))
-
+          (catch :default _ (clear-places!))))
 
 (defn- search-bar
   [props features]
   (let [navigate (:navigate (:navigation props))
-        input-props {:placeholder "Where would you like to go?"
-                     :onChangeText #(autocomplete! {::geocoding/query %})}]
+        ref      (volatile! nil)]
     [:> Header {:searchBar true :rounded true}
      [:> Item {}
       [:> Button {:transparent true :full true
                   :on-press #(navigate "DrawerToggle")}
        [:> Icon {:name "ios-menu" :transparent true}]]
-      [:> Input (if (not-empty @features) input-props
-                  (assoc input-props :value ""))]
+      [:> Input {:placeholder "Where would you like to go?"
+                 :ref #(when % (vreset! ref (.-_root %)))
+                 :onChangeText #(autocomplete! {::geocoding/query %})}]
+
       (if (empty? @features)
         [:> Icon {:name "ios-search"}]
         [:> Button {:transparent true :full true
-                    :on-press    clear-input!}
+                    :on-press    #(do (.clear @ref) (clear-places!))}
           [:> Icon {:name "close"}]])]]))
 
 (defn- set-goal
