@@ -21,7 +21,7 @@
     :user/position (dissoc data :user/id)}])
 
 (def update-position (comp tx-position
-                           #(rework/inject % :user/id queries/user-id)
+                           (rework/inject :user/id queries/user-id)
                            tool/keywordize))
 
 (defn- watch
@@ -54,7 +54,7 @@
   (rework/pipe watch
                tool/keywordize
                #(hash-map ::watcher %)
-               #(rework/inject % :app/session queries/session)
+               (rework/inject :app/session queries/session)
                set-watcher))
 
 (defn stop!

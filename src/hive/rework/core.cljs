@@ -9,7 +9,8 @@
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
-            [hive.rework.util :as tool]))
+            [hive.rework.util :as tool]
+            [hive.rework.state :as state]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -53,51 +54,48 @@
 ;; the way to combine functionality in REWORK is with "pipes". See below for a
 ;; full description
 
-;; Holds the current state of the complete app
-(defonce ^:private conn nil)
-
 (defn init!
   "takes a Datascript conn and starts listening to its transactor for changes"
   [dsconn]
-  (when conn ;; just in case
-    (rtx/unlisten! conn)
+  (when state/conn ;; just in case
+    (rtx/unlisten! state/conn)
     (rtx/unlisten! dsconn))
-  (set! conn dsconn)
-  (rtx/listen! conn))
+  (set! state/conn dsconn)
+  (rtx/listen! state/conn))
 
 (defn pull
   "same as datascript pull but uses the app state as connection"
   [selector eid]
-  (data/pull @conn selector eid))
+  (data/pull @state/conn selector eid))
 
 (defn pull!
   "same as datascript/pull but returns a ratom which will be updated
   every time that the value of conn changes"
   [selector eid]
-  (r/track rtx/pull* (::rtx/ratom @conn) selector eid))
+  (r/track rtx/pull* (::rtx/ratom @state/conn) selector eid))
 
 (defn entity
   "same as datascript/entity but uses the app state as connection"
   [eid]
-  (data/entity @conn eid))
+  (data/entity @state/conn eid))
 
 (defn entity!
   "same as datascript/entity but returns a ratom which will be updated
   every time that the value of conn changes"
   [eid]
-  (r/track rtx/entity* (::rtx/ratom @conn) eid))
+  (r/track rtx/entity* (::rtx/ratom @state/conn) eid))
 
 (defn q
   "same as datascript/q but uses the app state as connection"
   [query & inputs]
-  (apply data/q query @conn inputs))
+  (apply data/q query @state/conn inputs))
 
 (defn q!
   "Returns a reagent/atom with the result of the query.
   The value of the ratom will be automatically updated whenever
   a change is detected"
   [query & inputs]
-  (r/track rtx/q* query (::rtx/ratom @conn) inputs))
+  (r/track rtx/q* query (::rtx/ratom @state/conn) inputs))
 
 (defn transact!
   "'Updates' the DataScript state with tx-data.
@@ -107,15 +105,17 @@
 
    Returns tx-data"
   [tx-data]
-  (do (data/transact! conn tx-data)
+  (do (data/transact! state/conn tx-data)
       tx-data))
 
 (defn inject
   "runs query with provided inputs and associates its result into m
   under key"
-  [m key query & inputs]
-  (let [result (apply q query inputs)]
-    (assoc m key result)))
+  ([m key query & inputs]
+   (let [result (apply q query inputs)]
+     (assoc m key result)))
+  ([key query & inputs]
+   (fn inject* [m] (apply inject m key query inputs))))
 
 ;; Pipes are a combination of 3 concepts:
 ;; - UNIX pipes

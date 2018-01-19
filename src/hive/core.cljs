@@ -9,7 +9,8 @@
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [datascript.core :as data]
-            [clojure.core.async :as async]))
+            [clojure.core.async :as async]
+            [hive.rework.util :as tool]))
 
 (defn root-ui
   []
@@ -56,3 +57,5 @@
 ;(async/take! (location/watch! {::location/enableHighAccuracy true
 ;                               ::location/timeInterval 3000})
 ;             cljs.pprint/pprint)
+
+;(:eavt @hive.rework.state/conn)

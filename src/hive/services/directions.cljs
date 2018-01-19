@@ -45,7 +45,7 @@
    Returns a channel with the result or an exception
 
   https://www.mapbox.com/api-documentation/#request-format"
-  (rework/pipe #(rework/inject % ::access_token queries/mapbox-token)
+  (rework/pipe (rework/inject ::access_token queries/mapbox-token)
                request
                http/json!
                tool/keywordize))

@@ -8,6 +8,7 @@
             [hive.services.geocoding :as geocoding]
             [clojure.string :as str]
             [hive.rework.util :as tool]
+            [hiposfer.geojson.specs :as geojson]
             [cljs.spec.alpha :as s]
             [hive.services.directions :as directions]))
 
@@ -70,7 +71,7 @@
    app state"
   (work/pipe #(tool/validate (s/keys :req [::geocoding/query]) % ::invalid-input)
              geocoding/autocomplete!
-             #(work/inject % :user/id queries/user-id)
+             (work/inject :user/id queries/user-id)
              update-places
              work/transact!))
 
@@ -109,18 +110,16 @@
   [{:user/id (:user/id path)
     :user/directions (dissoc path :user/id)}])
 
-(def set-path! (work/pipe #(work/inject % :user/position queries/user-position)
+(def set-path! (work/pipe (work/inject :user/position queries/user-position)
                           prepare-path
                           directions/request!
-                          #(work/inject % :user/id queries/user-id)
+                          (work/inject :user/id queries/user-id)
                           set-path))
-
-(def set-places (comp set-goal #(work/inject % :user/id queries/user-id)))
 
 (defn update-map!
   [target]
   (go-try
-    (let [places (set-places target)
+    (let [places (set-goal (work/inject target :user/id queries/user-id))
           paths  (set-path!)]
       (work/transact! (concat (<? paths) places)))
     (catch :default error
@@ -143,6 +142,3 @@
 ;                              ::geocoding/mode  "mapbox.places"]]])])
 
 ;(rework/q queries/user-position)
-
-;(s/explain ::geojson/linestring {:type "LineString"
-;                                 :coordinates [[1 2] [3 4]]))]]])])
