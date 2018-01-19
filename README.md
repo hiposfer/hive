@@ -4,17 +4,17 @@ Your go-to public transport routing app
 
 ## requirements
 
-- [npm](https://www.npmjs.com/get-npm?utm_source=house&utm_medium=homepage&utm_campaign=free%20orgs&utm_term=Install%20npm)
+- [yarn](https://yarnpkg.com/lang/en/docs/install/)
 - [lein](http://leiningen.org/#install)
 
 ## development
 
 ``` shell
 # install js modules
-npm install
+yarn install
 
 # signup using exp CLI
-npm run exp signup
+yarn run exp signup
 
 # start the figwheel server and cljs repl 
 lein figwheel
@@ -23,7 +23,7 @@ lein figwheel
 in another terminal
 ``` shell
 ## Start exponent server
-npm run exp start
+yarn run exp start
 ```
 
 ## usage
