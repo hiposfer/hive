@@ -69,6 +69,8 @@
 (def geocode! (work/pipe (tool/validate (s/keys :req [::geocoding/query]) ::invalid-input)
                          (work/inject ::geocoding/proximity queries/user-position)
                          (work/inject ::geocoding/access_token queries/mapbox-token)
+                         (work/inject ::geocoding/bbox queries/user-city)
+                         #(update % ::geocoding/bbox (fn [c] (:city/bbox c)))
                          geocoding/autocomplete!
                          (work/inject :user/id queries/user-id)
                          update-places))

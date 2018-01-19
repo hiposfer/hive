@@ -1,4 +1,5 @@
-(ns hive.queries)
+(ns hive.queries
+  (:require [hive.rework.core :as work]))
 
 ;; get name geometry and bbox of each city in the db
 (def cities '[:find [(pull ?entity [*]) ...]
@@ -33,3 +34,7 @@
 
 (def session '[:find ?session .
                :where [_ :app/session ?session]])
+
+;(work/q '{:find [(pull ?city [*]) .]
+;          :where [[?id :user/id]
+;                  [?id :user/city ?city]]})

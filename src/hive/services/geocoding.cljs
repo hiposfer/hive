@@ -33,7 +33,8 @@
     (ex-info "missing gps information" request ::unknown-location)
     (let [request (assoc request ::autocomplete true
                                  ::mode  "mapbox.places"
-                                 ::proximity (geojson/uri (::proximity request)))
+                                 ::proximity (geojson/uri (::proximity request))
+                                 ::bbox (str/join "," (::bbox request)))
           params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
                        (dissoc request ::query ::mode))
           URL (-> (str/replace template "{mode}" (::mode request))
