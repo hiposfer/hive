@@ -117,15 +117,16 @@
   [goal]
   (if (nil? (:user/position goal))
     (ex-info "missing user location" goal ::user-position-unknown)
-    (let [pos    (:coords (:user/position goal))
-          lnglat [(:longitude pos) (:latitude pos)]]
-      {::directions/coordinates
-       [lnglat (:coordinates (:geometry goal))]})))
+    {::directions/coordinates [(:coordinates (:geometry (:user/position goal)))
+                               (:coordinates (:geometry goal))]}))
 
 (defn- set-path
   [path]
-  [{:user/id (:user/id path)
-    :user/directions (dissoc path :user/id)}])
+  (if (not= (:code path))
+    (ex-info (or (:msg path) "invalid response")
+             path ::invalid-response)
+    [{:user/id (:user/id path)
+      :user/directions (dissoc path :user/id)}]))
 
 (def set-path! (work/pipe (work/inject :user/position queries/user-position)
                           prepare-path
@@ -137,7 +138,7 @@
   [target]
   (go-try
     (let [places (set-goal (work/inject target :user/id queries/user-id))
-          paths  (set-path!)]
+          paths  (set-path! target)]
       (work/transact! (concat (<? paths) places)))
     (catch :default error
       (fl/toast! (ex-message error)))))

@@ -52,7 +52,7 @@
           (.then #((:watchPositionAsync fl/Location) js-opts (::callback opts)))
           (.then #(async/put! result %))
           (.catch #(async/put! result
-                     (ex-info "no location provider" % ::no-location-provider))))
+                               (ex-info "no location provider" % ::missing-provider))))
       result)))
 
 (defn- set-watcher
