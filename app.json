@@ -24,6 +24,9 @@
       ],
       "nonPersistent": ""
     },
+    "android": {
+      "package": "com.hiposfer.hive"
+    },
     "ios": {
       "supportsTablet": true
     }
