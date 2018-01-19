@@ -114,8 +114,8 @@
   ([m key query & inputs]
    (let [result (apply q query inputs)]
      (assoc m key result)))
-  ([key query & inputs]
-   (fn inject* [m] (apply inject m key query inputs))))
+  ([key query] ;; not possible to have & inputs due to conflict with upper args
+   (fn inject* [m] (inject m key query))))
 
 ;; Pipes are a combination of 3 concepts:
 ;; - UNIX pipes
