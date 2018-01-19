@@ -1,4 +1,4 @@
-(ns hive.services.http
+(ns hive.services.raw.http
   (:require [cljs.core.async :as async]
             [cljs.spec.alpha :as s]
             [hive.rework.core :as rework]

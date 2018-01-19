@@ -1,7 +1,7 @@
 (ns hive.services.directions
   (:require [clojure.string :as str]
             [cljs.spec.alpha :as s]
-            [hive.services.http :as http]
+            [hive.services.raw.http :as http]
             [hive.rework.core :as rework]
             [hive.queries :as queries]
             [hive.rework.util :as tool]))

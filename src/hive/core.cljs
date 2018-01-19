@@ -3,14 +3,13 @@
             [hive.foreigns :as fl]
             [hive.components.core :refer [View Image Text TouchableHighlight Icon]]
             [hive.state :as state]
-            [hive.services.location :as location]
+            [hive.services.location :as position]
+            [hive.services.raw.location :as location]
             [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.rework.core :as work :refer-macros [go-try <?]]
-            [datascript.core :as data]
-            [clojure.core.async :as async]
-            [hive.rework.util :as tool]))
+            [datascript.core :as data]))
 
 (defn root-ui
   []
@@ -37,15 +36,11 @@
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
   (let [conn (data/create-conn state/schema)
-        data (cons {:app/session (data/squuid)} state/defaults)
-        cb      (comp work/transact! location/update-position)
-        opts    {::location/enableHighAccuracy true
-                 ::location/timeInterval 3000
-                 ::location/callback cb}]
+        data (cons {:app/session (data/squuid)} state/defaults)]
     (data/transact! conn data)
     (work/init! conn)
     (go-try
-      (let [remover (location/watch! opts)]
+      (let [remover (location/watch! position/defaults)]
         (work/transact! (<? remover)))
       (catch :default error
         (fl/toast! (ex-message error))))
