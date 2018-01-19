@@ -122,7 +122,7 @@
 
 (defn- set-path
   [path]
-  (if (not= (:code path))
+  (if (not= (:code path) "Ok")
     (ex-info (or (:msg path) "invalid response")
              path ::invalid-response)
     [{:user/id (:user/id path)
@@ -140,8 +140,7 @@
     (let [places (set-goal (work/inject target :user/id queries/user-id))
           paths  (set-path! target)]
       (work/transact! (concat (<? paths) places)))
-    (catch :default error
-      (fl/toast! (ex-message error)))))
+    (catch :default error (tool/log error))))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his

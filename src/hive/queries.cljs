@@ -12,9 +12,9 @@
                  :where [?id :user/id]
                         [?id :user/city ?city]])
 
-(def user-route '[:find ?directions .
-                  :where [?id :user/id]
-                         [?id :user/directions ?directions]])
+(def user-directions '[:find ?directions .
+                       :where [?id :user/id]
+                              [?id :user/directions ?directions]])
 
 (def user-places '[:find ?places .
                    :where [?id :user/id]

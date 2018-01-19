@@ -30,6 +30,7 @@
   [request]
   (let [coords  (str/join ";" (map #(str/join "," %) (::coordinates request)))
         request (assoc request ::geometries "geojson"
+                               ::steps true
                                ::profile "mapbox/walking"
                                ::coordinates coords)
         params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))

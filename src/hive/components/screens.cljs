@@ -6,7 +6,8 @@
             [hive.queries :as queries]
             [hive.rework.core :as rework]
             [cljs.core.async :as async :refer [go]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [hive.rework.util :as tool]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -24,7 +25,8 @@
 (defn directions
   "basic navigation directions"
   [props]
-  (let [route        @(rework/q! queries/user-route)
+  (let [dirs        @(rework/q! queries/user-directions)
+        route        (first (:routes dirs))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
@@ -34,29 +36,30 @@
      [:> Content
       [:> Card
        [:> CardItem [:> Icon {:name "flag"}]
-        [:> Text "distance: " 5 " meters"]] ;(:distance @route)
+        [:> Text (str "distance: " (:distance route) " meters")]]
        [:> CardItem [:> Icon {:name "information-circle"}]
-        [:> Text "duration: " (Math/round (/ 10 60)) " minutes"]] ;(:duration @route)
+        [:> Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
        [:> CardItem [:> Icon {:name "time"}]
-        [:> Text "time of arrival: " (str (js/Date. (+ (js/Date.now)
-                                                       (* 1000 20)))) ;(:duration @route))))))
-         " minutes"]]]
+        [:> Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
+                                                       (* 1000 (:duration route))))
+                      " minutes")]]]
       [:> Card
-       [:> CardItem [:> Icon {:name "map"}]
-        [:> Text "Instructions: "
-         (for [[id text] instructions]
-           (if (= id (first (last instructions)))
-             ^{:key id} [:> CardItem [:> Icon {:name "flag"}]
-                         [text text]]
-             ^{:key id} [:> CardItem [:> Icon {:name "ios-navigate-outline"}]
-                         [text text]]))]]]]]))
+       [:> CardItem [:> Icon {:name "map"}]]
+       [:> Text "Instructions: "]
+       (for [[id text] instructions]
+         ^{:key id}
+         [:> CardItem
+          (if (= id (first (last instructions)))
+            [:> Icon {:name "flag"}]
+            [:> Icon {:name "ios-navigate-outline"}])
+          [:> Text text]])]]]))
 
 (defn home
   [props]
   (let [city      @(rework/q! queries/user-city)
         features  (rework/q! queries/user-places)
         goal      @(rework/q! queries/user-goal)
-        route     @(rework/q! queries/user-route)]
+        route     @(rework/q! queries/user-directions)]
     [:> Container {}
      [els/search-bar props features]
      (if (empty? @features)
