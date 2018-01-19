@@ -10,7 +10,8 @@
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
             [hive.services.directions :as directions]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [hiposfer.geojson.specs :as geojson]))
 
 (defn update-city
   [data]
@@ -66,6 +67,8 @@
     :user/places (:features data)}])
 
 (def geocode! (work/pipe (tool/validate (s/keys :req [::geocoding/query]) ::invalid-input)
+                         (work/inject ::geocoding/proximity queries/user-position)
+                         (work/inject ::geocoding/access_token queries/mapbox-token)
                          geocoding/autocomplete!
                          (work/inject :user/id queries/user-id)
                          update-places))

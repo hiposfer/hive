@@ -2,20 +2,19 @@
   (:require [clojure.string :as str]
             [cljs.spec.alpha :as s]
             [hive.services.raw.http :as http]
-            [hive.rework.core :as rework]
-            [hive.queries :as queries]
-            [hive.rework.util :as tool]))
+            [hive.rework.core :as work]
+            [hive.rework.util :as tool]
+            [hiposfer.geojson.specs :as geojson]))
 
 (s/def ::input (s/and string? not-empty))
-(s/def ::coordinate (s/tuple number? number?))
 (s/def ::query (s/or :location ::input
-                     :coordinate ::coordinate))
+                     :coordinate ::geojson/position))
 (s/def ::mode #{"mapbox.places" "mapbox.places-permanent"})
 (s/def ::country ::input)
-(s/def ::proximity ::coordinate)
+(s/def ::proximity ::geojson/position)
 (s/def ::types string?)
 (s/def ::autocomplete boolean?)
-(s/def ::bbox (s/tuple number? number? number? number?))
+(s/def ::bbox ::geojson/bbox)
 (s/def ::limit number?)
 (s/def ::language ::input)
 (s/def ::access_token (s/and string? not-empty))
@@ -30,14 +29,17 @@
   "takes a map with the items required by ::request and replaces their values into
    the Mapbox URL template. Returns the full url to use with an http service"
   [request]
-  (let [request (assoc request ::autocomplete true
-                               ::mode  "mapbox.places")
-        params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
-                     (dissoc request ::query ::mode))
-        URL (-> (str/replace template "{mode}" (::mode request))
-                (str/replace "{query}" (js/encodeURIComponent (::query request)))
-                (str/replace "{params}" (str/join "&" params)))]
-    [URL]))
+  (if (nil? (::proximity request))
+    (ex-info "missing gps information" request ::unknown-location)
+    (let [request (assoc request ::autocomplete true
+                                 ::mode  "mapbox.places"
+                                 ::proximity (geojson/uri (::proximity request)))
+          params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
+                       (dissoc request ::query ::mode))
+          URL (-> (str/replace template "{mode}" (::mode request))
+                  (str/replace "{query}" (js/encodeURIComponent (::query request)))
+                  (str/replace "{params}" (str/join "&" params)))]
+        [URL])))
 
 (def autocomplete!
   "takes an autocomplete geocoding channel and a request shaped
@@ -45,9 +47,8 @@
    Returns a channel with the result or an exception
 
   https://www.mapbox.com/api-documentation/#request-format"
-  (rework/pipe (rework/inject ::access_token queries/mapbox-token)
-               autocomplete
-               http/json!
-               tool/keywordize))
+  (work/pipe autocomplete
+             http/json!
+             tool/keywordize))
 
 (s/fdef autocomplete :args (s/cat :request ::request))
