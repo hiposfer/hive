@@ -61,14 +61,6 @@
   dependencies:
     cross-spawn "^5.1.0"
 
-"@expo/traveling-fastlane-darwin@1.2.5":
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/@expo/traveling-fastlane-darwin/-/traveling-fastlane-darwin-1.2.5.tgz#45c7d71bfb2227599856cb319b7ac50b6cd7e4d0"
-
-"@expo/traveling-fastlane-linux@1.2.5":
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/@expo/traveling-fastlane-linux/-/traveling-fastlane-linux-1.2.5.tgz#32f4c3636c84faef53989a052cab32f783d9129b"
-
 "@expo/vector-icons@^5.0.0":
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/@expo/vector-icons/-/vector-icons-5.2.0.tgz#877f75c00bf21313cdb231c92cbcfd40e46ee2a1"
@@ -1342,10 +1334,6 @@ cli-cursor@^2.1.0:
   dependencies:
     restore-cursor "^2.0.0"
 
-cli-spinners@^1.0.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/cli-spinners/-/cli-spinners-1.1.0.tgz#f1847b168844d917a671eb9d147e3df497c90d06"
-
 cli-table@^0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/cli-table/-/cli-table-0.3.1.tgz#f53b05266a8b1a0b934b3d0821e6e2dc5914ae23"
@@ -1610,7 +1598,7 @@ create-react-class@15.6.0:
     loose-envify "^1.3.1"
     object-assign "^4.1.1"
 
-create-react-class@^15.5.2, create-react-class@^15.6.0:
+create-react-class@^15.5.2:
   version "15.6.2"
   resolved "https://registry.yarnpkg.com/create-react-class/-/create-react-class-15.6.2.tgz#cf1ed15f12aad7f14ef5f2dfe05e6c42f91ef02a"
   dependencies:
@@ -1855,10 +1843,10 @@ envinfo@^3.0.0:
     which "^1.2.14"
 
 "errno@>=0.1.1 <0.2.0-0", errno@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/errno/-/errno-0.1.4.tgz#b896e23a9e5e8ba33871fc996abd3635fc9a1c7d"
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/errno/-/errno-0.1.6.tgz#c386ce8a6283f14fc09563b71560908c9bf53026"
   dependencies:
-    prr "~0.0.0"
+    prr "~1.0.1"
 
 error-ex@^1.2.0:
   version "1.3.1"
@@ -1986,9 +1974,9 @@ exit-hook@^1.0.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/exit-hook/-/exit-hook-1.1.1.tgz#f05ca233b48c05d54fff07765df8507e95c02ff8"
 
-exp@^47.4.4:
-  version "47.4.4"
-  resolved "https://registry.yarnpkg.com/exp/-/exp-47.4.4.tgz#2862b827e181f938f6ef6a2fadb742d7c5aa201a"
+exp@46.0.3:
+  version "46.0.3"
+  resolved "https://registry.yarnpkg.com/exp/-/exp-46.0.3.tgz#f38d66f2ad5e1c189c06db9c4ba4daf0983b64d7"
   dependencies:
     "@expo/bunyan" "^1.8.10"
     "@expo/json-file" "^5.2.0"
@@ -2000,23 +1988,17 @@ exp@^47.4.4:
     commander "^2.9.0"
     delay-async "^1.0.0"
     es6-error "^3.0.0"
-    fs-extra "^4.0.2"
     glob "^7.0.3"
     indent-string "^3.1.0"
     inquirer "^2.0.0"
     lodash "^4.17.4"
     mz "^2.6.0"
-    ora "^1.3.0"
     progress "^2.0.0"
     qrcode-terminal "^0.11.0"
     semver "^5.0.1"
-    slash "^1.0.0"
     source-map-support "^0.4.1"
     untildify "^3.0.2"
-    xdl "47.1.4"
-  optionalDependencies:
-    "@expo/traveling-fastlane-darwin" "1.2.5"
-    "@expo/traveling-fastlane-linux" "1.2.5"
+    xdl "47.0.1"
 
 expand-brackets@^0.1.4:
   version "0.1.5"
@@ -2470,10 +2452,6 @@ glob-parent@^2.0.0:
   dependencies:
     is-glob "^2.0.0"
 
-glob-promise@^3.3.0:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/glob-promise/-/glob-promise-3.3.0.tgz#d1eb3625c4e6dcbb9b96eeae4425d5a3b135fed2"
-
 glob@^6.0.1:
   version "6.0.4"
   resolved "https://registry.yarnpkg.com/glob/-/glob-6.0.4.tgz#0f08860f6a155127b2fadd4f9ce24b1aab6e4d22"
@@ -2738,10 +2716,6 @@ iconv-lite@0.4.19, iconv-lite@^0.4.17, iconv-lite@^0.4.8, iconv-lite@~0.4.13:
   version "0.4.19"
   resolved "https://registry.yarnpkg.com/iconv-lite/-/iconv-lite-0.4.19.tgz#f7468f60135f5e5dad3399c0a81be9a1603a082b"
 
-idx@^2.1.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/idx/-/idx-2.2.0.tgz#8544749f9faba6409822b5d9488ba5bc77b8fbfe"
-
 image-size@^0.6.0:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/image-size/-/image-size-0.6.1.tgz#98122a562d59dcc097ef1b2c8191866eb8f5d663"
@@ -2810,6 +2784,10 @@ inquirer@^3.0.6:
     string-width "^2.1.0"
     strip-ansi "^4.0.0"
     through "^2.3.6"
+
+instapromise@2.0.7-rc.1:
+  version "2.0.7-rc.1"
+  resolved "https://registry.yarnpkg.com/instapromise/-/instapromise-2.0.7-rc.1.tgz#34aff619a45ea7d32bb122866a9e315ee73033e8"
 
 instapromise@^2.0.7:
   version "2.0.7"
@@ -3350,7 +3328,7 @@ lodash.zipobject@^4.1.3:
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/lodash.zipobject/-/lodash.zipobject-4.1.3.tgz#b399f5aba8ff62a746f6979bf20b214f964dbef8"
 
-lodash@4.17.4, lodash@^4.0.0, lodash@^4.10.1, lodash@^4.11.1, lodash@^4.13.1, lodash@^4.14.0, lodash@^4.14.1, lodash@^4.16.6, lodash@^4.17.4, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0, lodash@^4.6.1:
+lodash@4.17.4, lodash@^4.0.0, lodash@^4.10.1, lodash@^4.11.1, lodash@^4.14.0, lodash@^4.14.1, lodash@^4.16.6, lodash@^4.17.4, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0, lodash@^4.6.1:
   version "4.17.4"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.4.tgz#78203a4d1c328ae1d86dca6460e369b57f4055ae"
 
@@ -3369,12 +3347,6 @@ lodash@~4.11.1:
 lodash@~4.5.1:
   version "4.5.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.5.1.tgz#80e8a074ca5f3893a6b1c10b2a636492d710c316"
-
-log-symbols@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/log-symbols/-/log-symbols-1.0.2.tgz#376ff7b58ea3086a0f09facc74617eca501e1a18"
-  dependencies:
-    chalk "^1.0.0"
 
 logfmt@^1.2.0:
   version "1.2.0"
@@ -3395,8 +3367,8 @@ loose-envify@^1.0.0, loose-envify@^1.1.0, loose-envify@^1.3.1:
     js-tokens "^3.0.0"
 
 lottie-ios@^2.0.5:
-  version "2.1.3"
-  resolved "https://registry.yarnpkg.com/lottie-ios/-/lottie-ios-2.1.3.tgz#57b2328511a26606dc6de7a74bbdbf77f92c6aa0"
+  version "2.1.5"
+  resolved "https://registry.yarnpkg.com/lottie-ios/-/lottie-ios-2.1.5.tgz#33be2a74fbf2614a6b6f302506dc21c1090c585a"
 
 lottie-react-native@2.2.0:
   version "2.2.0"
@@ -3730,29 +3702,29 @@ nan@^2.3.0:
   version "2.8.0"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.8.0.tgz#ed715f3fe9de02b57a5e6252d90a96675e1f085a"
 
-native-base-shoutem-theme@0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/native-base-shoutem-theme/-/native-base-shoutem-theme-0.2.1.tgz#8494783833dcc5bace945db68dc7bfce209fcc40"
+native-base-shoutem-theme@0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/native-base-shoutem-theme/-/native-base-shoutem-theme-0.2.2.tgz#5823310455fe391adf72236469c039fd44f56a20"
   dependencies:
     hoist-non-react-statics "^1.0.5"
     lodash "^4.10.1"
     prop-types "^15.5.10"
 
 native-base@^2.3.3:
-  version "2.3.3"
-  resolved "https://registry.yarnpkg.com/native-base/-/native-base-2.3.3.tgz#de35234cf9cf8d24b5ce5e1720f8330dd5f3c96a"
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/native-base/-/native-base-2.3.7.tgz#3a974d1aedef9b68fcbe8a9140358cc5349caeb2"
   dependencies:
     blueimp-md5 "^2.5.0"
     clamp "^1.0.1"
     color "~1.0.3"
     fs-extra "^2.0.0"
     lodash "~4.11.1"
-    native-base-shoutem-theme "0.2.1"
+    native-base-shoutem-theme "0.2.2"
     print-message "^2.1.0"
     prop-types "^15.5.10"
-    react-native-drawer "https://github.com/GeekyAnts/react-native-drawer"
+    react-native-drawer "2.5.0"
     react-native-easy-grid "0.1.15"
-    react-native-keyboard-aware-scroll-view "https://github.com/GeekyAnts/react-native-keyboard-aware-scroll-view"
+    react-native-keyboard-aware-scroll-view "0.4.2"
     react-native-vector-icons "~4.4.2"
     react-tween-state "^0.1.5"
     tween-functions "^1.0.1"
@@ -3972,15 +3944,6 @@ optionator@^0.8.1:
 options@>=0.0.5:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/options/-/options-0.0.6.tgz#ec22d312806bb53e731773e7cdaefcf1c643128f"
-
-ora@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/ora/-/ora-1.3.0.tgz#80078dd2b92a934af66a3ad72a5b910694ede51a"
-  dependencies:
-    chalk "^1.1.1"
-    cli-cursor "^2.1.0"
-    cli-spinners "^1.0.0"
-    log-symbols "^1.0.2"
 
 os-homedir@^1.0.0:
   version "1.0.2"
@@ -4295,9 +4258,9 @@ proxy-agent@2:
     pac-proxy-agent "^2.0.0"
     socks-proxy-agent "^3.0.0"
 
-prr@~0.0.0:
-  version "0.0.0"
-  resolved "https://registry.yarnpkg.com/prr/-/prr-0.0.0.tgz#1a84b85908325501411853d0081ee3fa86e2926a"
+prr@~1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/prr/-/prr-1.0.1.tgz#d3fc114ba06995a45ec6893f484ceb1d78f5f476"
 
 pseudomap@^1.0.1, pseudomap@^1.0.2:
   version "1.0.2"
@@ -4435,9 +4398,9 @@ react-native-drawer-layout@1.3.2:
   dependencies:
     react-native-dismiss-keyboard "1.0.0"
 
-"react-native-drawer@https://github.com/GeekyAnts/react-native-drawer":
-  version "2.3.0"
-  resolved "https://github.com/GeekyAnts/react-native-drawer#8d9078516d177c9cb02d2579a6860706d2370d25"
+react-native-drawer@2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/react-native-drawer/-/react-native-drawer-2.5.0.tgz#022cba5c0516126a9fc9cce3185cb46c644b51c4"
   dependencies:
     prop-types "^15.5.8"
     tween-functions "^1.0.1"
@@ -4454,13 +4417,16 @@ react-native-gesture-handler@1.0.0-alpha.22:
   dependencies:
     prop-types "^15.5.10"
 
-"react-native-keyboard-aware-scroll-view@https://github.com/GeekyAnts/react-native-keyboard-aware-scroll-view":
-  version "0.2.9"
-  resolved "https://github.com/GeekyAnts/react-native-keyboard-aware-scroll-view#f4805f254d6cc8e3329f5fb224944401f66655db"
+react-native-iphone-x-helper@^1.0.1:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/react-native-iphone-x-helper/-/react-native-iphone-x-helper-1.0.2.tgz#7dbca530930f7c1ce8633cc8fd13ba94102992e1"
+
+react-native-keyboard-aware-scroll-view@0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/react-native-keyboard-aware-scroll-view/-/react-native-keyboard-aware-scroll-view-0.4.2.tgz#f8777e5ab14ac8416d86376f15a99dd59e87522f"
   dependencies:
-    create-react-class "^15.6.0"
-    prop-types "^15.5.10"
-    react-timer-mixin "^0.13.3"
+    prop-types "^15.6.0"
+    react-native-iphone-x-helper "^1.0.1"
 
 react-native-maps@0.15.3:
   version "0.15.3"
@@ -4619,7 +4585,7 @@ react-redux@^5.0.2:
     loose-envify "^1.1.0"
     prop-types "^15.5.10"
 
-react-timer-mixin@^0.13.2, react-timer-mixin@^0.13.3:
+react-timer-mixin@^0.13.2:
   version "0.13.3"
   resolved "https://registry.yarnpkg.com/react-timer-mixin/-/react-timer-mixin-0.13.3.tgz#0da8b9f807ec07dc3e854d082c737c65605b3d22"
 
@@ -4646,15 +4612,6 @@ react@16.0.0-alpha.12:
     loose-envify "^1.1.0"
     object-assign "^4.1.0"
     prop-types "^15.5.6"
-
-react@^16.0.0:
-  version "16.2.0"
-  resolved "https://registry.yarnpkg.com/react/-/react-16.2.0.tgz#a31bd2dab89bff65d42134fa187f24d054c273ba"
-  dependencies:
-    fbjs "^0.8.16"
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
-    prop-types "^15.6.0"
 
 read-chunk@^2.0.0:
   version "2.1.0"
@@ -4817,20 +4774,6 @@ request-progress@^3.0.0:
   dependencies:
     throttleit "^1.0.0"
 
-request-promise-core@1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/request-promise-core/-/request-promise-core-1.1.1.tgz#3eee00b2c5aa83239cfb04c5700da36f81cd08b6"
-  dependencies:
-    lodash "^4.13.1"
-
-request-promise-native@^1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/request-promise-native/-/request-promise-native-1.0.5.tgz#5281770f68e0c9719e5163fd3fab482215f4fda5"
-  dependencies:
-    request-promise-core "1.1.1"
-    stealthy-require "^1.1.0"
-    tough-cookie ">=2.3.3"
-
 request@2.81.0:
   version "2.81.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.81.0.tgz#c6928946a0e06c5f8d6f8a9333469ffda46298a0"
@@ -4858,7 +4801,7 @@ request@2.81.0:
     tunnel-agent "^0.6.0"
     uuid "^3.0.0"
 
-request@^2.79.0, request@^2.81.0, request@^2.83.0:
+request@^2.74.0, request@^2.79.0, request@^2.81.0, request@^2.83.0:
   version "2.83.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.83.0.tgz#ca0b65da02ed62935887808e6f510381034e3356"
   dependencies:
@@ -5260,12 +5203,6 @@ split@0.2.x:
   dependencies:
     through "2"
 
-split@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/split/-/split-1.0.1.tgz#605bd9be303aa59fb35f9229fbea0ddec9ea07d9"
-  dependencies:
-    through "2"
-
 sshpk@^1.7.0:
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/sshpk/-/sshpk-1.13.1.tgz#512df6da6287144316dc4c18fe1cf1d940739be3"
@@ -5299,10 +5236,6 @@ statuses@~1.2.1:
 statuses@~1.3.1:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.3.1.tgz#faf51b9eb74aaef3b3acf4ad5f61abf24cb7b93e"
-
-stealthy-require@^1.1.0:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/stealthy-require/-/stealthy-require-1.1.1.tgz#35b09875b4ff49f26a777e509b3090a3226bf24b"
 
 stream-buffers@~2.2.0:
   version "2.2.0"
@@ -5561,7 +5494,7 @@ touch@0.0.3:
   dependencies:
     nopt "~1.0.10"
 
-tough-cookie@>=2.3.3, tough-cookie@~2.3.0, tough-cookie@~2.3.3:
+tough-cookie@~2.3.0, tough-cookie@~2.3.3:
   version "2.3.3"
   resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-2.3.3.tgz#0b618a5565b6dea90bf3425d04d55edc475a7561"
   dependencies:
@@ -5913,13 +5846,12 @@ xcode@^0.9.1:
     simple-plist "^0.2.1"
     uuid "3.0.1"
 
-xdl@47.1.4:
-  version "47.1.4"
-  resolved "https://registry.yarnpkg.com/xdl/-/xdl-47.1.4.tgz#dabe4ca6f9c61520a69c95d502d1a3544d305cfb"
+xdl@47.0.1:
+  version "47.0.1"
+  resolved "https://registry.yarnpkg.com/xdl/-/xdl-47.0.1.tgz#ae322ca562edcc4e9e59e79f14495f8f0aeb73fd"
   dependencies:
     "@expo/bunyan" "^1.8.10"
     "@expo/json-file" "^5.3.0"
-    "@expo/ngrok" "2.3.0"
     "@expo/osascript" "^1.8.0"
     "@expo/schemer" "1.1.0"
     "@expo/spawn-async" "^1.2.8"
@@ -5941,19 +5873,17 @@ xdl@47.1.4:
     fs-extra "^4.0.2"
     getenv "^0.7.0"
     glob "^7.0.3"
-    glob-promise "^3.3.0"
     globby "^6.1.0"
     hasbin "^1.2.3"
     home-dir "^1.0.0"
-    idx "^2.1.0"
     indent-string "^3.1.0"
+    instapromise "2.0.7-rc.1"
     joi "^10.0.2"
     jsonfile "^2.3.1"
     jsonschema "^1.1.0"
     jsonwebtoken "^7.2.1"
     lodash "^4.14.1"
     md5hex "^1.0.0"
-    minimatch "^3.0.4"
     mkdirp "^0.5.1"
     mkdirp-promise "^5.0.0"
     mv "^2.1.1"
@@ -5961,24 +5891,20 @@ xdl@47.1.4:
     ncp "^2.0.0"
     opn "^4.0.2"
     plist "2.1.0"
-    prop-types "^15.5.10"
     querystring "^0.2.0"
     raven "^2.1.1"
     raven-js "^3.17.0"
-    react "^16.0.0"
     react-redux "^5.0.2"
     read-chunk "^2.0.0"
     redux "^3.6.0"
     redux-logger "^2.7.4"
     replace-string "^1.1.0"
-    request "^2.83.0"
+    request "^2.74.0"
     request-progress "^3.0.0"
-    request-promise-native "^1.0.5"
     semver "^5.3.0"
     slugid "^1.1.0"
     slugify "^1.0.2"
     source-map-support "^0.4.2"
-    split "^1.0.1"
     tar "^4.0.2"
     tree-kill "^1.1.0"
     url "^0.11.0"

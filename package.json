@@ -17,6 +17,6 @@
     "react-navigation": "^1.0.0-beta.19"
   },
   "devDependencies": {
-    "exp": "^47.4.4"
+    "exp": "46.0.3"
   }
 }
