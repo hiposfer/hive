@@ -72,3 +72,4 @@ fabric.properties
 /assets/init.json
 
 .lan-ip
+/hive.iml
