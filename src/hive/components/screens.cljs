@@ -54,12 +54,12 @@
 (defn home
   [props]
   (let [city      @(rework/q! queries/user-city)
-        features  @(rework/q! queries/user-places)
+        features  (rework/q! queries/user-places)
         goal      @(rework/q! queries/user-goal)
         route     @(rework/q! queries/user-route)]
     [:> Container {}
-     [els/search-bar props]
-     (if (empty? features)
+     [els/search-bar props features]
+     (if (empty? @features)
        [:> View {:style {:flex 1}}
         [:> MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry city)))
                                            {:latitudeDelta 0.02,
@@ -79,7 +79,7 @@
           [:> Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> Icon {:name "information-circle" :transparent true}]
            [:> Text (:text goal)]])]
-       [els/places features])]))
+       [els/places @features])]))
 
 (defn settings
   [props]

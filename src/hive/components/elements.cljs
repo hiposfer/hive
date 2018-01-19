@@ -9,7 +9,8 @@
             [clojure.string :as str]
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
-            [hive.services.directions :as directions]))
+            [hive.services.directions :as directions]
+            [reagent.core :as r]))
 
 (defn update-city
   [data]
@@ -64,27 +65,48 @@
   [{:user/id (:user/id data)
     :user/places (:features data)}])
 
-(def autocomplete!
+(defn- update-input-text
+  [data]
+  [{:app/session (:app/session data)
+    :app.searc 2}])
+
+(def geocode! (work/pipe (tool/validate (s/keys :req [::geocoding/query]) ::invalid-input)
+                         geocoding/autocomplete!
+                         (work/inject :user/id queries/user-id)
+                         update-places))
+
+(defn autocomplete!
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  (work/pipe #(tool/validate (s/keys :req [::geocoding/query]) % ::invalid-input)
-             geocoding/autocomplete!
-             (work/inject :user/id queries/user-id)
-             update-places
-             work/transact!))
+  [query]
+  (go-try (work/transact! (<? (geocode! query)))
+    (catch :default error
+      (case (ex-cause error)
+        ::invalid-input (work/transact! [{:user/id (work/q queries/user-id)
+                                          :user/places []}])))))
 
-;; todo: handle autocomplete errors
+(defn- clear-input! []
+  (work/transact! [{:user/places []
+                    :user/id (work/q queries/user-id)}]))
+
+
 (defn- search-bar
-  [props]
-  (let [navigate (:navigate (:navigation props))]
+  [props features]
+  (let [navigate (:navigate (:navigation props))
+        input-props {:placeholder "Where would you like to go?"
+                     :onChangeText #(autocomplete! {::geocoding/query %})}]
     [:> Header {:searchBar true :rounded true}
      [:> Item {}
       [:> Button {:transparent true :full true
                   :on-press #(navigate "DrawerToggle")}
        [:> Icon {:name "ios-menu" :transparent true}]]
-      [:> Input {:placeholder "Where would you like to go?"
-                 :onChangeText #(autocomplete! {::geocoding/query %})}]
-      [:> Icon {:name "ios-search"}]]]))
+      [:> Input (if (not-empty @features) input-props
+                  (assoc input-props :value ""))]
+      (if (empty? @features)
+        [:> Icon {:name "ios-search"}]
+        [:> Button {:transparent true :full true
+                    :on-press    clear-input!}
+          [:> Icon {:name "close"}]])]]))
 
 (defn- set-goal
   "set feature as the user goal and removes the :user/places attributes from the app

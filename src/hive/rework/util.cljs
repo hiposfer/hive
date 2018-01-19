@@ -85,8 +85,12 @@
 (defn validate
   "validates the request against the provided spec. Returns the request if valid
   or an ex-info with cause otherwise"
-  [spec value cause]
-  (if (s/valid? spec value) value
-    (ex-info (s/explain-str spec value)
-             (s/explain-data spec value)
-             cause)))
+  ([spec value cause]
+   (if (s/valid? spec value) value
+                             (ex-info (s/explain-str spec value)
+                                      (s/explain-data spec value)
+                                      cause)))
+  ([spec cause]
+   (fn validate* [value] (validate spec value cause))))
+
+
