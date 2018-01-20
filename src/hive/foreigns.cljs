@@ -10,6 +10,7 @@
 (def Constants (js->clj (.-Constants Expo) :keywordize-keys true))
 (def Permissions (js->clj (.-Permissions Expo) :keywordize-keys true))
 (def Platform (js->clj (.-Platform ReactNative) :keywordize-keys true))
+(def Store (js->clj (.-SecureStore Expo) :keywordize-keys true))
 
 (def app-registry  (.-AppRegistry ReactNative))
 ;(def async-storage (.-AsyncStorage ReactNative))
