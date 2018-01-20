@@ -16,7 +16,8 @@
 ;; needs to be an array of maps. This will be used for data/transact!
 (def defaults
   (concat (map #(tool/with-ns "city" %) cities)
-          [{:user/id -1 ;; dummy
-            :user/city [:city/name "Frankfurt am Main"]}
+          [{:user/id -1} ;; dummy
            (tool/with-ns "token" tokens)]))
 
+
+(def default-city {:user/city [:city/name "Frankfurt am Main"]})

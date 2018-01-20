@@ -76,7 +76,7 @@
   [o]
   (js->clj o :keywordize-keys true))
 
-(defn log
+(defn log!
   "pretty prints the input and returns it"
   [o]
   (do (print/pprint o)

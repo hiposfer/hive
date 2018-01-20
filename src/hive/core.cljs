@@ -9,7 +9,11 @@
             [hive.components.navigation :as nav]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.rework.core :as work :refer-macros [go-try <?]]
-            [datascript.core :as data]))
+            [datascript.core :as data]
+            [hive.services.store :as store]
+            [hive.queries :as queries]
+            [clojure.core.async :as async]
+            [hive.rework.util :as tool]))
 
 (defn root-ui []
   (let [HomeDirections (rn-nav/stack-screen screens/directions
@@ -31,6 +35,10 @@
                                        {})]
     [:> Root]))
 
+(defn register! []
+  (.registerComponent fl/app-registry "main"
+                      #(r/reactify-component root-ui)))
+
 (defn init!
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
@@ -38,14 +46,18 @@
         data (cons {:app/session (data/squuid)} state/defaults)]
     (data/transact! conn data)
     (work/init! conn)
-    (go-try
-      (let [remover (location/watch! position/defaults)]
-        (work/transact! (<? remover)))
-      (catch :default error
-        (fl/toast! (ex-message error))))
-    (.registerComponent fl/app-registry "main"
-      #(r/reactify-component root-ui))))
+    (go-try (work/transact! (<? (location/watch! position/defaults)))
+            (catch :default error (fl/toast! (ex-message error))))
+    (go-try (let [city (<? (store/load! [:user/city]))
+                  tx   (work/inject city :user/id queries/user-id)]
+              (work/transact! [tx]))
+            (catch :default error
+              (work/transact! [(work/inject state/default-city
+                                            :user/id queries/user-id)])
+              (tool/log! error))
+            (finally (register!)))))
 
+;(async/take! (store/delete! [:user/city]) println)
 
 ;; this also works but it is not as clear
 ;(async/take! (location/watch! {::location/enableHighAccuracy true
@@ -66,3 +78,8 @@
 ;; that changed should be stored.
 ;; Did I forget anything there?
 ;; PS: simply use add-watch to the datascript conn
+
+hive.rework.state
+
+;(async/take! (store/load! [:user/city]) println)
+;; TODO: if nothing is stored or loaded then the complete function should be an error

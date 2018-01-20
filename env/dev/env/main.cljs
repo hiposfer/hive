@@ -19,6 +19,10 @@
 
 ;; initialization required by fighwheel bridge to play well with
 ;; react native. Please omit the ugliness of this
+;; TODO: I am not entirely sure if this initialization is not causing me troubles
+;; when I start the app, the map is shown with a warning of not providing an initial
+;; region. I think that figwheel is loading the UI even before that I register it in
+;; init!. If so then this glitch should only happen in development
 (def counter (r/atom 0))
 (defn reloader [] @counter [core/root-ui])
 (def root-el (r/as-element [reloader]))

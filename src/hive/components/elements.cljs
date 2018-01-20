@@ -10,21 +10,30 @@
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
             [hive.services.directions :as directions]
+            [hive.services.store :as store]
             [reagent.core :as r]
-            [hiposfer.geojson.specs :as geojson]))
+            [hiposfer.geojson.specs :as geojson]
+            [clojure.core.async :as async]))
 
 (defn update-city
   [data]
-  [{:user/id (:user/id data)
-    :user/city [:city/name (:city/name data)]}])
+  {:user/id (:user/id data)
+   :user/city [:city/name (:city/name data)]})
 
-(defn move-to [city] (update-city (work/inject city :user/id queries/user-id)))
+(defn move-to!
+  [city props]
+  (let [data (work/inject city :user/id queries/user-id)
+        tx   (update-city data)]
+    (go-try
+      (work/transact! [tx])
+      (<? (store/save! (select-keys tx [:user/city])))
+      ((:navigate (:navigation props)) "Home")
+      (catch :default error (cljs.pprint/pprint error)))))
 
 (defn city-selector
   [city props]
   ^{:key (:city/name city)}
-  [:> ListItem {:on-press #(do (work/transact! (move-to city))
-                               ((:navigate (:navigation props)) "Home"))}
+  [:> ListItem {:on-press #(move-to! city props)}
      [:> Body {}
        [:> Text (:city/name city)]
        [:> Text {:note true :style {:color "gray"}}
@@ -140,7 +149,7 @@
     (let [places (set-goal (work/inject target :user/id queries/user-id))
           paths  (set-path! target)]
       (work/transact! (concat (<? paths) places)))
-    (catch :default error (tool/log error))))
+    (catch :default error (tool/log! error))))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
