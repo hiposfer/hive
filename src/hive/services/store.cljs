@@ -65,11 +65,11 @@
         :ret tool/chan?)
 
 (s/fdef load!
-        :args (s/coll-of ::store/key)
+        :args (s/cat :ks (s/coll-of ::store/key))
         :ret tool/chan?)
 
 (s/fdef delete!
-        :args (s/coll-of ::store/key)
+        :args (s/cat :ks (s/coll-of ::store/key))
         :ret tool/chan?)
 
 ;(require '[clojure.spec.test.alpha :as stest])
