@@ -10,10 +10,7 @@
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
             [hive.services.directions :as directions]
-            [hive.services.store :as store]
-            [reagent.core :as r]
-            [hiposfer.geojson.specs :as geojson]
-            [clojure.core.async :as async]))
+            [hive.services.store :as store]))
 
 (defn update-city
   [data]
@@ -24,10 +21,9 @@
   [city props]
   (let [data (work/inject city :user/id queries/user-id)
         tx   (update-city data)]
-    (go-try
-      (work/transact! [tx])
-      (<? (store/save! (select-keys tx [:user/city])))
-      ((:navigate (:navigation props)) "Home")
+    (go-try (work/transact! [tx])
+            (<? (store/save! (select-keys tx [:user/city])))
+            ((:navigate (:navigation props)) "Home")
       (catch :default error (cljs.pprint/pprint error)))))
 
 (defn city-selector

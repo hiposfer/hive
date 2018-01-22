@@ -13,7 +13,8 @@
             [hive.services.store :as store]
             [hive.queries :as queries]
             [clojure.core.async :as async]
-            [hive.rework.util :as tool]))
+            [hive.rework.util :as tool]
+            [cljs.spec.alpha :as s]))
 
 (defn root-ui []
   (let [HomeDirections (rn-nav/stack-screen screens/directions
@@ -39,18 +40,26 @@
   (.registerComponent fl/app-registry "main"
                       #(r/reactify-component root-ui)))
 
+(s/def ::object (s/and map? not-empty))
+
+(def reload-config!
+  (work/pipe store/load!
+             (tool/validate ::object ::invalid-result)
+             (work/inject :user/id queries/user-id)
+             vector
+             work/transact!))
+
 (defn init!
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
-  (let [conn (data/create-conn state/schema)
-        data (cons {:app/session (data/squuid)} state/defaults)]
+  (let [conn   (data/create-conn state/schema)
+        data   (cons {:app/session (data/squuid)}
+                     state/defaults)]
     (data/transact! conn data)
     (work/init! conn)
     (go-try (work/transact! (<? (location/watch! position/defaults)))
             (catch :default error (fl/toast! (ex-message error))))
-    (go-try (let [city (<? (store/load! [:user/city]))
-                  tx   (work/inject city :user/id queries/user-id)]
-              (work/transact! [tx]))
+    (go-try (<? (reload-config! [:user/city]))
             (catch :default error
               (work/transact! [(work/inject state/default-city
                                             :user/id queries/user-id)])
@@ -78,8 +87,3 @@
 ;; that changed should be stored.
 ;; Did I forget anything there?
 ;; PS: simply use add-watch to the datascript conn
-
-hive.rework.state
-
-;(async/take! (store/load! [:user/city]) println)
-;; TODO: if nothing is stored or loaded then the complete function should be an error
