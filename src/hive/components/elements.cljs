@@ -71,8 +71,7 @@
   [{:user/id (:user/id data)
     :user/places (:features data)}])
 
-(def geocode! (work/pipe (tool/validate (s/keys :req [::geocoding/query]) ::invalid-input)
-                         (work/inject ::geocoding/proximity queries/user-position)
+(def geocode! (work/pipe (work/inject ::geocoding/proximity queries/user-position)
                          (work/inject ::geocoding/access_token queries/mapbox-token)
                          (work/inject ::geocoding/bbox queries/user-city)
                          #(update % ::geocoding/bbox (fn [c] (:city/bbox c)))
@@ -87,9 +86,12 @@
 (defn autocomplete!
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  [query]
+  [navigate query]
   (go-try (work/transact! (<? (geocode! query)))
-          (catch :default _ (clear-places!))))
+          (catch :default _
+            (if (empty? (::geocoding/query query))
+              (clear-places!)
+              (navigate "location-error")))))
 
 (defn- search-bar
   [props features]
@@ -102,7 +104,7 @@
        [:> Icon {:name "ios-menu" :transparent true}]]
       [:> Input {:placeholder "Where would you like to go?"
                  :ref #(when % (vreset! ref (.-_root %)))
-                 :onChangeText #(autocomplete! {::geocoding/query %})}]
+                 :onChangeText #(autocomplete! navigate {::geocoding/query %})}]
 
       (if (empty? @features)
         [:> Icon {:name "ios-search"}]

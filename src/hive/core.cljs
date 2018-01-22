@@ -12,18 +12,20 @@
             [datascript.core :as data]
             [hive.services.store :as store]
             [hive.queries :as queries]
-            [clojure.core.async :as async]
             [hive.rework.util :as tool]
-            [cljs.spec.alpha :as s]))
+            [hive.components.elements :as els]))
 
 (defn root-ui []
   (let [HomeDirections (rn-nav/stack-screen screens/directions
                          {:title "directions"})
         HomeMap        (rn-nav/stack-screen screens/home
                          {:title "map"})
+        LocError       (rn-nav/stack-screen els/user-location-error
+                         {:title "location-error"})
         HomeStack      (rn-nav/stack-navigator
                          {:map        {:screen HomeMap}
-                          :directions {:screen HomeDirections}}
+                          :directions {:screen HomeDirections}
+                          :location-error {:screen LocError}}
                          {:headerMode "none"})
         Home     (nav/drawer-screen HomeStack
                    {:title "Home"
@@ -40,11 +42,9 @@
   (.registerComponent fl/app-registry "main"
                       #(r/reactify-component root-ui)))
 
-(s/def ::object (s/and map? not-empty))
-
 (def reload-config!
   (work/pipe store/load!
-             (tool/validate ::object ::invalid-result)
+             (tool/validate not-empty ::missing-data)
              (work/inject :user/id queries/user-id)
              vector
              work/transact!))
@@ -54,16 +54,16 @@
   [] ;; todo: add https://github.com/reagent-project/historian
   (let [conn   (data/create-conn state/schema)
         data   (cons {:app/session (data/squuid)}
-                     state/defaults)]
+                     state/init-data)]
     (data/transact! conn data)
     (work/init! conn)
     (go-try (work/transact! (<? (location/watch! position/defaults)))
             (catch :default error (fl/toast! (ex-message error))))
     (go-try (<? (reload-config! [:user/city]))
             (catch :default error
-              (work/transact! [(work/inject state/default-city
-                                            :user/id queries/user-id)])
-              (tool/log! error))
+              (let [base [(work/inject state/defaults :user/id queries/user-id)]]
+                (work/transact! base)
+                (tool/log! error)))
             (finally (register!)))))
 
 ;(async/take! (store/delete! [:user/city]) println)

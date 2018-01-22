@@ -14,10 +14,10 @@
              :app/session {:db.unique :db.unique/identity}})
 
 ;; needs to be an array of maps. This will be used for data/transact!
-(def defaults
+(def init-data
   (concat (map #(tool/with-ns "city" %) cities)
           [{:user/id -1} ;; dummy
            (tool/with-ns "token" tokens)]))
 
 
-(def default-city {:user/city [:city/name "Frankfurt am Main"]})
+(def defaults {:user/city [:city/name "Frankfurt am Main"]})
