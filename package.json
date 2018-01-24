@@ -9,7 +9,6 @@
     "exp": "exp"
   },
   "dependencies": {
-    "@expo/vector-icons": "^6.2.2",
     "create-react-class": "15.6.0",
     "expo": "^21.0.0",
     "native-base": "^2.3.3",
