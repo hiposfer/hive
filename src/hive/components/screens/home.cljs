@@ -132,7 +132,7 @@
   "basic navigation directions"
   [props]
   (let [dirs        @(work/q! queries/user-directions)
-        route        (first (:routes dirs))
+        route        (first (:route/routes dirs))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
