@@ -145,12 +145,11 @@
        [:> CardItem [:> Icon {:name "map"}]]
        [:> Text "Instructions: "]
        (for [[id text] instructions]
-         ^{:key id}
-         [:> CardItem
-          (if (= id (first (last instructions)))
-            [:> Icon {:name "flag"}]
-            [:> Icon {:name "ios-navigate-outline"}])
-          [:> Text text]])]]]))
+         ^{:key id} [:> CardItem
+                       (if (= id (first (last instructions)))
+                         [:> Icon {:name "flag"}]
+                         [:> Icon {:name "ios-navigate-outline"}])
+                       [:> Text text]])]]]))
 
 (defn home
   [props]
@@ -181,7 +180,6 @@
            [:> Icon {:name "information-circle" :transparent true}]
            [:> Text (:text goal)]])]
        [places @features])]))
-
 
 (def Directions    (rn-nav/stack-screen directions
                      {:title "directions"}))

@@ -1,6 +1,6 @@
 (ns hive.components.screens.errors
   (:require [hive.components.core :refer [Container Text Body Content Card
-                                          CardItem Image Button Icon]]
+                                          CardItem Image Button Icon View]]
             [hive.foreigns :as fl]
             [hive.rework.util :as tool]
             [hive.services.location :as position]
@@ -27,8 +27,8 @@
 (defn user-location
   [props]
   (let [dims (js->clj (.get fl/dimensions "window") :keywordize-keys true)]
-    [:> Container
-     [:> Content {:style {:padding 10}}
+    [:> Container {:style {:paddingVertical "20%"}}
+     [:> Content
       [:> Card
        [:> CardItem {:cardBody true}
         [:> Image {:style  {:width (* (:width dims) 0.8)
@@ -37,12 +37,20 @@
                    :source fl/thumb-run}]]
        [:> CardItem
         [:> Body {:style {:alignItems "center"}}
-         [:> Text "ERROR: we couldn't find your current location"]
+         [:> Text {:style {:flexWrap "wrap"}}
+                  "We couldn't find your current location"]
          [:> Text]
          [:> Text "Please enable your GPS to continue"]
-         [:> Button {:bordered false :rounded true
-                     :on-press #(launch-location-settings props)}
-          [:> Text "OK"]]]]]]]))
+         [:> View {:style {:flexDirection "row" :alignItems "flex-start"
+                           :flex 1}}
+          [:> Button {:danger true :bordered false
+                      :on-press #((:goBack (:navigation props)))}
+            [:> Icon {:name "ios-close-circle"}]]
+          [:> Button {:success true :iconRight true :bordered false
+                      :on-press #(launch-location-settings props)}
+           [:> Text "OK"] [:> Icon {:name "ios-arrow-forward"}]]]]]]]]))
+
+
 
 (defn no-internet
   "display a nice little monster asking for internet connection"
