@@ -1,8 +1,8 @@
 (defproject hive "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
+  :description "Your go-to routing app for public transport"
   :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url  "http://www.eclipse.org/legal/epl-v10.html"}
+  :license {:name "LGPL v3"
+            :url  "https://choosealicense.com/licenses/gpl-3.0/"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [react-native-externs "0.1.0"]
