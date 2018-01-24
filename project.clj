@@ -1,6 +1,6 @@
 (defproject hive "0.1.0-SNAPSHOT"
   :description "Your go-to routing app for public transport"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/hiposfer/hive"
   :license {:name "LGPL v3"
             :url  "https://choosealicense.com/licenses/gpl-3.0/"}
   :dependencies [[org.clojure/clojure "1.9.0"]
