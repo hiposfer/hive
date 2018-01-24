@@ -12,7 +12,7 @@
                  :where [?id :user/id]
                         [?id :user/city ?city]])
 
-(def user-directions '[:find ?directions .
+(def user-directions '[:find (pull ?directions [*]) .
                        :where [?id :user/id]
                               [?id :user/directions ?directions]])
 

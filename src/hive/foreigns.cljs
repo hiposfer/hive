@@ -16,7 +16,8 @@
 
 (def app-registry  (.-AppRegistry ReactNative))
 ;(def async-storage (.-AsyncStorage ReactNative))
-(def toast-android (.-ToastAndroid ReactNative))
+(def toast-android (js->clj (.-ToastAndroid ReactNative)
+                            :keywordize-keys true))
 (def dimensions    (.-Dimensions ReactNative))
 
 (defn alert [title] (.alert (.-Alert ReactNative) title))
@@ -34,4 +35,4 @@
 (defn toast!
   ([text] (toast! text nil))
   ([text duration]
-   (.show toast-android text (or duration toast-android.SHORT))))
+   ((:show toast-android) text (or duration (:SHORT toast-android)))))

@@ -15,7 +15,8 @@
             [hive.services.geocoding :as geocoding]
             [hive.services.raw.location :as location]
             [hive.services.location :as position]
-            [hive.foreigns :as fl]))
+            [hive.foreigns :as fl]
+            [datascript.core :as data]))
 
 (defn latlng
   [coordinates]
@@ -87,11 +88,18 @@
 
 (defn- set-path
   [path]
-  (if (not= (:code path) "Ok")
+  (cond
+    (not= (:code path) "Ok")
     (ex-info (or (:msg path) "invalid response")
              path ::invalid-response)
-    [{:user/id (:user/id path)
-      :user/directions (dissoc path :user/id)}]))
+
+    (not (contains? path :uuid))
+    (recur (assoc path :uuid (data/squuid)))
+
+    :ok
+    [(tool/with-ns :route (dissoc path :user/id))
+     {:user/id (:user/id path)
+      :user/directions [:route/uuid (:uuid path)]}]))
 
 (def set-path! (work/pipe (work/inject :user/position queries/user-position)
                           prepare-path
@@ -152,6 +160,7 @@
                        [:> Text text]])]]]))
 
 (defn home
+  "the main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [city      @(work/q! queries/user-city)
         features  (work/q! queries/user-places)
@@ -196,4 +205,3 @@
 (def Screen     (nav/drawer-screen Navigator
                   {:title      "Home"
                    :drawerIcon (r/as-element [:> Icon {:name "home"}])}))
-

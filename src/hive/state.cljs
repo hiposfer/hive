@@ -9,9 +9,12 @@
 
 (def schema {:user/city {:db.valueType     :db.type/ref
                          :db.cardinality   :db.cardinality/one}
+             :user/directions {:db.valueType :db.type/ref
+                               :db.cardinality :db.cardinality/one}
              :user/id {:db.unique :db.unique/identity}
              :city/name {:db.unique :db.unique/identity}
-             :app/session {:db.unique :db.unique/identity}})
+             :app/session {:db.unique :db.unique/identity}
+             :route/uuid {:db.unique :db.unique/identity}})
 
 ;; needs to be an array of maps. This will be used for data/transact!
 (def init-data

@@ -50,8 +50,6 @@
                       :on-press #(launch-location-settings props)}
            [:> Text "OK"] [:> Icon {:name "ios-arrow-forward"}]]]]]]]]))
 
-
-
 (defn no-internet
   "display a nice little monster asking for internet connection"
   []
