@@ -5,36 +5,18 @@
             [hive.state :as state]
             [hive.services.location :as position]
             [hive.services.raw.location :as location]
-            [hive.components.screens :as screens]
             [hive.components.navigation :as nav]
-            [cljs-react-navigation.reagent :as rn-nav]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [datascript.core :as data]
             [hive.services.store :as store]
             [hive.queries :as queries]
             [hive.rework.util :as tool]
-            [hive.components.elements :as els]))
+            [hive.components.screens.home :as home]
+            [hive.components.screens.settings :as settings]))
 
 (defn root-ui []
-  (let [HomeDirections (rn-nav/stack-screen screens/directions
-                         {:title "directions"})
-        HomeMap        (rn-nav/stack-screen screens/home
-                         {:title "map"})
-        LocError       (rn-nav/stack-screen els/user-location-error
-                         {:title "location-error"})
-        HomeStack      (rn-nav/stack-navigator
-                         {:map        {:screen HomeMap}
-                          :directions {:screen HomeDirections}
-                          :location-error {:screen LocError}}
-                         {:headerMode "none"})
-        Home     (nav/drawer-screen HomeStack
-                   {:title "Home"
-                    :drawerIcon (r/as-element [:> Icon {:name "home"}])})
-        Settings (nav/drawer-screen screens/settings
-                   {:title "Settings"
-                    :drawerIcon (r/as-element [:> Icon {:name "settings"}])})
-        Root     (nav/drawer-navigator {:Home {:screen Home}
-                                        :Settings {:screen Settings}}
+  (let [Root     (nav/drawer-navigator {:Home {:screen home/Screen}
+                                        :Settings {:screen settings/Screen}}
                                        {})]
     [:> Root]))
 
