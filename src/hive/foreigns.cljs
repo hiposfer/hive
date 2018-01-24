@@ -13,6 +13,7 @@
 (def Store (js->clj (.-SecureStore Expo) :keywordize-keys true))
 (def IntentLauncherAndroid (js->clj (.-IntentLauncherAndroid Expo)
                                     :keywordize-keys true))
+(def Keyboard (.-Keyboard ReactNative))
 
 (def app-registry  (.-AppRegistry ReactNative))
 ;(def async-storage (.-AsyncStorage ReactNative))
