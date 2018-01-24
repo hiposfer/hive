@@ -14,6 +14,15 @@
             [hive.components.screens.home :as home]
             [hive.components.screens.settings :as settings]))
 
+"Each Screen will receive two props:
+ - screenProps - Extra props passed down from the router (rarely used)
+ - navigation  - The main navigation functions in a map as follows:
+   {:state     - routing state for this screen
+    :dispatch  - generic dispatch fn
+    :goBack    - pop's the current screen off the stack
+    :navigate  - most common way to navigate to the next screen
+    :setParams - used to change the params for the current screen}"
+
 (defn root-ui []
   (let [Root     (nav/drawer-navigator {:Home {:screen home/Screen}
                                         :Settings {:screen settings/Screen}}

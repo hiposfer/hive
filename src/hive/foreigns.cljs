@@ -11,6 +11,8 @@
 (def Permissions (js->clj (.-Permissions Expo) :keywordize-keys true))
 (def Platform (js->clj (.-Platform ReactNative) :keywordize-keys true))
 (def Store (js->clj (.-SecureStore Expo) :keywordize-keys true))
+(def IntentLauncherAndroid (js->clj (.-IntentLauncherAndroid Expo)
+                                    :keywordize-keys true))
 
 (def app-registry  (.-AppRegistry ReactNative))
 ;(def async-storage (.-AsyncStorage ReactNative))

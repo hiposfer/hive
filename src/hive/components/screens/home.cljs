@@ -12,7 +12,10 @@
             [hive.rework.util :as tool]
             [hive.components.screens.errors :as errors]
             [hive.services.directions :as directions]
-            [hive.services.geocoding :as geocoding]))
+            [hive.services.geocoding :as geocoding]
+            [hive.services.raw.location :as location]
+            [hive.services.location :as position]
+            [hive.foreigns :as fl]))
 
 (defn latlng
   [coordinates]
@@ -40,11 +43,13 @@
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   [navigate query]
-  (go-try (work/transact! (<? (geocode! query)))
-          (catch :default _
-            (if (empty? (::geocoding/query query))
-              (clear-places!)
-              (navigate "location-error")))))
+  (go-try
+    (work/transact! (<? (geocode! query)))
+    (catch :default _
+      (if (empty? (::geocoding/query query))
+        (clear-places!)
+        (try (work/transact! (<? (location/watch! position/defaults)))
+             (catch :default _ (navigate "location-error")))))))
 
 (defn- search-bar
   [props features]
