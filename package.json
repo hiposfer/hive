@@ -1,8 +1,8 @@
 {
   "name": "hive",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Your go-to app for public transport routing",
+  "author": "Camilo Roca",
   "private": true,
   "main": "main.js",
   "scripts": {
