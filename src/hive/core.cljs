@@ -1,7 +1,7 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [hive.foreigns :as fl]
-            [hive.components.core :refer [View Image Text TouchableHighlight Icon]]
+            [hive.components.native-base :as base]
             [hive.state :as state]
             [hive.services.location :as position]
             [hive.services.raw.location :as location]

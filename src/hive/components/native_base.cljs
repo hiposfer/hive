@@ -1,10 +1,5 @@
-(ns hive.components.core
+(ns hive.components.native-base
   (:require [hive.foreigns :as fl]))
-
-(def View   (.-View fl/ReactNative))
-(def Image  (.-Image fl/ReactNative))
-(def Modal  (.-Modal fl/ReactNative))
-(def TouchableHighlight (.-TouchableHighlight fl/ReactNative))
 
 (def Container (.-Container fl/NativeBase))
 (def Fab       (.-Fab fl/NativeBase))
@@ -26,7 +21,3 @@
 (def Drawer    (.-Drawer fl/NativeBase))
 (def Text      (.-Text fl/NativeBase))
 (def Title     (.-Title fl/NativeBase))
-
-(def MapView   (.-MapView fl/Expo))
-(def MapMarker (.-Marker MapView))
-(def MapPolyline (.-Polyline MapView))

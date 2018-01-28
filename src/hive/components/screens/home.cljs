@@ -1,8 +1,6 @@
 (ns hive.components.screens.home
-  (:require [hive.components.core :refer [Container Header Text Icon MapView Body
-                                          Content Button Title Card MapPolyline
-                                          CardItem MapMarker View Image Item Input
-                                          ListBase ListItem]]
+  (:require [hive.components.native-base :as base]
+            [hive.components.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.navigation :as nav]
             [reagent.core :as r]
@@ -15,8 +13,8 @@
             [hive.services.geocoding :as geocoding]
             [hive.services.raw.location :as location]
             [hive.services.location :as position]
-            [hive.foreigns :as fl]
-            [datascript.core :as data]))
+            [datascript.core :as data]
+            [hive.components.react :as react]))
 
 (defn latlng
   [coordinates]
@@ -30,7 +28,7 @@
 
 (def geocode! (work/pipe (work/inject ::geocoding/proximity queries/user-position)
                          (work/inject ::geocoding/access_token queries/mapbox-token)
-                         (work/inject ::geocoding/bbox queries/user-city)
+                         (work/inject ::geocoding/bbox queries/city-info)
                          #(update % ::geocoding/bbox (fn [c] (:city/bbox c)))
                          geocoding/autocomplete!
                          (work/inject :user/id queries/user-id)
@@ -56,20 +54,19 @@
   [props features]
   (let [navigate (:navigate (:navigation props))
         ref      (volatile! nil)]
-    [:> Header {:searchBar true :rounded true}
-     [:> Item {}
-      [:> Button {:transparent true :full true
-                  :on-press #(navigate "DrawerToggle")}
-       [:> Icon {:name "ios-menu" :transparent true}]]
-      [:> Input {:placeholder "Where would you like to go?"
-                 :ref #(when % (vreset! ref (.-_root %)))
-                 :onChangeText #(autocomplete! navigate {::geocoding/query %})}]
-
+    [:> base/Header {:searchBar true :rounded true}
+     [:> base/Item {}
+      [:> base/Button {:transparent true :full true
+                       :on-press #(navigate "DrawerToggle")}
+       [:> base/Icon {:name "ios-menu" :transparent true}]]
+      [:> base/Input {:placeholder "Where would you like to go?"
+                      :ref #(when % (vreset! ref (.-_root %)))
+                      :onChangeText #(autocomplete! navigate {::geocoding/query %})}]
       (if (empty? @features)
-        [:> Icon {:name "ios-search"}]
-        [:> Button {:transparent true :full true
-                    :on-press    #(do (.clear @ref) (clear-places!))}
-         [:> Icon {:name "close"}]])]]))
+        [:> base/Icon {:name "ios-search"}]
+        [:> base/Button {:transparent true :full true
+                         :on-press    #(do (.clear @ref) (clear-places!))}
+         [:> base/Icon {:name "close"}]])]]))
 
 (defn- set-goal
   "set feature as the user goal and removes the :user/places attributes from the app
@@ -119,14 +116,14 @@
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
-  [:> ListBase
+  [:> base/ListBase
    (for [target features]
      ^{:key (:id target)}
-     [:> ListItem {:on-press #(update-map! target)}
-      [:> Body
-       [:> Text (:text target)]
-       [:> Text {:note true :style {:color "gray"}}
-        (str/join ", " (map :text (:context target)))]]])])
+     [:> base/ListItem {:on-press #(update-map! target)}
+      [:> base/Body
+       [:> base/Text (:text target)]
+       [:> base/Text {:note true :style {:color "gray"}}
+                     (str/join ", " (map :text (:context target)))]]])])
 
 (defn directions
   "basic navigation directions"
@@ -138,57 +135,56 @@
                                      (map :instruction)
                                      (map-indexed vector))
                                (:legs route))]
-    [:> Container
-     [:> Content
-      [:> Card
-       [:> CardItem [:> Icon {:name "flag"}]
-        [:> Text (str "distance: " (:distance route) " meters")]]
-       [:> CardItem [:> Icon {:name "information-circle"}]
-        [:> Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
-       [:> CardItem [:> Icon {:name "time"}]
-        [:> Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
-                                                       (* 1000 (:duration route))))
-                      " minutes")]]]
-      [:> Card
-       [:> CardItem [:> Icon {:name "map"}]]
-       [:> Text "Instructions: "]
+    [:> base/Container
+     [:> base/Content
+      [:> base/Card
+       [:> base/CardItem [:> base/Icon {:name "flag"}]
+        [:> base/Text (str "distance: " (:distance route) " meters")]]
+       [:> base/CardItem [:> base/Icon {:name "information-circle"}]
+        [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
+       [:> base/CardItem [:> base/Icon {:name "time"}]
+        [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
+                                                            (* 1000 (:duration route))))
+                           " minutes")]]]
+      [:> base/Card
+       [:> base/CardItem [:> base/Icon {:name "map"}]]
+       [:> base/Text "Instructions: "]
        (for [[id text] instructions]
-         ^{:key id} [:> CardItem
+         ^{:key id} [:> base/CardItem
                        (if (= id (first (last instructions)))
-                         [:> Icon {:name "flag"}]
-                         [:> Icon {:name "ios-navigate-outline"}])
-                       [:> Text text]])]]]))
+                         [:> base/Icon {:name "flag"}]
+                         [:> base/Icon {:name "ios-navigate-outline"}])
+                       [:> base/Text text]])]]]))
 
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [city      @(work/q! queries/user-city)
-        features  (work/q! queries/user-places)
-        goal      @(work/q! queries/user-goal)
-        route     @(work/q! queries/user-directions)]
-    [:> Container {}
-     [search-bar props features]
-     (if (empty? @features)
-       [:> View {:style {:flex 1}}
-        [:> MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry city)))
-                                           {:latitudeDelta 0.02,
-                                            :longitudeDelta 0.02})
-                     :showsUserLocation true :style {:flex 1}
-                     :showsMyLocationButton true}
-         (when goal
-           [:> MapMarker {:title       (:text goal)
-                          :coordinate  (latlng (:coordinates (:geometry goal)))
-                          :description (str/join ", " (map :text (:context goal)))}])
-         (when route
-           (let [path (map latlng (:coordinates (:geometry (first (:routes route)))))]
-             [:> MapPolyline {:coordinates path
-                              :strokeColor "#3bb2d0" ;; light
-                              :strokeWidth 4}]))]
-        (when goal
-          [:> Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
-           [:> Icon {:name "information-circle" :transparent true}]
-           [:> Text (:text goal)]])]
-       [places @features])]))
+  (let [info      @(work/q! queries/city-info)]
+    [:> base/Container {}
+     [search-bar props (:user/places info)]
+     (if (empty? (:user/places info))
+       [:> react/View {:style {:flex 1}}
+        [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry info)))
+                                                {:latitudeDelta 0.02,
+                                                 :longitudeDelta 0.02})
+                          :showsUserLocation true :style {:flex 1}
+                          :showsMyLocationButton true}
+         (when (some? (:user/goal info))
+           (let [point (latlng (:coordinates (:geometry (:user/goal info))))
+                 text  (str/join ", " (map :text (:context (:user/goal info))))]
+             [:> expo/MapMarker {:title       (:text (:user/goal info))
+                                 :coordinate  point
+                                 :description text}]))
+         (when (some? (:user/directions info))
+           (let [geo (:geometry (first (:routes (:user/directions info))))]
+             [:> expo/MapPolyline {:coordinates (map latlng (:coordinates geo))
+                                   :strokeColor "#3bb2d0" ;; light
+                                   :strokeWidth 4}]))]
+        (when (some? (:user/goal info))
+          [:> base/Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
+           [:> base/Icon {:name "information-circle" :transparent true}]
+           [:> base/Text (:text (:user/goal info))]])]
+       [places (:user/places info)])]))
 
 (def Directions    (rn-nav/stack-screen directions
                      {:title "directions"}))
@@ -204,4 +200,4 @@
 
 (def Screen     (nav/drawer-screen Navigator
                   {:title      "Home"
-                   :drawerIcon (r/as-element [:> Icon {:name "home"}])}))
+                   :drawerIcon (r/as-element [:> base/Icon {:name "home"}])}))

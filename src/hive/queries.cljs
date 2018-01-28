@@ -8,21 +8,15 @@
 (def user-id '[:find ?uid .
                :where [_ :user/id ?uid]])
 
-(def user-city '[:find (pull ?city [*]) .
-                 :where [?id :user/id]
-                        [?id :user/city ?city]])
+(def city-info
+  "returns the user city, directions, places and goal"
+  '[:find (pull ?id [:user/city :user/directions
+                     :user/places :user/goal  .])
+    :where [?id :user/id]])
 
 (def user-directions '[:find (pull ?directions [*]) .
                        :where [?id :user/id]
-                              [?id :user/directions ?directions]])
-
-(def user-places '[:find ?places .
-                   :where [?id :user/id]
-                          [?id :user/places ?places]])
-
-(def user-goal '[:find ?goal .
-                 :where [?id :user/id]
-                        [?id :user/goal ?goal]])
+                       [?id :user/directions ?directions]])
 
 (def user-position '[:find ?position .
                      :where [?id :user/id]

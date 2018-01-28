@@ -1,7 +1,5 @@
 (ns hive.components.screens.settings
-  (:require [hive.components.core :refer [View Button Icon Text ListItem ListBase
-                                          Body Container Content Card CardItem Image
-                                          Header Item Input Title]]
+  (:require [hive.components.native-base :as base]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.services.store :as store]
             [hive.queries :as queries]
@@ -25,25 +23,25 @@
 (defn city-selector
   [city props]
   ^{:key (:city/name city)}
-  [:> ListItem {:on-press #(move-to! city props)}
-   [:> Body {}
-    [:> Text (:city/name city)]
-    [:> Text {:note true :style {:color "gray"}}
-     (str (:city/region city) ", " (:city/country city))]]])
+  [:> base/ListItem {:on-press #(move-to! city props)}
+   [:> base/Body {}
+    [:> base/Text (:city/name city)]
+    [:> base/Text {:note true :style {:color "gray"}}
+                  (str (:city/region city) ", " (:city/country city))]]])
 
 (defn settings
   [props]
   (let [cities @(work/q! queries/cities)
         navigate (:navigate (:navigation props))]
-    [:> Container
-     [:> Header
-      [:> Button {:transparent true :full true
-                  :on-press #(navigate "DrawerToggle")}
-       [:> Icon {:name "menu"}]]
-      [:> Body [:> Title "Settings"]]]
-     [:> Content
-      (map city-selector cities (repeat props))]]))
+    [:> base/Container
+     [:> base/Header
+      [:> base/Button {:transparent true :full true
+                       :on-press #(navigate "DrawerToggle")}
+       [:> base/Icon {:name "menu"}]]
+      [:> base/Body [:> base/Title "Settings"]]]
+     [:> base/Content
+        (map city-selector cities (repeat props))]]))
 
 (def Screen (nav/drawer-screen settings
               {:title      "Settings"
-               :drawerIcon (r/as-element [:> Icon {:name "settings"}])}))
+               :drawerIcon (r/as-element [:> base/Icon {:name "settings"}])}))
