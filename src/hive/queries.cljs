@@ -39,5 +39,3 @@
 ;(work/q '{:find [(pull ?city [*]) .]
 ;          :where [[?id :user/id]
 ;                  [?id :user/city ?city]]})
-
-(work/q user-city)

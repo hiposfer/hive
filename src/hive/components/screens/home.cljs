@@ -172,12 +172,11 @@
      (if (not-empty pois)
        [places pois]
        [:> react/View {:style {:flex 1}}
-        (let [coord (latlng (:coordinates (:city/geometry city)))]
-          [:> expo/MapView {:initialRegion (merge coord
-                                                  {:latitudeDelta 0.02,
-                                                   :longitudeDelta 0.02})
-                            :showsUserLocation true :style {:flex 1}
-                            :showsMyLocationButton true}]
+        [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry city)))
+                                           {:latitudeDelta 0.02,
+                                            :longitudeDelta 0.02})
+                          :showsUserLocation true :style {:flex 1}
+                          :showsMyLocationButton true}
          (when (some? (:user/goal info))
            (let [point (latlng (:coordinates (:geometry (:user/goal info))))
                  text  (str/join ", " (map :text (:context (:user/goal info))))]
@@ -188,7 +187,7 @@
            (let [geo (:geometry (first (:routes (:user/directions info))))]
              [:> expo/MapPolyline {:coordinates (map latlng (:coordinates geo))
                                    :strokeColor "#3bb2d0" ;; light
-                                   :strokeWidth 4}])))
+                                   :strokeWidth 4}]))]
         (when (some? (:user/goal info))
           [:> base/Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> base/Icon {:name "information-circle" :transparent true}]
