@@ -120,10 +120,12 @@
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
-  [:> base/ListBase
+  [:> base/List
    (for [target features]
      ^{:key (:id target)}
-     [:> base/ListItem {:on-press #(update-map! target)}
+     [:> base/ListItem {:icon true :on-press #(update-map! target)}
+      [:> base/Left
+       [:> base/Icon {:name "pin"}]]
       [:> base/Body
        [:> base/Text (:text target)]
        [:> base/Text {:note true :style {:color "gray"}}
@@ -167,7 +169,7 @@
   (let [info      @(work/q! queries/map-info)
         city      @(work/q! queries/user-city)
         pois      @(work/q! queries/user-places)]
-    [:> base/Container {}
+    [:> base/Container
      [search-bar props]
      (if (not-empty pois)
        [places pois]
