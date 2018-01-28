@@ -14,7 +14,8 @@
             [hive.services.raw.location :as location]
             [hive.services.location :as position]
             [datascript.core :as data]
-            [hive.components.react :as react]))
+            [hive.components.react :as react]
+            [hive.foreigns :as fl]))
 
 (defn latlng
   [coordinates]
@@ -64,7 +65,7 @@
       [:> base/Input {:placeholder "Where would you like to go?"
                       :ref #(when % (vreset! ref (.-_root %)))
                       :onChangeText #(autocomplete! navigate {::geocoding/query %})}]
-      (if (empty? @features)
+      (if (empty? features)
         [:> base/Icon {:name "ios-search"}]
         [:> base/Button {:transparent true :full true
                          :on-press    #(do (.clear @ref) (clear-places!))}
@@ -164,7 +165,8 @@
   (let [info      @(work/q! queries/city-info)]
     [:> base/Container {}
      [search-bar props (:user/places info)]
-     (if (empty? (:user/places info))
+     (if (not-empty (:user/places info))
+       [places (:user/places info)]
        [:> react/View {:style {:flex 1}}
         [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry info)))
                                                 {:latitudeDelta 0.02,
@@ -185,8 +187,7 @@
         (when (some? (:user/goal info))
           [:> base/Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> base/Icon {:name "information-circle" :transparent true}]
-           [:> base/Text (:text (:user/goal info))]])]
-       [places (:user/places info)])]))
+           [:> base/Text (:text (:user/goal info))]])])]))
 
 (def Directions    (rn-nav/stack-screen directions
                      {:title "directions"}))

@@ -11,7 +11,7 @@
 (def city-info
   "returns the user city, directions, places and goal"
   '[:find (pull ?id [:user/city :user/directions
-                     :user/places :user/goal  .])
+                     :user/places :user/goal]) .
     :where [?id :user/id]])
 
 (def user-directions '[:find (pull ?directions [*]) .

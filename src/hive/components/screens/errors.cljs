@@ -31,10 +31,10 @@
      [:> base/Content
       [:> base/Card
        [:> base/CardItem {:cardBody true}
-        [:> react/Image {:style  {:width (* (:width dims) 0.8)}
-                                 :height (* (:height dims) 0.5)
-                                 :resizeMode "contain" :flex 1}
-                        :source fl/thumb-run]]
+        [:> react/Image {:style  {:width (* (:width dims) 0.8)
+                                  :height (* (:height dims) 0.5)
+                                  :resizeMode "contain" :flex 1}
+                         :source fl/thumb-run}]]
        [:> base/CardItem
         [:> base/Body {:style {:alignItems "center"}}
          [:> base/Text {:style {:flexWrap "wrap"}}
