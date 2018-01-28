@@ -48,7 +48,9 @@
       (if (empty? (::geocoding/query query))
         (clear-places!)
         (try (work/transact! (<? (location/watch! position/defaults)))
-             (catch :default _ (navigate "location-error")))))))
+             (catch :default _
+               (.dismiss fl/Keyboard)
+               (navigate "location-error")))))))
 
 (defn- search-bar
   [props features]

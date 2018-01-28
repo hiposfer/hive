@@ -64,3 +64,10 @@ lein prod-build
 - check the [React Native](https://facebook.github.io/react-native/) docs when in doubt
 
 - the [Expo](https://expo.io/) documentation will become your best friend
+
+## known problems
+- "unnable to resolve @expo/vector-icons/Feather ...". The solution is generally
+ to install @expo/vector-icons, however, doing that makes the icons disappear
+ and an [X] is shown instead, which is definitely not the idea. The "solution" so
+ far is to go to the node_modules and remove the "Feather" import. This way
+ the packager doesnt complain anymore and the icons are shown. 
