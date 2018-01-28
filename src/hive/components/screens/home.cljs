@@ -116,16 +116,16 @@
       (work/transact! (concat (<? paths) places)))
     (catch :default error (tool/log! error))))
 
+;; TODO: consider using dataArray and renderRow from native base
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
-  [:> base/List
+  [:> base/List {:icon true} ;; todo: is it here or in list item?
    (for [target features]
      ^{:key (:id target)}
-     [:> base/ListItem {:icon true :on-press #(update-map! target)}
-      [:> base/Left
-       [:> base/Icon {:name "pin"}]]
+     [:> base/ListItem {:on-press #(update-map! target)}
+      [:> base/Left [:> base/Icon {:name "pin"}]]
       [:> base/Body
        [:> base/Text (:text target)]
        [:> base/Text {:note true :style {:color "gray"}}
