@@ -29,7 +29,7 @@
 
 (def geocode! (work/pipe (work/inject ::geocoding/proximity queries/user-position)
                          (work/inject ::geocoding/access_token queries/mapbox-token)
-                         (work/inject ::geocoding/bbox queries/city-info)
+                         (work/inject ::geocoding/bbox queries/user-city)
                          #(update % ::geocoding/bbox (fn [c] (:city/bbox c)))
                          geocoding/autocomplete!
                          (work/inject :user/id queries/user-id)
@@ -54,8 +54,9 @@
                (navigate "location-error")))))))
 
 (defn- search-bar
-  [props features]
+  [props]
   (let [navigate (:navigate (:navigation props))
+        places   @(work/q! queries/user-places)
         ref      (volatile! nil)]
     [:> base/Header {:searchBar true :rounded true}
      [:> base/Item {}
@@ -65,7 +66,7 @@
       [:> base/Input {:placeholder "Where would you like to go?"
                       :ref #(when % (vreset! ref (.-_root %)))
                       :onChangeText #(autocomplete! navigate {::geocoding/query %})}]
-      (if (empty? features)
+      (if (empty? places)
         [:> base/Icon {:name "ios-search"}]
         [:> base/Button {:transparent true :full true
                          :on-press    #(do (.clear @ref) (clear-places!))}
@@ -159,20 +160,24 @@
                          [:> base/Icon {:name "ios-navigate-outline"}])
                        [:> base/Text text]])]]]))
 
+
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [info      @(work/q! queries/city-info)]
+  (let [info      @(work/q! queries/map-info)
+        city      @(work/q! queries/user-city)
+        pois      @(work/q! queries/user-places)]
     [:> base/Container {}
-     [search-bar props (:user/places info)]
-     (if (not-empty (:user/places info))
-       [places (:user/places info)]
+     [search-bar props]
+     (if (not-empty pois)
+       [places pois]
        [:> react/View {:style {:flex 1}}
-        [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry info)))
-                                                {:latitudeDelta 0.02,
-                                                 :longitudeDelta 0.02})
-                          :showsUserLocation true :style {:flex 1}
-                          :showsMyLocationButton true}
+        (let [coord (latlng (:coordinates (:city/geometry city)))]
+          [:> expo/MapView {:initialRegion (merge coord
+                                                  {:latitudeDelta 0.02,
+                                                   :longitudeDelta 0.02})
+                            :showsUserLocation true :style {:flex 1}
+                            :showsMyLocationButton true}]
          (when (some? (:user/goal info))
            (let [point (latlng (:coordinates (:geometry (:user/goal info))))
                  text  (str/join ", " (map :text (:context (:user/goal info))))]
@@ -183,7 +188,7 @@
            (let [geo (:geometry (first (:routes (:user/directions info))))]
              [:> expo/MapPolyline {:coordinates (map latlng (:coordinates geo))
                                    :strokeColor "#3bb2d0" ;; light
-                                   :strokeWidth 4}]))]
+                                   :strokeWidth 4}])))
         (when (some? (:user/goal info))
           [:> base/Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
            [:> base/Icon {:name "information-circle" :transparent true}]
