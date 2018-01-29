@@ -15,7 +15,8 @@
             [hive.services.location :as position]
             [datascript.core :as data]
             [hive.components.react :as react]
-            [hive.foreigns :as fl]))
+            [hive.foreigns :as fl]
+            [hive.libs.geometry :as geometry]))
 
 (defn latlng
   [coordinates]
@@ -116,24 +117,26 @@
       (work/transact! (concat (<? paths) places)))
     (catch :default error (tool/log! error))))
 
-;; TODO: consider using dataArray and renderRow from native base
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
-  [:> base/List {:icon true :style {:flex 1}}
-   (for [target features]
-     ^{:key (:id target)}
-     [:> base/ListItem {:icon true :on-press #(update-map! target)
-                        :style {:height 50 :paddingVertical 30}}
-      [:> base/Left
-       [:> react/View {:align-items "center"}
-        [:> base/Icon {:name "pin"}]
-        [:> base/Text {:note true} "12.4 km"]]]
-      [:> base/Body
-       [:> base/Text (:text target)]
-       [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
-                     (str/join ", " (map :text (:context target)))]]])])
+  (let [position @(work/q! queries/user-position)]
+    [:> base/List {:icon true :style {:flex 1}}
+     (for [target features
+           :let [distance (geometry/haversine position target)]]
+       ^{:key (:id target)}
+       [:> base/ListItem {:icon true :on-press #(update-map! target)
+                          :style {:height 50 :paddingVertical 30}}
+        [:> base/Left
+         [:> react/View {:align-items "center"}
+          [:> base/Icon {:name "pin"}]
+          [:> base/Text {:note true} (str (.toPrecision (/ distance 1000) 3)
+                                          " km")]]]
+        [:> base/Body
+         [:> base/Text (:text target)]
+         [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
+                       (str/join ", " (map :text (:context target)))]]])]))
 
 (defn directions
   "basic navigation directions"
