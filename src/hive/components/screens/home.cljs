@@ -126,7 +126,10 @@
      ^{:key (:id target)}
      [:> base/ListItem {:icon true :on-press #(update-map! target)
                         :style {:height 50 :paddingVertical 30}}
-      [:> base/Left [:> base/Icon {:name "pin"}]]
+      [:> base/Left
+       [:> react/View {:align-items "center"}
+        [:> base/Icon {:name "pin"}]
+        [:> base/Text {:note true} "12.4 km"]]]
       [:> base/Body
        [:> base/Text (:text target)]
        [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
