@@ -121,14 +121,15 @@
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [features]
-  [:> base/List {:icon true} ;; todo: is it here or in list item?
+  [:> base/List {:icon true :style {:flex 1}}
    (for [target features]
      ^{:key (:id target)}
-     [:> base/ListItem {:on-press #(update-map! target)}
+     [:> base/ListItem {:icon true :on-press #(update-map! target)
+                        :style {:height 50 :paddingVertical 30}}
       [:> base/Left [:> base/Icon {:name "pin"}]]
       [:> base/Body
        [:> base/Text (:text target)]
-       [:> base/Text {:note true :style {:color "gray"}}
+       [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
                      (str/join ", " (map :text (:context target)))]]])])
 
 (defn directions

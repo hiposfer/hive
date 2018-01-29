@@ -1,4 +1,5 @@
 (ns hive.components.native-base
+  (:refer-clojure :exclude [List])
   (:require [hive.foreigns :as fl]))
 
 (def Container (.-Container fl/NativeBase))
