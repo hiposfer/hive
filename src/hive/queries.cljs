@@ -1,6 +1,9 @@
 (ns hive.queries
   (:require [hive.rework.core :as work]))
 
+;; TODO: most of these queries rely on user ID. It could be better to compute
+;; that once and later on just pull or entity attributes out of it
+
 ;; get name geometry and bbox of each city in the db
 (def cities '[:find [(pull ?entity [*]) ...]
               :where [?entity :city/name ?name]])
@@ -10,7 +13,7 @@
 
 (def map-info
   "returns the map directions, places and goal"
-  '[:find (pull ?uid [:user/places :user/goal :user/directions]) .
+  '[:find (pull ?uid [:user/places :user/goal {:user/directions [:route/routes]}]) .
     :where [?uid :user/id]])
 
 (def user-city '[:find (pull ?city [*]) .

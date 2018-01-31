@@ -109,12 +109,15 @@
                           (work/inject :user/id queries/user-id)
                           set-path))
 
+;(work/q queries/user-directions)
+
 (defn update-map!
   [target]
   (go-try
     (let [places (set-goal (work/inject target :user/id queries/user-id))
           paths  (set-path! target)]
-      (work/transact! (concat (<? paths) places)))
+      (work/transact! (concat (<? paths) places))
+      (.dismiss fl/Keyboard))
     (catch :default error (tool/log! error))))
 
 (defn places
@@ -133,7 +136,7 @@
           [:> base/Icon {:name "pin"}]
           [:> base/Text {:note true} (str (.toPrecision distance 3) " km")]]]
         [:> base/Body
-         [:> base/Text (:text target)]
+         [:> base/Text {:numberOfLines 1} (:text target)]
          [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
                        (str/join ", " (map :text (:context target)))]]])]))
 
@@ -191,7 +194,7 @@
                                  :coordinate  point
                                  :description text}]))
          (when (some? (:user/directions info))
-           (let [geo (:geometry (first (:routes (:user/directions info))))]
+           (let [geo (:geometry (first (:route/routes (:user/directions info))))]
              [:> expo/MapPolyline {:coordinates (map latlng (:coordinates geo))
                                    :strokeColor "#3bb2d0" ;; light
                                    :strokeWidth 4}]))]
