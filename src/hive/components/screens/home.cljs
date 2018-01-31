@@ -81,6 +81,7 @@
    [:db.fn/retractAttribute [:user/id (:user/id data)] :user/places]])
 
 (defn- prepare-path
+  "transform the user/position attribute to the ::directions/coordinates format"
   [goal]
   (if (nil? (:user/position goal))
     (ex-info "missing user location" goal ::user-position-unknown)
@@ -88,6 +89,8 @@
                                (:coordinates (:geometry goal))]}))
 
 (defn- set-path
+  "takes a mapbox directions response and returns a transaction vector
+  to use with transact!. Return an exception if no path was found"
   [path]
   (cond
     (not= (:code path) "Ok")
@@ -102,15 +105,19 @@
      {:user/id (:user/id path)
       :user/directions [:route/uuid (:uuid path)]}]))
 
-(def set-path! (work/pipe (work/inject :user/position queries/user-position)
-                          prepare-path
-                          directions/request!
-                          (work/inject :user/id queries/user-id)
-                          set-path))
+(def set-path!
+  "takes a geocoded feature (target) and queries the path to get there.
+  Returns a transaction vector to use with transact!"
+  (work/pipe (work/inject :user/position queries/user-position)
+             prepare-path
+             directions/request!
+             (work/inject :user/id queries/user-id)
+             set-path))
 
 ;(work/q queries/user-directions)
 
 (defn update-map!
+  "associates a target and a path to get there with the user"
   [target]
   (go-try
     (let [places (set-goal (work/inject target :user/id queries/user-id))
@@ -139,36 +146,42 @@
          [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
                        (str/join ", " (map :text (:context target)))]]])]))
 
-(defn directions
-  "basic navigation directions"
-  [props]
-  (let [dirs        @(work/q! queries/user-directions)
-        route        (first (:route/routes dirs))
+(defn route-details
+  [props id]
+  (print "hello")
+  (let [route        (first (:route/routes (work/entity [:route/uuid id])))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
                                      (map-indexed vector))
                                (:legs route))]
-    [:> base/Container
-     [:> base/Content
-      [:> base/Card
-       [:> base/CardItem [:> base/Icon {:name "flag"}]
-        [:> base/Text (str "distance: " (:distance route) " meters")]]
-       [:> base/CardItem [:> base/Icon {:name "information-circle"}]
-        [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
-       [:> base/CardItem [:> base/Icon {:name "time"}]
-        [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
-                                                            (* 1000 (:duration route))))
-                           " minutes")]]
-       [:> base/CardItem [:> base/Icon {:name "map"}]]
-       [:> base/Text "Instructions: "]
-       (for [[id text] instructions]
-         ^{:key id} [:> base/CardItem
-                       (if (= id (first (last instructions)))
-                         [:> base/Icon {:name "flag"}]
-                         [:> base/Icon {:name "ios-navigate-outline"}])
-                       [:> base/Text text]])]]]))
+    ^{:key id}
+    [:> base/Card
+     [:> base/CardItem [:> base/Icon {:name "flag"}]
+      [:> base/Text (str "distance: " (:distance route) " meters")]]
+     [:> base/CardItem [:> base/Icon {:name "information-circle"}]
+      [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
+     [:> base/CardItem [:> base/Icon {:name "time"}]
+      [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
+                                                          (* 1000 (:duration route))))
+                         " minutes")]]
+     [:> base/CardItem [:> base/Icon {:name "map"}]
+      [:> base/Text "Instructions: "]]
+     (for [[id text] instructions]
+       ^{:key id} [:> base/CardItem
+                   (if (= id (first (last instructions)))
+                     [:> base/Icon {:name "flag"}]
+                     [:> base/Icon {:name "ios-navigate-outline"}])
+                   [:> base/Text text]])]))
 
+(defn directions
+  "basic navigation directions"
+  [props]
+  (let [routes        @(work/q! queries/routes-ids)]
+    [:> base/Container
+     [:> react/View
+      [:> base/DeckSwiper {:dataSource routes
+                           :renderItem #(r/as-element (route-details props %))}]]]))
 
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
