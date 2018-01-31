@@ -38,7 +38,9 @@
 
 (defn- print-warning!
   [e]
-  (let [error (if (instance? js/Error (ex-data e)) (ex-data e) e)]
+  (let [error (if (instance? js/Error (ex-data e))
+                (ex-data e)
+                (ex-message e))]
     (.warn js/console error)))
 
 ;; TODO: only print stacktrace if we are in DEBUG mode

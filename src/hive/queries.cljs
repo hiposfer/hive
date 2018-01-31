@@ -45,3 +45,9 @@
 ;(work/q '{:find [(pull ?city [*]) .]
 ;          :where [[?id :user/id]
 ;                  [?id :user/city ?city]]})
+
+(def routes-ids '[:find [?routes ...]
+                  :where [_ :route/uuid ?routes]])
+
+;(work/q routes-ids)
+;(work/entity [:route/uuid "cjd3ifgvx041p48pbjvzw0icl"])

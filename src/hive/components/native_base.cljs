@@ -22,3 +22,4 @@
 (def Drawer    (.-Drawer fl/NativeBase))
 (def Text      (.-Text fl/NativeBase))
 (def Title     (.-Title fl/NativeBase))
+(def DeckSwiper (.-DeckSwiper fl/NativeBase))
