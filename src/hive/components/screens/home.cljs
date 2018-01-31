@@ -148,14 +148,14 @@
 
 (defn route-details
   [props id]
-  (print "hello")
+  ;; TODO: https://github.com/GeekyAnts/NativeBase/issues/826
+  ;(print "hello")
   (let [route        (first (:route/routes (work/entity [:route/uuid id])))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
                                      (map-indexed vector))
                                (:legs route))]
-    ^{:key id}
     [:> base/Card
      [:> base/CardItem [:> base/Icon {:name "flag"}]
       [:> base/Text (str "distance: " (:distance route) " meters")]]
