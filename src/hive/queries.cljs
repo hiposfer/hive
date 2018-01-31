@@ -13,7 +13,10 @@
 
 (def map-info
   "returns the map directions, places and goal"
-  '[:find (pull ?uid [:user/places :user/goal {:user/directions [:route/routes]}]) .
+  '[:find (pull ?uid [:user/places
+                      :user/goal
+                      {:user/city [:city/geometry]}
+                      {:user/directions [:route/routes]}]) .
     :where [?uid :user/id]])
 
 (def user-city '[:find (pull ?city [*]) .

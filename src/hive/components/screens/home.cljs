@@ -55,9 +55,8 @@
                (navigate "location-error")))))))
 
 (defn- search-bar
-  [props]
+  [props places]
   (let [navigate (:navigate (:navigation props))
-        places   @(work/q! queries/user-places)
         ref      (volatile! nil)]
     [:> base/Header {:searchBar true :rounded true}
      [:> base/Item {}
@@ -174,15 +173,13 @@
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [info      @(work/q! queries/map-info)
-        city      @(work/q! queries/user-city)
-        pois      @(work/q! queries/user-places)]
+  (let [info      @(work/q! queries/map-info)]
     [:> base/Container
-     [search-bar props]
-     (if (not-empty pois)
-       [places pois]
+     [search-bar props (:user/places info)]
+     (if (not-empty (:user/places info))
+       [places (:user/places info)]
        [:> react/View {:style {:flex 1}}
-        [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry city)))
+        [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry (:user/city info))))
                                            {:latitudeDelta 0.02,
                                             :longitudeDelta 0.02})
                           :showsUserLocation true :style {:flex 1}
