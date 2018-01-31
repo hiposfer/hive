@@ -124,15 +124,14 @@
   (let [position @(work/q! queries/user-position)]
     [:> base/List {:icon true :style {:flex 1}}
      (for [target features
-           :let [distance (geometry/haversine position target)]]
+           :let [distance (/ (geometry/haversine position target) 1000)]]
        ^{:key (:id target)}
        [:> base/ListItem {:icon true :on-press #(update-map! target)
                           :style {:height 50 :paddingVertical 30}}
         [:> base/Left
          [:> react/View {:align-items "center"}
           [:> base/Icon {:name "pin"}]
-          [:> base/Text {:note true} (str (.toPrecision (/ distance 1000) 3)
-                                          " km")]]]
+          [:> base/Text {:note true} (str (.toPrecision distance 3) " km")]]]
         [:> base/Body
          [:> base/Text (:text target)]
          [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
@@ -158,8 +157,7 @@
        [:> base/CardItem [:> base/Icon {:name "time"}]
         [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
                                                             (* 1000 (:duration route))))
-                           " minutes")]]]
-      [:> base/Card
+                           " minutes")]]
        [:> base/CardItem [:> base/Icon {:name "map"}]]
        [:> base/Text "Instructions: "]
        (for [[id text] instructions]
