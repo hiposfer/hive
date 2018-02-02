@@ -1,7 +1,6 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [hive.foreigns :as fl]
-            [hive.components.native-base :as base]
             [hive.state :as state]
             [hive.services.location :as position]
             [hive.services.raw.location :as location]
@@ -11,7 +10,7 @@
             [hive.services.store :as store]
             [hive.queries :as queries]
             [hive.rework.util :as tool]
-            [hive.components.screens.home :as home]
+            [hive.components.screens.home.core :as home]
             [hive.components.screens.settings :as settings]))
 
 "Each Screen will receive two props:

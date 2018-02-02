@@ -1,4 +1,4 @@
-(ns hive.components.screens.home
+(ns hive.components.screens.home.core
   (:require [hive.components.native-base :as base]
             [hive.components.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
@@ -8,6 +8,7 @@
             [hive.queries :as queries]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.rework.util :as tool]
+            [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
             [hive.services.directions :as directions]
             [hive.services.geocoding :as geocoding]
@@ -101,9 +102,12 @@
     (recur (assoc path :uuid (data/squuid)))
 
     :ok
-    [(tool/with-ns :route (dissoc path :user/id))
-     {:user/id (:user/id path)
-      :user/directions [:route/uuid (:uuid path)]}]))
+    (let [id      (:uuid path)
+          garbage (remove #{id} (:remove/routes path))]
+      (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
+              [(tool/with-ns :route (dissoc path :user/id))
+               {:user/id (:user/id path)
+                :user/directions [:route/uuid id]}]))))
 
 (def set-path!
   "takes a geocoded feature (target) and queries the path to get there.
@@ -112,6 +116,7 @@
              prepare-path
              directions/request!
              (work/inject :user/id queries/user-id)
+             (work/inject :remove/routes queries/routes-ids)
              set-path))
 
 ;(work/q queries/user-directions)
@@ -146,43 +151,6 @@
          [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
                        (str/join ", " (map :text (:context target)))]]])]))
 
-(defn route-details
-  [props id]
-  ;; TODO: https://github.com/GeekyAnts/NativeBase/issues/826
-  ;(print "hello")
-  (let [route        (first (:route/routes (work/entity [:route/uuid id])))
-        instructions (sequence (comp (mapcat :steps)
-                                     (map :maneuver)
-                                     (map :instruction)
-                                     (map-indexed vector))
-                               (:legs route))]
-    [:> base/Card
-     [:> base/CardItem [:> base/Icon {:name "flag"}]
-      [:> base/Text (str "distance: " (:distance route) " meters")]]
-     [:> base/CardItem [:> base/Icon {:name "information-circle"}]
-      [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
-     [:> base/CardItem [:> base/Icon {:name "time"}]
-      [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
-                                                          (* 1000 (:duration route))))
-                         " minutes")]]
-     [:> base/CardItem [:> base/Icon {:name "map"}]
-      [:> base/Text "Instructions: "]]
-     (for [[id text] instructions]
-       ^{:key id} [:> base/CardItem
-                   (if (= id (first (last instructions)))
-                     [:> base/Icon {:name "flag"}]
-                     [:> base/Icon {:name "ios-navigate-outline"}])
-                   [:> base/Text text]])]))
-
-(defn directions
-  "basic navigation directions"
-  [props]
-  (let [routes        @(work/q! queries/routes-ids)]
-    [:> base/Container
-     [:> react/View
-      [:> base/DeckSwiper {:dataSource routes
-                           :renderItem #(r/as-element (route-details props %))}]]]))
-
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
@@ -209,11 +177,11 @@
                                    :strokeColor "#3bb2d0" ;; light
                                    :strokeWidth 4}]))]
         (when (some? (:user/goal info))
-          [:> base/Button {:full true :on-press #((:navigate (:navigation props)) "directions")}
+          [:> base/Button {:on-press #((:navigate (:navigation props)) "directions")}
            [:> base/Icon {:name "information-circle" :transparent true}]
-           [:> base/Text (:text (:user/goal info))]])])]))
+           [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])])]))
 
-(def Directions    (rn-nav/stack-screen directions
+(def Directions    (rn-nav/stack-screen route/instructions
                      {:title "directions"}))
 (def Map           (rn-nav/stack-screen home
                      {:title "map"}))
@@ -228,3 +196,6 @@
 (def Screen     (nav/drawer-screen Navigator
                   {:title      "Home"
                    :drawerIcon (r/as-element [:> base/Icon {:name "home"}])}))
+
+;(work/q queries/routes-ids)
+;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
