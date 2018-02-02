@@ -81,45 +81,25 @@
     :user/goal (dissoc data :user/id)}
    [:db.fn/retractAttribute [:user/id (:user/id data)] :user/places]])
 
-(defn- prepare-path
-  "transform the user/position attribute to the ::directions/coordinates format"
-  [goal]
-  (if (nil? (:user/position goal))
-    (ex-info "missing user location" goal ::user-position-unknown)
-    {::directions/coordinates [(:coordinates (:geometry (:user/position goal)))
-                               (:coordinates (:geometry goal))]}))
 
 (defn- set-path
   "takes a mapbox directions response and returns a transaction vector
   to use with transact!. Return an exception if no path was found"
   [path]
-  (cond
-    (not= (:code path) "Ok")
-    (ex-info (or (:msg path) "invalid response")
-             path ::invalid-response)
-
-    (not (contains? path :uuid))
-    (recur (assoc path :uuid (data/squuid)))
-
-    :ok
-    (let [id      (:uuid path)
-          garbage (remove #{id} (:remove/routes path))]
-      (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-              [(tool/with-ns :route (dissoc path :user/id))
-               {:user/id (:user/id path)
-                :user/directions [:route/uuid id]}]))))
+  (let [id      (:uuid path)
+        garbage (remove #{id} (:route/remove path))]
+    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
+            [(tool/with-ns :route (dissoc path :user/id))
+             {:user/id (:user/id path)
+              :user/directions [:route/uuid id]}])))
 
 (def set-path!
   "takes a geocoded feature (target) and queries the path to get there.
   Returns a transaction vector to use with transact!"
-  (work/pipe (work/inject :user/position queries/user-position)
-             prepare-path
-             directions/request!
-             (work/inject :user/id queries/user-id)
-             (work/inject :remove/routes queries/routes-ids)
+  (work/pipe route/get-path!
+             route/validate-path
+             (work/inject :route/remove queries/routes-ids)
              set-path))
-
-;(work/q queries/user-directions)
 
 (defn update-map!
   "associates a target and a path to get there with the user"
@@ -177,7 +157,8 @@
                                    :strokeColor "#3bb2d0" ;; light
                                    :strokeWidth 4}]))]
         (when (some? (:user/goal info))
-          [:> base/Button {:on-press #((:navigate (:navigation props)) "directions")}
+          [:> base/Button {:full true
+                           :on-press #((:navigate (:navigation props)) "directions")}
            [:> base/Icon {:name "information-circle" :transparent true}]
            [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])])]))
 
@@ -199,3 +180,5 @@
 
 ;(work/q queries/routes-ids)
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
+
+;(work/pull '[*] [:route/uuid "cjd5rx3pn00qj47p6lc1z7n1v"])
