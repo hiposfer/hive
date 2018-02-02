@@ -31,6 +31,10 @@
                    :where [?id :user/id]
                           [?id :user/places ?places]])
 
+(def user-goal '[:find ?goal .
+                 :where [?id :user/id]
+                        [?id :user/goal ?goal]])
+
 (def user-position '[:find ?position .
                      :where [?id :user/id]
                             [?id :user/position ?position]])
@@ -48,6 +52,3 @@
 
 (def routes-ids '[:find [?routes ...]
                   :where [_ :route/uuid ?routes]])
-
-;(work/q routes-ids)
-;(work/entity [:route/uuid "cjd3ifgvx041p48pbjvzw0icl"])

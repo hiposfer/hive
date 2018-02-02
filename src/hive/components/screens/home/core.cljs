@@ -10,11 +10,9 @@
             [hive.rework.util :as tool]
             [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
-            [hive.services.directions :as directions]
             [hive.services.geocoding :as geocoding]
             [hive.services.raw.location :as location]
             [hive.services.location :as position]
-            [datascript.core :as data]
             [hive.components.react :as react]
             [hive.foreigns :as fl]
             [hive.libs.geometry :as geometry]))

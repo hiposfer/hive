@@ -43,12 +43,15 @@
   Returns a transaction vector to use with transact!"
   (work/pipe get-path!
              validate-path
-             #(vector (tool/with-ns :route (dissoc % :user/id)))))
+             #(vector (tool/with-ns :route (dissoc % :user/id)))
+             work/transact!))
 
 ;; TODO: https://github.com/GeekyAnts/NativeBase/issues/826
 (defn route-details
   [props id]
-  (let [route        (first (:route/routes (work/entity [:route/uuid id])))
+  (println)
+  (let [directions   (work/entity [:route/uuid id])
+        route        (first (:route/routes directions))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
@@ -57,6 +60,8 @@
     [:> base/Card
      [:> base/CardItem [:> base/Icon {:name "flag"}]
       [:> base/Text (str "distance: " (:distance route) " meters")]]
+     [:> base/CardItem [:> base/Icon {:name "flag"}]
+      [:> base/Text (str "UUID: " (:route/uuid directions) " meters")]]
      [:> base/CardItem [:> base/Icon {:name "information-circle"}]
       [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
      [:> base/CardItem [:> base/Icon {:name "time"}]
@@ -73,6 +78,8 @@
           [:> base/Icon {:name "ios-navigate-outline"}])
         [:> base/Text text]])]))
 
+;; TODO: the Top item has the problem of not having any additional data yet
+;; maybe we should use renderTop
 (defn instructions
   "basic navigation directions"
   [props]
@@ -80,6 +87,8 @@
     [:> base/Container
      [:> react/View
       [:> base/DeckSwiper {:dataSource routes
-                           :renderItem #(r/as-element (route-details props %))}]]]))
+                           ;:looping false
+                           :renderItem #(r/as-element (route-details props %))
+                           :onSwipeLeft #(next-path! (work/q queries/user-goal))}]]]))
 
 ;(work/q queries/routes-ids)
