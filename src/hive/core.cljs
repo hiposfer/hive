@@ -68,12 +68,16 @@
 
 ;; FOOD FOR THOUGHT
 ;; a possible way of synchronizing the entire datascript option would
-;; be to create a serializer which takes the datascript content and stores
-;; it using the db/id (Values with the same id are merged together).
+;; be to create a serializer which takes the datascript content as datoms,
+;; enumerates and stores them using the number as key and the datom as value.
 ;; This however would be very inneficient, therefore it would be best
 ;; to throtle it to say every 15 seconds or so.
 ;; Furthermore, storing the complete state again would be very inneficient
 ;; so a complete diff of the two states should be performed and only those
 ;; that changed should be stored.
+;; Just to avoid mixing old datoms with recently removed datoms, a remove until
+;; exception is found should be executed as well.
+;; To restore the datoms, simply pass (range) and stop taking elements when a
+;; read fails
 ;; Did I forget anything there?
 ;; PS: simply use add-watch to the datascript conn
