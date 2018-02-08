@@ -79,12 +79,12 @@
                              :flex 1}}
       [:> base/Button {:danger true :bordered false
                        :on-press #(swap! i dec)}
-       [:> base/Text "previous"]
-       [:> base/Icon {:name "ios-arrow-forward"}]]
+       [:> base/Icon {:name "ios-arrow-back"}]
+       [:> base/Text "previous"]]
       [:> base/Button {:success true :iconRight true :bordered false
                        :on-press #(swap! i inc)}
        [:> base/Text "next"]
-       [:> base/Icon {:name "ios-arrow-back"}]]]
+       [:> base/Icon {:name "ios-arrow-forward"}]]]
      [:> base/CardItem [:> base/Icon {:name "map"}]
       [:> base/Text "Instructions: "]]
      (for [[id text] instructions]
@@ -105,7 +105,7 @@
       (go-try (work/transact! (<? (fetch-path! @goal)))))
     (fn []
       [:> base/Container
-       [:> react/View
+       [:> base/Content
         [route-details props routes counter]]])))
 
 ;(work/q queries/routes-ids)
