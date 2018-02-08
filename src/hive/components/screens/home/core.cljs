@@ -79,46 +79,27 @@
     :user/goal (dissoc data :user/id)}
    [:db.fn/retractAttribute [:user/id (:user/id data)] :user/places]])
 
-
-(defn- set-path
-  "takes a mapbox directions response and returns a transaction vector
-  to use with transact!. Return an exception if no path was found"
-  [path]
-  (let [id      (:uuid path)
-        garbage (remove #{id} (:route/remove path))]
-    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-            [(tool/with-ns :route (dissoc path :user/id))
-             {:user/id (:user/id path)
-              :user/directions [:route/uuid id]}])))
-
-(def set-path!
-  "takes a geocoded feature (target) and queries the path to get there.
-  Returns a transaction vector to use with transact!"
-  (work/pipe route/get-path!
-             route/validate-path
-             (work/inject :route/remove queries/routes-ids)
-             set-path))
-
-(defn update-map!
+(defn choose-route!
   "associates a target and a path to get there with the user"
-  [target]
+  [props target]
   (go-try
     (let [places (set-goal (work/inject target :user/id queries/user-id))
-          paths  (set-path! target)]
+          paths  (route/fetch-path! target)]
       (work/transact! (concat (<? paths) places))
-      (.dismiss fl/Keyboard))
+      (.dismiss fl/Keyboard)
+      ((:navigate (:navigation props)) "directions"))
     (catch :default error (tool/log! error))))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
-  [features]
+  [props features]
   (let [position @(work/q! queries/user-position)]
     [:> base/List {:icon true :style {:flex 1}}
      (for [target features
            :let [distance (/ (geometry/haversine position target) 1000)]]
        ^{:key (:id target)}
-       [:> base/ListItem {:icon true :on-press #(update-map! target)
+       [:> base/ListItem {:icon true :on-press #(choose-route! props target)
                           :style {:height 50 :paddingVertical 30}}
         [:> base/Left
          [:> react/View {:align-items "center"}
@@ -136,7 +117,7 @@
     [:> base/Container
      [search-bar props (:user/places info)]
      (if (not-empty (:user/places info))
-       [places (:user/places info)]
+       [places props (:user/places info)]
        [:> react/View {:style {:flex 1}}
         [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry (:user/city info))))
                                            {:latitudeDelta 0.02,
