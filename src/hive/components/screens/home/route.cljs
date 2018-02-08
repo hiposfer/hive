@@ -80,11 +80,11 @@
       [:> base/Button {:danger true :bordered false
                        :on-press #(swap! i dec)}
        [:> base/Text "previous"]
-       [:> base/Icon {:name "ion-arrow-forward"}]]
+       [:> base/Icon {:name "ios-arrow-forward"}]]
       [:> base/Button {:success true :iconRight true :bordered false
                        :on-press #(swap! i inc)}
        [:> base/Text "next"]
-       [:> base/Icon {:name "ion-arrow-back"}]]]
+       [:> base/Icon {:name "ios-arrow-back"}]]]
      [:> base/CardItem [:> base/Icon {:name "map"}]
       [:> base/Text "Instructions: "]]
      (for [[id text] instructions]
