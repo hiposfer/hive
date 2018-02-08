@@ -37,11 +37,12 @@
   (exists? (.-then value)))
 
 (defn- print-warning!
-  [e]
-  (let [error (if (instance? js/Error (ex-data e))
-                (ex-data e)
-                (ex-message e))]
-    (.warn js/console error)))
+  [e pipe request]
+  (if (instance? js/Error (ex-data e))
+    (.warn js/console (ex-data e))
+    (do (.info js/console (clj->js pipe) (pr-str request))
+        (.warn js/console (ex-message e) (str (ex-cause e))))))
+
 
 ;; TODO: only print stacktrace if we are in DEBUG mode
 ;; TODO: allow returning pipes to have dynamic pipe dispatch?
@@ -52,7 +53,7 @@
       (loop [queue  (unfold this)
              value  request]
         (if (instance? js/Error value)
-          (do (print-warning! value) value) ;; short-circuit
+          (do (print-warning! value this request) value) ;; short-circuit
           (let [f   (first queue)
                 rr  (f value)
                 rr2 (if (promise? rr) (channel value) rr)
@@ -89,9 +90,9 @@
   or an ex-info with cause otherwise"
   ([spec value cause]
    (if (s/valid? spec value) value
-                             (ex-info (s/explain-str spec value)
-                                      (s/explain-data spec value)
-                                      cause)))
+     (ex-info (s/explain-str spec value)
+              (s/explain-data spec value)
+              cause)))
   ([spec cause]
    (fn validate* [value] (validate spec value cause))))
 
