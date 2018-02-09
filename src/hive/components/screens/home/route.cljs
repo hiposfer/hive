@@ -68,11 +68,48 @@
   (when (nil? (get @routes (inc @i)))
     (go-try (work/transact! (<? (fetch-path! @goal))))))
 
+(defn route-controllers
+  "display previous, ok and next buttons to the user to choose which route
+  too take"
+  [props routes i]
+  (let [goal (work/q! queries/user-goal)
+        path (work/entity [:route/uuid (get @routes @i)])]
+    [:> react/View {:style {:flexDirection "row" :justifyContent "space-around"
+                            :flex 1}}
+     (when (> @i 0)
+       [:> base/Button {:warning true :bordered false
+                        :on-press #(swap! i dec)}
+        [:> base/Icon {:name "ios-arrow-back"}]
+        [:> base/Text "previous"]])
+     [:> base/Button {:success true :bordered false
+                      :on-press #(do (set-route! (into {} path))
+                                     ((:goBack (:navigation props))))}
+      [:> base/Text "OK"]]
+     [:> base/Button {:warning true :iconRight true :bordered false
+                      :on-press #(next-path! routes i goal)}
+      [:> base/Text "next"]
+      [:> base/Icon {:name "ios-arrow-forward"}]]]))
+
+(defn route-meta
+  "displays route meta information like distance, time, uuid etc"
+  [route path]
+  [:> react/View
+   [:> base/CardItem [:> base/Icon {:name "flag"}]
+    [:> base/Text (str "distance: " (:distance route) " meters")]]
+   [:> base/CardItem [:> base/Icon {:name "flag"}]
+    [:> base/Text (str "UUID: " (:route/uuid path) " meters")]]
+   [:> base/CardItem [:> base/Icon {:name "information-circle"}]
+    [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
+   [:> base/CardItem [:> base/Icon {:name "time"}]
+    [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
+                                                        (* 1000 (:duration route))))
+                       " minutes")]]])
+
 (defn route-details
+  "display the complete route information to the user"
   [props i]
   (let [routes       (work/q! queries/routes-ids)
         path         (work/entity [:route/uuid (get @routes @i)])
-        goal         (work/q! queries/user-goal)
         route        (first (:route/routes path))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
@@ -81,41 +118,20 @@
                                (:legs route))]
     (if (nil? path)
       [:> base/Spinner]
-      [:> base/Card
-       [:> base/CardItem [:> base/Icon {:name "flag"}]
-        [:> base/Text (str "distance: " (:distance route) " meters")]]
-       [:> base/CardItem [:> base/Icon {:name "flag"}]
-        [:> base/Text (str "UUID: " (:route/uuid path) " meters")]]
-       [:> base/CardItem [:> base/Icon {:name "information-circle"}]
-        [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
-       [:> base/CardItem [:> base/Icon {:name "time"}]
-        [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
-                                                            (* 1000 (:duration route))))
-                           " minutes")]]
-       [:> react/View {:style {:flexDirection "row" :justifyContent "space-around"
-                               :flex 1}}
-        (when (> @i 0)
-          [:> base/Button {:warning true :bordered false
-                           :on-press #(swap! i dec)}
-            [:> base/Icon {:name "ios-arrow-back"}]
-            [:> base/Text "previous"]])
-        [:> base/Button {:success true :bordered false
-                         :on-press #(do (set-route! (into {} path))
-                                        ((:goBack (:navigation props))))}
-          [:> base/Text "OK"]]
-        [:> base/Button {:warning true :iconRight true :bordered false
-                         :on-press #(next-path! routes i goal)}
-          [:> base/Text "next"]
-          [:> base/Icon {:name "ios-arrow-forward"}]]]
-       [:> base/CardItem [:> base/Icon {:name "map"}]
-        [:> base/Text "Instructions: "]]
-       (for [[id text] instructions]
-         ^{:key id}
-         [:> base/CardItem
-          (if (= id (first (last instructions)))
-            [:> base/Icon {:name "flag"}]
-            [:> base/Icon {:name "ios-navigate-outline"}])
-          [:> base/Text text]])])))
+      [:> react/View
+       [:> base/Card
+        [route-meta route path]
+        [route-controllers props routes i]]
+       [:> base/Card
+        [:> base/CardItem [:> base/Icon {:name "map"}]
+         [:> base/Text "Instructions: "]]
+        (for [[id text] instructions]
+          ^{:key id}
+          [:> base/CardItem
+           (if (= id (first (last instructions)))
+             [:> base/Icon {:name "flag"}]
+             [:> base/Icon {:name "ios-navigate-outline"}])
+           [:> base/Text text]])]])))
 
 (defn instructions
   "basic navigation directions"
