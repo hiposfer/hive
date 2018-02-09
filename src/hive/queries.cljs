@@ -23,14 +23,6 @@
                  :where [?uid :user/id]
                         [?uid :user/city ?city]])
 
-(def user-directions '[:find (pull ?directions [*]) .
-                       :where [?id :user/id]
-                              [?id :user/directions ?directions]])
-
-(def user-places '[:find ?places .
-                   :where [?id :user/id]
-                          [?id :user/places ?places]])
-
 (def user-goal '[:find ?goal .
                  :where [?id :user/id]
                         [?id :user/goal ?goal]])
