@@ -58,7 +58,7 @@
           report (async/chan 1 (comp (filter tool/error?)
                                      (map #(fl/toast! (ex-message %)))))
           default (work/inject state/defaults :user/id queries/user-id)
-          tx      (async/merge [config (async/to-chan [default])])]
+          tx      (async/merge [config (async/to-chan [[default]])])]
       (async/pipe w report false)
       (work/transact-chan tx (remove tool/error?)))))
 
