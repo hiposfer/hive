@@ -51,35 +51,29 @@
                                 (map reform-path)
                                 (map vector)))))))
 
-(defn choose-path
-  "assocs the path to :user/directions and remove all other temporary paths"
-  [path]
-  (let [id      (:route/uuid path)
-        garbage (remove #{id} (:route/remove path))]
-    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-            [{:user/id         (:user/id path)
-              :user/directions [:route/uuid id]}])))
-
-(def set-route!
+(defn set-route!
   "takes a mapbox directions object and assocs the user/directions with
   it. All other temporary paths are removed"
-  (work/pipe (work/inject :user/id queries/user-id)
-             (work/inject :route/remove queries/routes-ids)
-             choose-path
-             work/transact!))
+  [epath user routes]
+  (let [path (into {:user/id user :route/remove routes} epath)
+        uuid (:route/uuid path)
+        garbage (remove #{uuid} (:route/remove path))]
+    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
+            [{:user/id         (:user/id path)
+              :user/directions [:route/uuid uuid]}])))
 
 (defn- next-path!
   "get the next route in memory or fetch one otherwise"
   [routes i goal]
-  (swap! i inc)
-  (when (nil? (get @routes (inc @i)))
-    (go-try (work/transact! (<? (fetch-path! @goal))))))
+  (when (nil? (get @routes @i))
+    (get-path! @goal)))
 
 (defn route-controllers
   "display previous, ok and next buttons to the user to choose which route
   too take"
   [props routes i]
-  (let [goal (work/q! queries/user-goal)
+  (let [user (work/q queries/user-id)
+        goal (work/q! queries/user-goal)
         path (work/entity [:route/uuid (get @routes @i)])]
     [:> react/View {:style {:flexDirection "row" :justifyContent "space-around"
                             :flex 1}}
@@ -89,11 +83,12 @@
         [:> base/Icon {:name "ios-arrow-back"}]
         [:> base/Text "previous"]])
      [:> base/Button {:success true :bordered false
-                      :on-press #(do (set-route! (into {} path))
+                      :on-press #(do (work/transact! (set-route! path user routes))
                                      ((:goBack (:navigation props))))}
       [:> base/Text "OK"]]
      [:> base/Button {:warning true :iconRight true :bordered false
-                      :on-press #(next-path! routes i goal)}
+                      :on-press #(do (swap! i inc)
+                                     (work/transact-chan (next-path! routes i goal)))}
       [:> base/Text "next"]
       [:> base/Icon {:name "ios-arrow-forward"}]]]))
 
