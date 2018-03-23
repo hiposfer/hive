@@ -46,7 +46,7 @@
 (defn log!
   "pretty prints the input and returns it"
   [o]
-  (do (print/pprint o)
+  (do (.log js/console o)
       o))
 
 (defn validate

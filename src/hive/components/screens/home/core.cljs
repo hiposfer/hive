@@ -40,12 +40,12 @@
                ::geocoding/proximity (:user/position data)
                ::geocoding/access_token token
                ::geocoding/bbox (:city/bbox (:user/city data))}
-        args (tool/validate args ::request ::invalid-input)]
-    (if (tool/error? args) (async/to-chan [args])
+        args (tool/validate ::geocoding/request args ::invalid-input)]
+    (if (tool/error? args) args
       (let [args (geocoding/defaults args)
             url  (geocoding/autocomplete args)
             xform (comp (map tool/keywordize)
-                        (map (assoc % :user/id id))
+                        (map #(assoc % :user/id id))
                         (map update-places))]
         [url {} xform]))))
     ;(go-try
@@ -60,7 +60,8 @@
   [props places]
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
-        data     @(work/pull! [:user/position :user/city] [:user/id id])
+        data     @(work/pull! [:user/position {:user/city [:city/bbox]}]
+                              [:user/id id])
         token    (work/q queries/mapbox-token)
         ref      (volatile! nil)]
     [:> base/Header {:searchBar true :rounded true}
@@ -71,14 +72,17 @@
       [:> base/Input {:placeholder "Where would you like to go?"
                       :ref #(when % (vreset! ref (.-_root %)))
                       :onChangeText #(if (empty? %) (work/transact! (clear-places id))
-                                       (work/transact-chan
-                                         (http/json! (autocomplete % id data token))))}]
+                                       (let [r (autocomplete % id data token)]
+                                         (if (tool/error? r) (tool/log! (ex-message r))
+                                           (work/transact-chan (http/json! r)))))}]
       (if (empty? places)
         [:> base/Icon {:name "ios-search"}]
         [:> base/Button {:transparent true :full true
                          :on-press    #(do (.clear @ref)
                                            (work/transact! (clear-places id)))}
          [:> base/Icon {:name "close"}]])]]))
+
+;hive.rework.state/conn
 
 (defn choose-route
   "associates a target and a path to get there with the user"
