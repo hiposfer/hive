@@ -37,6 +37,7 @@
         (.catch #(async/put! result %))) ;; halt on error
     result))
 
+;; todo fix this
 (s/fdef json! :args (s/cat :request ::request :xform fn?))
 
 (s/fdef text! :args (s/cat :request ::request :xform fn?))

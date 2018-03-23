@@ -40,6 +40,6 @@
         URL (-> (str/replace template "{profile}" (::profile request))
                 (str/replace "{coordinates}" (js/encodeURIComponent (::coordinates request)))
                 (str/replace "{params}" (str/join "&" params)))]
-    [URL]))
+    URL))
 
 (s/fdef request :args (s/cat :request ::request))
