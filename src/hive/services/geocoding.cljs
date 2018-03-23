@@ -44,6 +44,6 @@
         URL (-> (str/replace template "{mode}" (::mode request))
                 (str/replace "{query}" (js/encodeURIComponent (::query request)))
                 (str/replace "{params}" (str/join "&" params)))]
-      [URL]))
+      URL))
 
 (s/fdef autocomplete :args (s/cat :request ::request))
