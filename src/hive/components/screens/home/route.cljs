@@ -35,7 +35,7 @@
 
     :ok (tool/with-ns :route path)))
 
-(defn get-path!
+(defn get-path
   "takes a geocoded feature (target) and queries the path to get there
   from the current user position. Returns a transaction or error"
   [goal]
@@ -47,11 +47,11 @@
                                             (:coordinates (:geometry goal))]
                   ::directions/access_token tok}
             url  (directions/request args)]
-        (http/json! [url] (comp (map tool/keywordize)
-                                (map reform-path)
-                                (map vector)))))))
+        [url {} (comp (map tool/keywordize)
+                      (map reform-path)
+                      (map vector))]))))
 
-(defn set-route!
+(defn set-route
   "takes a mapbox directions object and assocs the user/directions with
   it. All other temporary paths are removed"
   [epath user routes]
@@ -61,12 +61,6 @@
     (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
             [{:user/id         (:user/id path)
               :user/directions [:route/uuid uuid]}])))
-
-(defn- next-path!
-  "get the next route in memory or fetch one otherwise"
-  [routes i goal]
-  (when (nil? (get @routes @i))
-    (get-path! @goal)))
 
 (defn route-controllers
   "display previous, ok and next buttons to the user to choose which route
@@ -83,12 +77,14 @@
         [:> base/Icon {:name "ios-arrow-back"}]
         [:> base/Text "previous"]])
      [:> base/Button {:success true :bordered false
-                      :on-press #(do (work/transact! (set-route! path user routes))
+                      :on-press #(do (work/transact! (set-route path user routes))
                                      ((:goBack (:navigation props))))}
       [:> base/Text "OK"]]
      [:> base/Button {:warning true :iconRight true :bordered false
                       :on-press #(do (swap! i inc)
-                                     (work/transact-chan (next-path! routes i goal)))}
+                                     (when (nil? (get @routes @i))
+                                       (work/transact-chan
+                                         (http/json! (get-path @goal)))))}
       [:> base/Text "next"]
       [:> base/Icon {:name "ios-arrow-forward"}]]]))
 

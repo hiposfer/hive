@@ -13,13 +13,15 @@
    Returns a channel with xform applied to its result or an exception on error
 
   https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch"
-  [[url init] xform]
-  (let [result (async/chan 1 (comp tool/bypass-error xform))]
-    (-> (js/fetch url (clj->js init))
-        (.then #(.json %))
-        (.then #(do (async/put! result %) (async/close! result)))
-        (.catch #(async/put! result %)))
-    result))
+  ([[url init xform]]
+   (json! url init xform))
+  ([url init xform]
+   (let [result (async/chan 1 (comp tool/bypass-error xform))]
+     (-> (js/fetch url (clj->js init))
+         (.then #(.json %))
+         (.then #(do (async/put! result %) (async/close! result)))
+         (.catch #(async/put! result %)))
+     result)))
 
 (defn text!
   "takes a request shaped according to ::request and executes it asynchronously.

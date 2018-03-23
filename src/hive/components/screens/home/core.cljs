@@ -36,7 +36,8 @@
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   [text id data token]
-  (let [args  {::geocoding/proximity (:user/position data)
+  (let [args  {::geocoding/query text
+               ::geocoding/proximity (:user/position data)
                ::geocoding/access_token token
                ::geocoding/bbox (:city/bbox (:user/city data))}
         args (tool/validate args ::request ::invalid-input)]
@@ -44,9 +45,9 @@
       (let [args (geocoding/defaults args)
             url  (geocoding/autocomplete args)
             xform (comp (map tool/keywordize)
-                        (map (work/inject :user/id queries/user-id))
+                        (map (assoc % :user/id id))
                         (map update-places))]
-        [[url] xform]))))
+        [url {} xform]))))
     ;(go-try
     ;  (work/transact! (<? (geocode! text)))
     ;  (catch :default _
@@ -71,7 +72,7 @@
                       :ref #(when % (vreset! ref (.-_root %)))
                       :onChangeText #(if (empty? %) (work/transact! (clear-places id))
                                        (work/transact-chan
-                                         (apply http/json! (autocomplete % id data token))))}]
+                                         (http/json! (autocomplete % id data token))))}]
       (if (empty? places)
         [:> base/Icon {:name "ios-search"}]
         [:> base/Button {:transparent true :full true
@@ -79,38 +80,35 @@
                                            (work/transact! (clear-places id)))}
          [:> base/Icon {:name "close"}]])]]))
 
-(defn- set-goal
-  "set feature as the user goal and removes the :user/places attributes from the app
-  state"
-  [data]
-  [{:user/id (:user/id data)
-    :user/goal (dissoc data :user/id)}
-   [:db.fn/retractAttribute [:user/id (:user/id data)] :user/places]])
-
-(defn choose-route!
+(defn choose-route
   "associates a target and a path to get there with the user"
-  [props target]
-  (go-try
-    (let [places (set-goal (work/inject target :user/id queries/user-id))
-          path   (route/get-path! target)
-          garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
-                        (work/q queries/routes-ids))]
-      (work/transact! (concat (<? path) places garbage))
-      (.dismiss fl/Keyboard)
-      ((:navigate (:navigation props)) "directions"))
-    (catch :default error (tool/log! error))))
+  [target id]
+  (let [places [{:user/id id
+                 :user/goal target}
+                [:db.fn/retractAttribute [:user/id id] :user/places]]
+        garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
+                      (work/q queries/routes-ids))]
+    (concat places garbage)))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [props features]
-  (let [position @(work/q! queries/user-position)]
+  (let [position @(work/q! queries/user-position)
+        navigate ((:navigate (:navigation props)))
+        id       (work/q queries/user-id)]
     [:> base/List {:icon true :style {:flex 1}}
      (for [target features
            :let [distance (/ (geometry/haversine position target) 1000)]]
        ^{:key (:id target)}
-       [:> base/ListItem {:icon true :on-press #(choose-route! props target)
-                          :style {:height 50 :paddingVertical 30}}
+       [:> base/ListItem {:icon     true
+                          :on-press #(do (work/transact-chan
+                                           (async/onto-chan (http/json! (route/get-path target))
+                                                            (choose-route target id)))
+                                         (.dismiss fl/Keyboard)
+                                         (navigate "directions"))
+
+                          :style    {:height 50 :paddingVertical 30}}
         [:> base/Left
          [:> react/View {:align-items "center"}
           [:> base/Icon {:name "pin"}]
