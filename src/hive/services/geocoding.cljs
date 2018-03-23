@@ -26,16 +26,18 @@
 
 (def template "https://api.mapbox.com/geocoding/v5/{mode}/{query}.json?{params}")
 
-(defn- presets
+(defn defaults
   [request]
   (assoc request ::autocomplete true
                  ::mode  "mapbox.places"
                  ::proximity (geojson/uri (::proximity request))
                  ::bbox (str/join "," (::bbox request))))
 
-(defn- autocomplete
+(defn autocomplete
   "takes a map with the items required by ::request and replaces their values into
-   the Mapbox URL template. Returns the full url to use with an http service"
+   the Mapbox URL template. Returns the full url to use with an http service
+
+   https://www.mapbox.com/api-documentation/#request-format"
   [request]
   (let [params  (map (fn [[k v]] (str (name k) "=" (js/encodeURIComponent v)))
                      (dissoc request ::query ::mode))
@@ -43,17 +45,5 @@
                 (str/replace "{query}" (js/encodeURIComponent (::query request)))
                 (str/replace "{params}" (str/join "&" params)))]
       [URL]))
-
-(def autocomplete!
-  "takes an autocomplete geocoding channel and a request shaped
-   according to MapBox geocode API v5 and executes it asynchronously.
-   Returns a channel with the result or an exception
-
-  https://www.mapbox.com/api-documentation/#request-format"
-  (work/pipe (tool/validate ::request ::invalid-input)
-             presets
-             autocomplete
-             http/json!
-             tool/keywordize))
 
 (s/fdef autocomplete :args (s/cat :request ::request))

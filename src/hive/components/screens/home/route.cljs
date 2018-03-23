@@ -3,25 +3,12 @@
             [hive.queries :as queries]
             [hive.components.native-base :as base]
             [hive.components.react :as react]
-            [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.services.directions :as directions]
             [hive.rework.util :as tool]
-            [datascript.core :as data]))
-
-(defn- prepare-coordinates
-  "transform the user/position attribute to the ::directions/coordinates format"
-  [goal]
-  (if (nil? (:user/position goal))
-    (ex-info "missing user location" goal ::user-position-unknown)
-    {::directions/coordinates [(:coordinates (:geometry (:user/position goal)))
-                               (:coordinates (:geometry goal))]}))
-
-(def get-path!
-  "takes a geocoded feature (target) and queries the path to get there.
-  Returns a transaction vector to use with transact!"
-  (work/pipe (work/inject :user/position queries/user-position)
-             prepare-coordinates
-             directions/request!))
+            [datascript.core :as data]
+            [hive.services.raw.http :as http]
+            [clojure.core.async :as async]
+            [hive.rework.core :as work]))
 
 ;(defn- tx-path
 ;  "takes a mapbox directions response and returns a transaction vector
@@ -34,7 +21,7 @@
 ;             {:user/id (:user/id path)
 ;              :user/directions [:route/uuid id]}])))
 
-(defn- validate-path
+(defn- reform-path
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
   [path]
@@ -46,13 +33,23 @@
     (not (contains? path :uuid))
     (recur (assoc path :uuid (data/squuid)))
 
-    :ok [(tool/with-ns :route path)]))
+    :ok (tool/with-ns :route path)))
 
-(def fetch-path!
-  "takes a geocoded feature (target) and queries the path to get there.
-  Returns a transaction vector to use with transact!"
-  (work/pipe get-path!
-             validate-path))
+(defn get-path!
+  "takes a geocoded feature (target) and queries the path to get there
+  from the current user position. Returns a transaction or error"
+  [goal]
+  (let [loc  (work/q queries/user-position)
+        tok  (work/q queries/mapbox-token)]
+    (if (nil? loc)
+      (async/to-chan [(ex-info "missing user location" goal ::user-position-unknown)])
+      (let [args {::directions/coordinates [(:coordinates (:geometry loc))
+                                            (:coordinates (:geometry goal))]
+                  ::directions/access_token tok}
+            url  (directions/request args)]
+        (http/json! [url] (comp (map tool/keywordize)
+                                (map reform-path)
+                                (map vector)))))))
 
 (defn route-details
   [props routes i]
@@ -102,10 +99,11 @@
         goal    (work/q! queries/user-goal)
         counter (r/atom 0)]
     (when (nil? (get @routes (inc @counter)))
-      (go-try (work/transact! (<? (fetch-path! @goal)))))
-    (fn []
-      [:> base/Container
-       [:> base/Content
-        [route-details props routes counter]]])))
+      (work/transact-chan (get-path! @goal)))
+    [:> base/Container
+     [:> base/Content
+      [route-details props routes counter]]]))
 
 ;(work/q queries/routes-ids)
+
+;hive.rework.state/conn

@@ -11,7 +11,8 @@
             [hive.queries :as queries]
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
-            [hive.components.screens.settings :as settings]))
+            [hive.components.screens.settings :as settings]
+            [cljs.core.async :as async]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -32,12 +33,16 @@
   (.registerComponent fl/app-registry "main"
                       #(r/reactify-component root-ui)))
 
-(def reload-config!
-  (work/pipe store/load!
-             (tool/validate not-empty ::missing-data)
-             (work/inject :user/id queries/user-id)
-             vector
-             work/transact!))
+(defn reload-config!
+  "takes a sequence of keys and attempts to read them from LocalStorage.
+  Returns a channel with a transaction or Error"
+  [ks]
+  (let [data (store/load! ks)
+        c    (async/chan 1 (comp (map (tool/validate not-empty ::missing-data))
+                                 tool/bypass-error
+                                 (map (work/inject :user/id queries/user-id))
+                                 (map vector)))]
+    (async/pipe data c)))
 
 (defn init!
   "register the main UI component in React Native"
@@ -47,14 +52,15 @@
                      state/init-data)]
     (data/transact! conn data)
     (work/init! conn)
-    (go-try (work/transact! (<? (location/watch! position/defaults)))
-            (catch :default error (fl/toast! (ex-message error))))
-    (go-try (<? (reload-config! [:user/city]))
-            (catch :default error
-              (let [base [(work/inject state/defaults :user/id queries/user-id)]]
-                (work/transact! base)
-                (tool/log! error)))
-            (finally (register!)))))
+    (register!)
+    (let [w      (location/watch! position/defaults) ;; displays Toast on error
+          config (reload-config! [:user/city])
+          report (async/chan 1 (comp (filter tool/error?)
+                                     (map #(fl/toast! (ex-message %)))))
+          default (work/inject state/defaults :user/id queries/user-id)
+          tx      (async/merge [config (async/to-chan [default])])]
+      (async/pipe w report false)
+      (work/transact-chan tx (remove tool/error?)))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 

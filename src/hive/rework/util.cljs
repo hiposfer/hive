@@ -5,17 +5,6 @@
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
 
-(defprotocol Pipe*
-  (unfold [this] "unfold (disassemble) this pipe into its constituents parts recursively"))
-
-(defn pipe?
-  "a pipe should behave just like a callable collection; with the exception of
-  implementing the Pipe* marker protocol"
-  [x]
-  (and (satisfies? cljs.core/IFn x)
-       (satisfies? cljs.core/ICollection x)
-       (satisfies? Pipe* x)))
-
 (defn channel
   "transforms a promise into a channel. Catches js/Errors and puts them in the
   channel as well. If the catch value is not an error, yields an ex-info with
@@ -42,31 +31,6 @@
     (.warn js/console (ex-data e))
     (do (.info js/console (clj->js pipe) (pr-str request))
         (.warn js/console (ex-message e) (str (ex-cause e))))))
-
-
-;; TODO: only print stacktrace if we are in DEBUG mode
-;; TODO: allow returning pipes to have dynamic pipe dispatch?
-(defrecord Pipe [sections]
-  cljs.core/IFn
-  (-invoke [this request]
-    (go
-      (loop [queue  (unfold this)
-             value  request]
-        (if (instance? js/Error value)
-          (do (print-warning! value this request) value) ;; short-circuit
-          (let [f   (first queue)
-                rr  (f value)
-                rr2 (if (promise? rr) (channel value) rr)
-                ;; get the value sync or async
-                rr3 (if (chan? rr) (async/<! rr2) rr2)]
-            (if (empty? (rest queue)) rr3
-              (recur (rest queue) rr3)))))))
-  Pipe*
-  (unfold [this]
-    (flatten ;; unroll the individual pipes into a bigger one
-      (for [p (:sections this)]
-        (if-not (pipe? p) p
-          (unfold p))))))
 
 (defn with-ns
   "modify a map keys to be namespaced with ns"
@@ -95,5 +59,9 @@
               cause)))
   ([spec cause]
    (fn validate* [value] (validate spec value cause))))
+
+(defn error? [o] (instance? js/Error o))
+
+(def bypass-error (halt-when error?))
 
 

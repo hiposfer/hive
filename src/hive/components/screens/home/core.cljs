@@ -11,11 +11,11 @@
             [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
             [hive.services.geocoding :as geocoding]
-            [hive.services.raw.location :as location]
-            [hive.services.location :as position]
             [hive.components.react :as react]
             [hive.foreigns :as fl]
-            [hive.libs.geometry :as geometry]))
+            [hive.libs.geometry :as geometry]
+            [hive.services.raw.http :as http]
+            [cljs.core.async :as async]))
 
 (defn latlng
   [coordinates]
@@ -27,35 +27,40 @@
   [{:user/id (:user/id data)
     :user/places (:features data)}])
 
-(def geocode! (work/pipe (work/inject ::geocoding/proximity queries/user-position)
-                         (work/inject ::geocoding/access_token queries/mapbox-token)
-                         (work/inject ::geocoding/bbox queries/user-city)
-                         #(update % ::geocoding/bbox (fn [c] (:city/bbox c)))
-                         geocoding/autocomplete!
-                         (work/inject :user/id queries/user-id)
-                         update-places))
+(defn- clear-places
+  [id]
+  [{:user/places []
+    :user/id     id}])
 
-(defn- clear-places! []
-  (work/transact! [{:user/places []
-                    :user/id     (work/q queries/user-id)}]))
-
-(defn autocomplete!
+(defn autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  [navigate query]
-  (go-try
-    (work/transact! (<? (geocode! query)))
-    (catch :default _
-      (if (empty? (::geocoding/query query))
-        (clear-places!)
-        (try (work/transact! (<? (location/watch! position/defaults)))
-             (catch :default _
-               (.dismiss fl/Keyboard)
-               (navigate "location-error")))))))
+  [text id data token]
+  (let [args  {::geocoding/proximity (:user/position data)
+               ::geocoding/access_token token
+               ::geocoding/bbox (:city/bbox (:user/city data))}
+        args (tool/validate args ::request ::invalid-input)]
+    (if (tool/error? args) (async/to-chan [args])
+      (let [args (geocoding/defaults args)
+            url  (geocoding/autocomplete args)
+            xform (comp (map tool/keywordize)
+                        (map (work/inject :user/id queries/user-id))
+                        (map update-places))]
+        [[url] xform]))))
+    ;(go-try
+    ;  (work/transact! (<? (geocode! text)))
+    ;  (catch :default _
+    ;    (try (work/transact! (<? (location/watch! position/defaults)))
+    ;         (catch :default _
+    ;           (.dismiss fl/Keyboard)
+    ;           (navigate "location-error")))))))
 
 (defn- search-bar
   [props places]
   (let [navigate (:navigate (:navigation props))
+        id       (work/q queries/user-id)
+        data     @(work/pull! [:user/position :user/city] [:user/id id])
+        token    (work/q queries/mapbox-token)
         ref      (volatile! nil)]
     [:> base/Header {:searchBar true :rounded true}
      [:> base/Item {}
@@ -64,11 +69,14 @@
        [:> base/Icon {:name "ios-menu" :transparent true}]]
       [:> base/Input {:placeholder "Where would you like to go?"
                       :ref #(when % (vreset! ref (.-_root %)))
-                      :onChangeText #(autocomplete! navigate {::geocoding/query %})}]
+                      :onChangeText #(if (empty? %) (work/transact! (clear-places id))
+                                       (work/transact-chan
+                                         (apply http/json! (autocomplete % id data token))))}]
       (if (empty? places)
         [:> base/Icon {:name "ios-search"}]
         [:> base/Button {:transparent true :full true
-                         :on-press    #(do (.clear @ref) (clear-places!))}
+                         :on-press    #(do (.clear @ref)
+                                           (work/transact! (clear-places id)))}
          [:> base/Icon {:name "close"}]])]]))
 
 (defn- set-goal
@@ -84,7 +92,7 @@
   [props target]
   (go-try
     (let [places (set-goal (work/inject target :user/id queries/user-id))
-          paths  (route/fetch-path! target)]
+          paths  (route/get-path! target)]
       (work/transact! (concat (<? paths) places))
       (.dismiss fl/Keyboard)
       ((:navigate (:navigation props)) "directions"))

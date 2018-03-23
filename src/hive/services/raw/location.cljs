@@ -37,37 +37,36 @@
                            tool/keywordize))
 
 (defn- watch
-  [opts]
-  (if (and (= "android" (:OS fl/Platform))
-           (not (:isDevice fl/Constants)))
-    (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
-             {} ::emulator-denial)
-    (let [result (async/chan)
-          js-opts (clj->js opts)]
-      (-> ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
-          (.then tool/keywordize)
-          (.then #(when (not= (:status %) "granted")
-                    (async/put! result
-                      (ex-info "permission denied" % ::permission-denied))))
-          (.then #((:watchPositionAsync fl/Location) js-opts (::callback opts)))
-          (.then #(async/put! result %))
-          (.catch #(async/put! result
-                               (ex-info "no location provider" % ::missing-provider))))
-      result)))
+  [xform]
+  (let [result (async/chan 1 (comp tool/bypass-error xform))]
+    (-> ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
+        (.then #(do (async/put! result %) (async/close! result)))
+        (.catch #(async/put! result %)))
+    result))
 
 (defn- set-watcher
   [data]
   [{:app/session (:app/session data)
     :app.location/watcher (::watcher data)}])
 
-(def watch!
+(defn watch!
   "watch the user location. Receives an options object according to
   Expo's API: https://docs.expo.io/versions/latest/sdk/location.html"
-  (rework/pipe watch
-               tool/keywordize
-               #(hash-map ::watcher %)
-               (rework/inject :app/session queries/session)
-               set-watcher))
+  [opts]
+  (if (and (= "android" (:OS fl/Platform)) (not (:isDevice fl/Constants)))
+    (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
+      (async/to-chan [(ex-info msg opts ::emulator-denial)]))
+    (let [js-opts (clj->js opts)
+          xform  (comp (map tool/keywordize)
+                       (map #(when (not= (:status %) "granted")
+                               (ex-info "permission denied" % ::permission-denied)))
+                       tool/bypass-error
+                       (map #((:watchPositionAsync fl/Location) js-opts
+                                                                (::callback opts)))
+                       (map #(hash-map ::watcher %))
+                       (map (rework/inject :app/session queries/session))
+                       (map set-watcher))]
+      (watch xform))))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"

@@ -10,7 +10,8 @@
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
             [hive.rework.util :as tool]
-            [hive.rework.state :as state]))
+            [hive.rework.state :as state]
+            [cljs.core.async :as async]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -79,12 +80,6 @@
   [eid]
   (data/entity @state/conn eid))
 
-(defn entity!
-  "same as datascript/entity but returns a ratom which will be updated
-  every time that the value of conn changes"
-  [eid]
-  (r/track rtx/entity* (::rtx/ratom @state/conn) eid))
-
 (defn q
   "same as datascript/q but uses the app state as connection"
   [query & inputs]
@@ -105,8 +100,20 @@
 
    Returns tx-data"
   [tx-data]
-  (do (data/transact! state/conn tx-data)
-      tx-data))
+  (data/transact! state/conn tx-data))
+
+(defn transact-chan
+  "same as transact! but accepts a port over which (map transact!)
+   will be executed. Stops on any Error.
+
+   Returns a channel with the result of the transduction"
+  ([port]
+   (transact-chan port (map identity)))
+  ([port xform]
+   (let [c (async/chan 1 (comp xform
+                               (halt-when #(instance? js/Error %))
+                               (map transact!)))]
+     (async/pipe port c))))
 
 (defn inject
   "runs query with provided inputs and associates its result into m
@@ -116,43 +123,6 @@
      (assoc m key result)))
   ([key query] ;; not possible to have & inputs due to conflict with upper args
    (fn inject* [m] (inject m key query))))
-
-;; Pipes are a combination of 3 concepts:
-;; - UNIX pipes
-;; - Haskell's Maybe Monad
-;; - Haskell's IO Monads
-;; Pipes are a sequence of functions executed one after the other with each
-;; function receiving the result of the previous one
-;; Pipes have 3 main purposes:
-;; - allow the combination of sync and async code into a single go loop
-;; - separate effectful code from pure functions
-;; - provide a way to convey errors during the process without silently
-;;   throwing on the background
-;; The problem with normal effectful code is that is it is not possible to
-;; use it without the user-function becoming effectful itself. This leads to
-;; a propagation of impure-functions for every action that the user wants to
-;; perform. With pipes, it is possible to separate the effectful functions from
-;; the pure ones. Furthermore since the input to each function is synchronous
-;; there is no need for glue code in synchronous functions.
-;; Finally, there should be a way to stop a pipe execution in case something goes
-;; wrong. Therefore, pipes are short-circuited if a js/Error is returned by any
-;; function. In that case, the js/Error is returned as the result of the pipe i.e.
-;; it is NOT thrown.
-
-
-(defn pipe
-  "Takes a sequence of functions and returns a fn that is the composition of those fns.
-  The returned fn takes a single argument (request), applies the leftmost of fns to
-  it, the next fn (left-to-right) to the result, etc (like transducer composition).
-
-  Returns a channel which will receive the result of the body when completed
-
-  If any function returns an exception, the execution will stop and returns it
-
-  The function composition handles async channels, promises and sync values
-  transparently"
-  [f g & more]
-  (tool/->Pipe (concat [f g] more)))
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
