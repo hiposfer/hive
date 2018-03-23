@@ -51,59 +51,102 @@
                                 (map reform-path)
                                 (map vector)))))))
 
-(defn route-details
+(defn choose-path
+  "assocs the path to :user/directions and remove all other temporary paths"
+  [path]
+  (let [id      (:route/uuid path)
+        garbage (remove #{id} (:route/remove path))]
+    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
+            [{:user/id         (:user/id path)
+              :user/directions [:route/uuid id]}])))
+
+(def set-route!
+  "takes a mapbox directions object and assocs the user/directions with
+  it. All other temporary paths are removed"
+  (work/pipe (work/inject :user/id queries/user-id)
+             (work/inject :route/remove queries/routes-ids)
+             choose-path
+             work/transact!))
+
+(defn- next-path!
+  "get the next route in memory or fetch one otherwise"
+  [routes i goal]
+  (swap! i inc)
+  (when (nil? (get @routes (inc @i)))
+    (go-try (work/transact! (<? (fetch-path! @goal))))))
+
+(defn route-controllers
+  "display previous, ok and next buttons to the user to choose which route
+  too take"
   [props routes i]
-  (println)
-  (let [directions   (work/entity [:route/uuid (get @routes @i)])
-        route        (first (:route/routes directions))
+  (let [goal (work/q! queries/user-goal)
+        path (work/entity [:route/uuid (get @routes @i)])]
+    [:> react/View {:style {:flexDirection "row" :justifyContent "space-around"
+                            :flex 1}}
+     (when (> @i 0)
+       [:> base/Button {:warning true :bordered false
+                        :on-press #(swap! i dec)}
+        [:> base/Icon {:name "ios-arrow-back"}]
+        [:> base/Text "previous"]])
+     [:> base/Button {:success true :bordered false
+                      :on-press #(do (set-route! (into {} path))
+                                     ((:goBack (:navigation props))))}
+      [:> base/Text "OK"]]
+     [:> base/Button {:warning true :iconRight true :bordered false
+                      :on-press #(next-path! routes i goal)}
+      [:> base/Text "next"]
+      [:> base/Icon {:name "ios-arrow-forward"}]]]))
+
+(defn route-meta
+  "displays route meta information like distance, time, uuid etc"
+  [route path]
+  [:> react/View
+   [:> base/CardItem [:> base/Icon {:name "flag"}]
+    [:> base/Text (str "distance: " (:distance route) " meters")]]
+   [:> base/CardItem [:> base/Icon {:name "flag"}]
+    [:> base/Text (str "UUID: " (:route/uuid path) " meters")]]
+   [:> base/CardItem [:> base/Icon {:name "information-circle"}]
+    [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
+   [:> base/CardItem [:> base/Icon {:name "time"}]
+    [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
+                                                        (* 1000 (:duration route))))
+                       " minutes")]]])
+
+(defn route-details
+  "display the complete route information to the user"
+  [props i]
+  (let [routes       (work/q! queries/routes-ids)
+        path         (work/entity [:route/uuid (get @routes @i)])
+        route        (first (:route/routes path))
         instructions (sequence (comp (mapcat :steps)
                                      (map :maneuver)
                                      (map :instruction)
                                      (map-indexed vector))
                                (:legs route))]
-    [:> base/Card
-     [:> base/CardItem [:> base/Icon {:name "flag"}]
-      [:> base/Text (str "distance: " (:distance route) " meters")]]
-     [:> base/CardItem [:> base/Icon {:name "flag"}]
-      [:> base/Text (str "UUID: " (:route/uuid directions) " meters")]]
-     [:> base/CardItem [:> base/Icon {:name "information-circle"}]
-      [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
-     [:> base/CardItem [:> base/Icon {:name "time"}]
-      [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
-                                                          (* 1000 (:duration route))))
-                         " minutes")]]
-     [:> react/View {:style {:flexDirection "row" :alignItems "flex-start"
-                             :flex 1}}
-      [:> base/Button {:danger true :bordered false
-                       :on-press #(swap! i dec)}
-       [:> base/Icon {:name "ios-arrow-back"}]
-       [:> base/Text "previous"]]
-      [:> base/Button {:success true :iconRight true :bordered false
-                       :on-press #(swap! i inc)}
-       [:> base/Text "next"]
-       [:> base/Icon {:name "ios-arrow-forward"}]]]
-     [:> base/CardItem [:> base/Icon {:name "map"}]
-      [:> base/Text "Instructions: "]]
-     (for [[id text] instructions]
-       ^{:key id}
-       [:> base/CardItem
-        (if (= id (first (last instructions)))
-          [:> base/Icon {:name "flag"}]
-          [:> base/Icon {:name "ios-navigate-outline"}])
-        [:> base/Text text]])]))
+    (if (nil? path)
+      [:> base/Spinner]
+      [:> react/View
+       [:> base/Card
+        [route-meta route path]
+        [route-controllers props routes i]]
+       [:> base/Card
+        [:> base/CardItem [:> base/Icon {:name "map"}]
+         [:> base/Text "Instructions: "]]
+        (for [[id text] instructions]
+          ^{:key id}
+          [:> base/CardItem
+           (if (= id (first (last instructions)))
+             [:> base/Icon {:name "flag"}]
+             [:> base/Icon {:name "ios-navigate-outline"}])
+           [:> base/Text text]])]])))
 
 (defn instructions
   "basic navigation directions"
   [props]
-  (let [routes  (work/q! queries/routes-ids)
-        goal    (work/q! queries/user-goal)
-        counter (r/atom 0)]
-    (when (nil? (get @routes (inc @counter)))
-      (work/transact-chan (get-path! @goal)))
-    [:> base/Container
-     [:> base/Content
-      [route-details props routes counter]]]))
+  (let [counter (r/atom 0)]
+    (fn []
+      [:> base/Container
+       [:> base/Content
+        [route-details props counter]]])))
 
 ;(work/q queries/routes-ids)
-
-;hive.rework.state/conn

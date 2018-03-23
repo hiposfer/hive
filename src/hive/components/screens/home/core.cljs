@@ -92,8 +92,10 @@
   [props target]
   (go-try
     (let [places (set-goal (work/inject target :user/id queries/user-id))
-          paths  (route/get-path! target)]
-      (work/transact! (concat (<? paths) places))
+          path   (route/get-path! target)
+          garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
+                        (work/q queries/routes-ids))]
+      (work/transact! (concat (<? path) places garbage))
       (.dismiss fl/Keyboard)
       ((:navigate (:navigation props)) "directions"))
     (catch :default error (tool/log! error))))
