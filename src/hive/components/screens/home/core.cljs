@@ -134,7 +134,7 @@
                                            (async/onto-chan (http/json! (route/get-path target))
                                                             (choose-route target id)))
                                          (.dismiss fl/Keyboard)
-                                         (navigate "directions"))
+                                         (navigate "home/directions"))
                           :style    {:height 50 :paddingVertical 30}}
         [:> base/Left
          [:> react/View {:align-items "center"}
@@ -172,16 +172,16 @@
                                    :strokeWidth 4}]))]
         (when (some? (:user/goal info))
           [:> base/Button {:full true
-                           :on-press #((:navigate (:navigation props)) "directions")}
+                           :on-press #((:navigate (:navigation props)) "home/directions")}
            [:> base/Icon {:name "information-circle" :transparent true}]
            [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])])]))
 
 (def Directions    (rn-nav/stack-screen route/instructions
-                     {:title "directions"}))
+                     {:title "home/directions"}))
 (def Map           (rn-nav/stack-screen home
-                     {:title "map"}))
+                     {:title "home/map"}))
 (def LocationError (rn-nav/stack-screen errors/user-location
-                     {:title "location-error"}))
+                     {:title "home/location-error"}))
 (def Navigator     (rn-nav/stack-navigator
                       {:map        {:screen Map}
                        :directions {:screen Directions}

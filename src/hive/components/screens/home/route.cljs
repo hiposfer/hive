@@ -121,7 +121,7 @@
         [route-meta route path]
         [route-controllers props routes i]]
        [:> base/Card
-        [:> base/CardItem [:> base/Icon {:name "map"}]
+        [:> base/CardItem [:> base/Icon {:name "home/map"}]
          [:> base/Text "Instructions: "]]
         (for [[id text] instructions]
           ^{:key id}

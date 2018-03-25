@@ -6,28 +6,24 @@
             [hive.components.navigation :as nav]
             [reagent.core :as r]))
 
-(defn update-city
-  [data]
-  {:user/id (:user/id data)
-   :user/city [:city/name (:city/name data)]})
-
 (defn move-to!
-  [city props]
-  (let [data (work/inject city :user/id queries/user-id)
-        tx   (update-city data)]
-    (go-try (work/transact! [tx])
-            (<? (store/save! (select-keys tx [:user/city])))
-            ((:goBack (:navigation props)))
-            (catch :default error (cljs.pprint/pprint error)))))
+  [city user goBack]
+  (let [tx {:user/id user
+            :user/city [:city/name (:city/name city)]}]
+    (work/transact! [tx])
+    (store/save! (select-keys tx [:user/city]))
+    (goBack)))
 
 (defn city-selector
   [city props]
-  ^{:key (:city/name city)}
-  [:> base/ListItem {:on-press #(move-to! city props)}
-   [:> base/Body {}
-    [:> base/Text (:city/name city)]
-    [:> base/Text {:note true :style {:color "gray"}}
-                  (str (:city/region city) ", " (:city/country city))]]])
+  (let [user (work/q queries/user-id)
+        goBack (:goBack (:navigation props))]
+    ^{:key (:city/name city)}
+    [:> base/ListItem {:on-press #(move-to! city user goBack)}
+     [:> base/Body {}
+      [:> base/Text (:city/name city)]
+      [:> base/Text {:note true :style {:color "gray"}}
+                    (str (:city/region city) ", " (:city/country city))]]]))
 
 (defn settings
   [props]

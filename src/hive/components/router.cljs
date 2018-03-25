@@ -20,7 +20,7 @@
 (defn- dispatch
   [state getStateForAction action]
   (let [next-state (getStateForAction action state)]
-    (println action)
+    ;(println action)
     (when (some? next-state) ;; nil on DrawerClose
       (work/transact! (set-routing next-state)))))
 
