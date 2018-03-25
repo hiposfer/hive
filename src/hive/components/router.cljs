@@ -25,10 +25,10 @@
       (work/transact! (set-routing next-state)))))
 
 (defn router [props]
-  (let [root-router               (:router/root props)
+  (let [root-router               (:root props)
         getStateForAction         (aget root-router "router" "getStateForAction")
         getActionForPathAndParams (aget root-router "router" "getActionForPathAndParams")
-        act                       (getActionForPathAndParams (:router/init props))
+        act                       (getActionForPathAndParams (:init props))
         init                      (getStateForAction act)
         routing-sub               (work/q! state-query)
         routing-state (or @routing-sub init)]

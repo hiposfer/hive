@@ -28,8 +28,7 @@
   (let [Root     (nav/drawer-navigator {:Home {:screen home/Screen}
                                         :Settings {:screen settings/Screen}}
                                        {})]
-    [router/router {:router/root Root
-                    :router/init "Home"}]))
+    [router/router {:root Root :init "Home"}]))
 
 (defn register! []
   (.registerComponent fl/app-registry "main"
