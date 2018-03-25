@@ -82,8 +82,6 @@
                                            (work/transact! (clear-places id)))}
          [:> base/Icon {:name "close"}]])]]))
 
-;hive.rework.state/conn
-
 (defn choose-route
   "associates a target and a path to get there with the user"
   [target id]
@@ -94,12 +92,38 @@
                       (work/q queries/routes-ids))]
     (concat places garbage)))
 
+;(async/go
+;  (println
+;    (async/<!
+;      (http/json!
+;        (route/get-path {:properties {},
+;                         :relevance 1,
+;                         :type "Feature",
+;                         :geometry {:type "Point", :coordinates [8.681239 50.09051]},
+;                         :place_type ["address"],
+;                         :center [8.681239 50.09051],
+;                         :place_name "Mittlerer Schafhofweg, Frankfurt am Main, Hessen 60598, Germany",
+;                         :id "address.1585297524",
+;                         :context [{:id "postcode.15081868302516260", :text "60598"}
+;                                   {:id "place.7300924236190980",
+;                                    :wikidata "Q1794",
+;                                    :text "Frankfurt am Main"}
+;                                   {:id "region.3907",
+;                                    :short_code "DE-HE",
+;                                    :wikidata "Q1199",
+;                                    :text "Hessen"}
+;                                   {:id "country.3135",
+;                                    :short_code "de",
+;                                    :wikidata "Q183",
+;                                    :text "Germany"}],
+;                         :text "Mittlerer Schafhofweg"})))))
+
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [props features]
   (let [position @(work/q! queries/user-position)
-        navigate ((:navigate (:navigation props)))
+        navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)]
     [:> base/List {:icon true :style {:flex 1}}
      (for [target features
@@ -111,7 +135,6 @@
                                                             (choose-route target id)))
                                          (.dismiss fl/Keyboard)
                                          (navigate "directions"))
-
                           :style    {:height 50 :paddingVertical 30}}
         [:> base/Left
          [:> react/View {:align-items "center"}

@@ -17,7 +17,7 @@
         tx   (update-city data)]
     (go-try (work/transact! [tx])
             (<? (store/save! (select-keys tx [:user/city])))
-            ((:navigate (:navigation props)) "Home")
+            ((:goBack (:navigation props)))
             (catch :default error (cljs.pprint/pprint error)))))
 
 (defn city-selector
