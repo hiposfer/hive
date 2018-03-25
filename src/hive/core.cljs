@@ -13,7 +13,8 @@
             [hive.components.screens.home.core :as home]
             [hive.components.router :as router]
             [hive.components.screens.settings :as settings]
-            [cljs.core.async :as async]))
+            [cljs.core.async :as async]
+            [clojure.data]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -30,10 +31,6 @@
                                        {})]
     [router/router {:root Root :init "Home"}]))
 
-(defn register! []
-  (.registerComponent fl/app-registry "main"
-                      #(r/reactify-component root-ui)))
-
 (defn reload-config!
   "takes a sequence of keys and attempts to read them from LocalStorage.
   Returns a channel with a transaction or Error"
@@ -45,6 +42,22 @@
                                  (map vector)))]
     (async/pipe data c)))
 
+;; TODO: for some reason, the app seems to not exit directly through
+;; the back button but keep removing some stacks? I think it might be
+;; related to the DrawerToggle
+(defn back-listener []
+  (let [r @(work/q! router/data-query)
+        tx (delay (router/goBack r))]
+    (cond
+      (nil? (second r))
+      false ;; no router initialized, Exit
+
+      (= (tool/keywordize (first r))
+         (tool/keywordize (:react.navigation/state (first @tx))))
+      false ;; nothing to go back to, Exit
+
+      :else (do (work/transact! @tx) true))))
+
 (defn init!
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
@@ -55,9 +68,12 @@
         config (reload-config! [:user/city])
         report (async/chan 1 (comp (filter tool/error?)
                                    (map #(fl/toast! (ex-message %)))))]
-    (data/transact! conn data)
     (work/init! conn)
-    (register!)
+    (work/transact! data)
+    (.registerComponent fl/app-registry "main" #(r/reactify-component root-ui))
+    ;; handles Android BackButton
+    ((:addEventListener fl/back-handler) "hardwareBackPress"
+      back-listener)
     (let [default (work/inject state/defaults :user/id queries/user-id)
           tx      (async/merge [config (async/to-chan [[default]])])]
       (async/pipe w report)

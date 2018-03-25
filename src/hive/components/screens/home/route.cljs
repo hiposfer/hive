@@ -68,7 +68,8 @@
   [props routes i]
   (let [user (work/q queries/user-id)
         goal (work/q! queries/user-goal)
-        path (work/entity [:route/uuid (get @routes @i)])]
+        path (work/entity [:route/uuid (get @routes @i)])
+        goBack (:goBack (:navigation props))]
     [:> react/View {:style {:flexDirection "row" :justifyContent "space-around"
                             :flex 1}}
      (when (> @i 0)
@@ -78,7 +79,7 @@
         [:> base/Text "previous"]])
      [:> base/Button {:success true :bordered false
                       :on-press #(do (work/transact! (set-route path user routes))
-                                     ((:goBack (:navigation props))))}
+                                     (goBack))}
       [:> base/Text "OK"]]
      [:> base/Button {:warning true :iconRight true :bordered false
                       :on-press #(do (swap! i inc)

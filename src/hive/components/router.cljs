@@ -11,29 +11,44 @@
 (def state-query '[:find ?state .
                    :where [_ :react.navigation/state ?state]])
 
+(def data-query '[:find [?state ?router]
+                  :where [_ :react.navigation/state ?state]
+                         [_ :react.navigation/router ?router]])
+
 (defn- set-routing
   "resets the complete navigation state according to new routes"
-  [new-routes]
+  [router new-routes]
   [{:react.navigation/name ::router
+    :react.navigation/router router
     :react.navigation/state new-routes}])
 
+;(type (get reagent/NavigationActionsMap "Navigation/BACK"))
+
+(defn goBack
+  [[state router]]
+  (let [back              (get reagent/NavigationActionsMap "Navigation/BACK")
+        getStateForAction (aget router "router" "getStateForAction")
+        new-state         (getStateForAction (back) state)]
+    (set-routing router new-state)))
+
 (defn- dispatch
-  [state getStateForAction action]
-  (let [next-state (getStateForAction action state)]
+  [state root-router action]
+  (let [getStateForAction (aget root-router "router" "getStateForAction")
+        next-state        (getStateForAction action state)]
     ;(println action)
     (when (some? next-state) ;; nil on DrawerClose
-      (work/transact! (set-routing next-state)))))
+      (work/transact! (set-routing root-router next-state)))))
 
 (defn router [props]
   (let [root-router               (:root props)
-        getStateForAction         (aget root-router "router" "getStateForAction")
         getActionForPathAndParams (aget root-router "router" "getActionForPathAndParams")
+        getStateForAction         (aget root-router "router" "getStateForAction")
         act                       (getActionForPathAndParams (:init props))
         init                      (getStateForAction act)
         routing-sub               (work/q! state-query)
-        routing-state (or @routing-sub init)]
+        routing-state             (or @routing-sub init)]
     [:> root-router
         {:navigation
          (base/addNavigationHelpers
            (clj->js {:state routing-state
-                     :dispatch #(dispatch routing-state getStateForAction %)}))}]))
+                     :dispatch #(dispatch routing-state root-router %)}))}]))
