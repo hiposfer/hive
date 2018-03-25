@@ -15,10 +15,10 @@
     (goBack)))
 
 (defn city-selector
-  [city props]
-  (let [user (work/q queries/user-id)
+  [props]
+  (let [city (:city props)
+        user (:user props)
         goBack (:goBack (:navigation props))]
-    ^{:key (:city/name city)}
     [:> base/ListItem {:on-press #(move-to! city user goBack)}
      [:> base/Body {}
       [:> base/Text (:city/name city)]
@@ -27,7 +27,8 @@
 
 (defn settings
   [props]
-  (let [cities @(work/q! queries/cities)
+  (let [cities  @(work/q! queries/cities)
+        user     (work/q queries/user-id)
         navigate (:navigate (:navigation props))]
     [:> base/Container
      [:> base/Header
@@ -36,7 +37,9 @@
        [:> base/Icon {:name "menu"}]]
       [:> base/Body [:> base/Title "Settings"]]]
      [:> base/Content
-        (map city-selector cities (repeat props))]]))
+        (for [city cities]
+          ^{:key (:city/name city)}
+          [city-selector (assoc props :city city :user user)])]]))
 
 (def Screen (nav/drawer-screen settings
               {:title      "Settings"
