@@ -70,7 +70,7 @@
 ;                               ::location/timeInterval 3000})
 ;             cljs.pprint/pprint)
 
-;(work/q router/state-query)
+;hive.rework.state/conn
 
 
 ;; FOOD FOR THOUGHT
