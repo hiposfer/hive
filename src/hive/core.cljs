@@ -11,6 +11,7 @@
             [hive.queries :as queries]
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
+            [hive.components.router :as router]
             [hive.components.screens.settings :as settings]
             [cljs.core.async :as async]))
 
@@ -27,7 +28,8 @@
   (let [Root     (nav/drawer-navigator {:Home {:screen home/Screen}
                                         :Settings {:screen settings/Screen}}
                                        {})]
-    [:> Root]))
+    [router/router {:router/root Root
+                    :router/init "Home"}]))
 
 (defn register! []
   (.registerComponent fl/app-registry "main"
@@ -49,17 +51,17 @@
   [] ;; todo: add https://github.com/reagent-project/historian
   (let [conn   (data/create-conn state/schema)
         data   (cons {:app/session (data/squuid)}
-                     state/init-data)]
+                     state/init-data)
+        w      (location/watch! position/defaults) ;; displays Toast on error
+        config (reload-config! [:user/city])
+        report (async/chan 1 (comp (filter tool/error?)
+                                   (map #(fl/toast! (ex-message %)))))]
     (data/transact! conn data)
     (work/init! conn)
     (register!)
-    (let [w      (location/watch! position/defaults) ;; displays Toast on error
-          config (reload-config! [:user/city])
-          report (async/chan 1 (comp (filter tool/error?)
-                                     (map #(fl/toast! (ex-message %)))))
-          default (work/inject state/defaults :user/id queries/user-id)
+    (let [default (work/inject state/defaults :user/id queries/user-id)
           tx      (async/merge [config (async/to-chan [[default]])])]
-      (async/pipe w report false)
+      (async/pipe w report)
       (work/transact-chan tx (remove tool/error?)))))
 
 ;(async/take! (store/delete! [:user/city]) println)
@@ -69,7 +71,7 @@
 ;                               ::location/timeInterval 3000})
 ;             cljs.pprint/pprint)
 
-;(:eavt @hive.rework.state/conn)
+;(work/q router/state-query)
 
 
 ;; FOOD FOR THOUGHT
