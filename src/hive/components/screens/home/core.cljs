@@ -56,32 +56,6 @@
     ;           (.dismiss fl/Keyboard)
     ;           (navigate "location-error")))))))
 
-(defn- search-bar
-  [props places]
-  (let [navigate (:navigate (:navigation props))
-        id       (work/q queries/user-id)
-        data     @(work/pull! [:user/position {:user/city [:city/bbox]}]
-                              [:user/id id])
-        token    (work/q queries/mapbox-token)
-        ref      (volatile! nil)]
-    [:> base/Header {:searchBar true :rounded true}
-     [:> base/Item {}
-      [:> base/Button {:transparent true :full true
-                       :on-press #(navigate "DrawerToggle")}
-       [:> base/Icon {:name "ios-menu" :transparent true}]]
-      [:> base/Input {:placeholder "Where would you like to go?"
-                      :ref #(when % (vreset! ref (.-_root %)))
-                      :onChangeText #(if (empty? %) (work/transact! (clear-places id))
-                                       (let [r (autocomplete % id data token)]
-                                         (if (tool/error? r) (tool/log! (ex-message r))
-                                           (work/transact-chan (http/json! r)))))}]
-      (if (empty? places)
-        [:> base/Icon {:name "ios-search"}]
-        [:> base/Button {:transparent true :full true
-                         :on-press    #(do (.clear @ref)
-                                           (work/transact! (clear-places id)))}
-         [:> base/Icon {:name "close"}]])]]))
-
 (defn choose-route
   "associates a target and a path to get there with the user"
   [target id]
@@ -145,52 +119,79 @@
          [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
                        (str/join ", " (map :text (:context target)))]]])]))
 
+(defn- search-bar
+  [props places]
+  (let [id       (:user/id props)
+        data     (select-keys props [:user/position :user/city])
+        token    (work/q queries/mapbox-token)
+        ref      (volatile! nil)]
+    [:> react/View {:style {:flex 1 :backgroundColor "white" :elevation 5
+                            :borderRadius 5 :justifyContent "center"
+                            :shadowColor "#000000" :shadowRadius 5
+                            :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+     [:> base/Item
+      [:> base/Button {:transparent true :full true
+                       :on-press    #(do (.clear @ref)
+                                         (work/transact! (clear-places id)))}
+        (if (empty? places)
+          [:> base/Icon {:name "ios-search"}]
+          [:> base/Icon {:name "close"}])]
+      [:> base/Input {:placeholder "Where would you like to go?"
+                      :ref #(when % (vreset! ref (.-_root %)))
+                      :onChangeText #(if (empty? %) (work/transact! (clear-places id))
+                                       (let [r (autocomplete % id data token)]
+                                         (if (tool/error? r)
+                                           (tool/log! (ex-message r))
+                                           (work/transact-chan (http/json! r)))))}]]]))
+
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [info      @(work/q! queries/map-info)]
-    [:> base/Container
-     [search-bar props (:user/places info)]
-     (if (not-empty (:user/places info))
-       [places props (:user/places info)]
-       [:> react/View {:style {:flex 1}}
-        [:> expo/MapView {:initialRegion (merge (latlng (:coordinates (:city/geometry (:user/city info))))
-                                           {:latitudeDelta 0.02,
-                                            :longitudeDelta 0.02})
-                          :showsUserLocation true :style {:flex 1}
-                          :showsMyLocationButton true}
-         (when (some? (:user/goal info))
-           (let [point (latlng (:coordinates (:geometry (:user/goal info))))
-                 text  (str/join ", " (map :text (:context (:user/goal info))))]
-             [:> expo/MapMarker {:title       (:text (:user/goal info))
-                                 :coordinate  point
-                                 :description text}]))
-         (when (some? (:user/directions info))
-           (let [geo (:geometry (first (:route/routes (:user/directions info))))]
-             [:> expo/MapPolyline {:coordinates (map latlng (:coordinates geo))
-                                   :strokeColor "#3bb2d0" ;; light
-                                   :strokeWidth 4}]))]
-        (when (some? (:user/goal info))
-          [:> base/Button {:full true
-                           :on-press #((:navigate (:navigation props)) "directions")}
-           [:> base/Icon {:name "information-circle" :transparent true}]
-           [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])])]))
+  (let [navigate   (:navigate (:navigation props))
+        id         (work/q queries/user-id)
+        info      @(work/pull! [:user/places :user/goal :user/position
+                                {:user/city [:city/geometry :city/bbox :city/name]}
+                                {:user/directions [:route/routes]}]
+                               [:user/id id])
+        coords     (:coordinates (:city/geometry (:user/city info)))]
+        ;_ (println (:user/city info))]
+    [:> react/View {:style {:flex 1}}
+      [:> expo/MapView {:initialRegion (merge (latlng coords)
+                                        {:latitudeDelta 0.02 :longitudeDelta 0.02})
+                        :showsUserLocation true :style {:flex 1}
+                        :showsMyLocationButton true}]
+      [:> react/View {:style {:position "absolute" :top 35 :left 20 :width 340 :height 42}}
+       [search-bar (merge info {:user/id id})
+                   (:user/places info)]]
+      [:> react/View {:style {:position "absolute" :bottom 20 :right 20
+                              :width 52 :height 52 :borderRadius 52/2
+                              :alignItems "center" :justifyContent "center"
+                              :backgroundColor "#FF5722" :elevation 3
+                              :shadowColor "#000000" :shadowRadius 5
+                              :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+       [:> base/Button {:transparent true :full true
+                        :onPress #(navigate "settings" {:user/id id})}
+         [:> base/Icon {:name "md-apps" :style {:color "white"}}]]]]))
+
+       ;[:> react/View {:style {:backgroundColor "red" :width 30 :height 30}}]]]))
+
+      ;[search-bar props (:user/places info)]]]
+      ;(if (not-empty (:user/places info))
+      ;[places props (:user/places info)]
+      ;[:> react/View {:style {:flex 1}}
+
+;(when (some? (:user/goal info))
+    ;  [:> base/Button {:full true
+    ;                   :on-press #((:navigate (:navigation props)) "directions")}
+    ;   [:> base/Icon {:name "information-circle" :transparent true}]
+    ;   [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])))
 
 (def Directions    (rn-nav/stack-screen route/instructions
                      {:title "directions"}))
-(def Map           (rn-nav/stack-screen home
+(def Screen        (rn-nav/stack-screen home
                      {:title "map"}))
 (def LocationError (rn-nav/stack-screen errors/user-location
                      {:title "location-error"}))
-(def Navigator     (rn-nav/stack-navigator
-                      {:map        {:screen Map}
-                       :directions {:screen Directions}
-                       :location-error {:screen LocationError}}
-                      {:headerMode "none"}))
-
-(def Screen     (nav/drawer-screen Navigator
-                  {:title      "Home"
-                   :drawerIcon (r/as-element [:> base/Icon {:name "home"}])}))
 
 ;(work/q queries/routes-ids)
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])

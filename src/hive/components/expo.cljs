@@ -4,3 +4,4 @@
 (def MapView   (.-MapView fl/Expo))
 (def MapMarker (.-Marker MapView))
 (def MapPolyline (.-Polyline MapView))
+;(def Ionicons (.-Ionicons (js/require "@expo/vector-icons")))

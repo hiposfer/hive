@@ -12,9 +12,10 @@
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
             [hive.components.router :as router]
-            [hive.components.screens.settings :as settings]
+            [hive.components.screens.settings.core :as settings]
             [cljs.core.async :as async]
-            [clojure.data]))
+            [clojure.data]
+            [cljs-react-navigation.reagent :as rn-nav]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -26,10 +27,14 @@
     :setParams - used to change the params for the current screen}"
 
 (defn root-ui []
-  (let [Root     (nav/drawer-navigator {:Home {:screen home/Screen}
-                                        :Settings {:screen settings/Screen}}
-                                       {})]
-    [router/router {:root Root :init "Home"}]))
+  (let [Navigator     (rn-nav/stack-navigator
+                        {:map            {:screen home/Screen}
+                         :directions     {:screen home/Directions}
+                         :settings       {:screen settings/Screen}
+                         :select-city    {:screen settings/SelectCity}
+                         :location-error {:screen home/LocationError}}
+                        {:headerMode "none"})]
+    [router/router {:root Navigator :init "map"}]))
 
 (defn reload-config!
   "takes a sequence of keys and attempts to read them from LocalStorage.
@@ -75,9 +80,9 @@
     ((:addEventListener fl/back-handler) "hardwareBackPress"
       back-listener)
     (let [default (work/inject state/defaults :user/id queries/user-id)
-          tx      (async/merge [config (async/to-chan [[default]])])]
+          tx      (async/merge [(async/to-chan [default]) config])]
       (async/pipe w report)
-      (work/transact-chan tx (remove tool/error?)))))
+      (work/transact-chan tx (comp (remove tool/error?))))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 

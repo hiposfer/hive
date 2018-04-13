@@ -143,3 +143,66 @@
 
 ;hive.rework.state/conn
 ;(work/q queries/routes-ids)
+
+;<View style={styles.routeShape}>
+;  <View style={styles.circle} />
+;  <View style={styles.square} />
+;  <View style={styles.circleBottom} />
+;</View>
+;
+;
+;const styles = StyleSheet.create({
+;                                  routeShape: {
+;                                               width: 25,
+;                                               height: 125
+;                                               ,}
+;                                  square: {
+;                                           position: 'absolute',
+;                                           top: 7,
+;                                           left: 5,
+;                                           width: 4,
+;                                           height: 100,
+;                                           backgroundColor: '#50E3C2'}})
+;    ,
+;                                           circle: {
+;                                                    width: 14,
+;                                                    height: 14,
+;                                                    borderRadius: 14/2,
+;                                                    backgroundColor: '#50E3C2'}
+;    ,
+;                                                    circleBottom: {
+;                                                                   position: 'absolute',
+;                                                                   top: 100,
+;                                                                   width: 14,
+;                                                                   height: 14,
+;                                                                   borderRadius: 14/2,
+;                                                                   backgroundColor: '#50E3C2'}
+;
+;                                                                   ;
+
+
+
+;var stringToColour = function(str) {
+;var hash = 0;
+;for (var i = 0; i < str.length; i++) {
+;         hash = str.charCodeAt(i) + ((hash << 5) - hash));
+;
+;var colour = '#';
+;    for (var i = 0; i < 3; i++) {
+;             var value = (hash >> (i * 8)) & 0xFF;
+;             colour += ('00' + value.toString(16)).substr(-2));
+;
+;return colour;
+
+
+;(when (some? (:user/goal info))
+;  (let [point (latlng (:coordinates (:geometry (:user/goal info))))
+;        text  (str/join ", " (map :text (:context (:user/goal info))))]
+;    [:> expo/MapMarker {:title       (:text (:user/goal info))
+;                        :coordinate  point
+;                        :description text}]))
+;(when (some? (:user/directions info))
+;  (let [geo (:geometry (first (:route/routes (:user/directions info))))]
+;    [:> expo/MapPolyline {:coordinates (map latlng (:coordinates geo))
+;                          :strokeColor "#3bb2d0" ;; light
+;                          :strokeWidth 4}]))
