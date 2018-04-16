@@ -25,36 +25,7 @@
   "transact the geocoding result under the user id"
   [data]
   [{:user/id (:user/id data)
-    :user/places (:features data)}])
-
-(defn- clear-places
-  [id]
-  [{:user/places []
-    :user/id     id}])
-
-(defn autocomplete
-  "request an autocomplete geocoding result from mapbox and adds its result to the
-   app state"
-  [text id data token]
-  (let [args  {::geocoding/query text
-               ::geocoding/proximity (:user/position data)
-               ::geocoding/access_token token
-               ::geocoding/bbox (:city/bbox (:user/city data))}
-        args (tool/validate ::geocoding/request args ::invalid-input)]
-    (if (tool/error? args) args
-      (let [args (geocoding/defaults args)
-            url  (geocoding/autocomplete args)
-            xform (comp (map tool/keywordize)
-                        (map #(assoc % :user/id id))
-                        (map update-places))]
-        [url {} xform]))))
-    ;(go-try
-    ;  (work/transact! (<? (geocode! text)))
-    ;  (catch :default _
-    ;    (try (work/transact! (<? (location/watch! position/defaults)))
-    ;         (catch :default _
-    ;           (.dismiss fl/Keyboard)
-    ;           (navigate "location-error")))))))
+    :user/places (or (:features data) [])}])
 
 (defn choose-route
   "associates a target and a path to get there with the user"
@@ -65,32 +36,6 @@
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]
     (concat places garbage)))
-
-;(async/go
-;  (println
-;    (async/<!
-;      (http/json!
-;        (route/get-path {:properties {},
-;                         :relevance 1,
-;                         :type "Feature",
-;                         :geometry {:type "Point", :coordinates [8.681239 50.09051]},
-;                         :place_type ["address"],
-;                         :center [8.681239 50.09051],
-;                         :place_name "Mittlerer Schafhofweg, Frankfurt am Main, Hessen 60598, Germany",
-;                         :id "address.1585297524",
-;                         :context [{:id "postcode.15081868302516260", :text "60598"}
-;                                   {:id "place.7300924236190980",
-;                                    :wikidata "Q1794",
-;                                    :text "Frankfurt am Main"}
-;                                   {:id "region.3907",
-;                                    :short_code "DE-HE",
-;                                    :wikidata "Q1199",
-;                                    :text "Hessen"}
-;                                   {:id "country.3135",
-;                                    :short_code "de",
-;                                    :wikidata "Q183",
-;                                    :text "Germany"}],
-;                         :text "Mittlerer Schafhofweg"})))))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
@@ -104,7 +49,7 @@
            :let [distance (/ (geometry/haversine position target) 1000)]]
        ^{:key (:id target)}
        [:> base/ListItem {:icon     true
-                          :on-press #(do (work/transact-chan
+                          :on-press #(do (work/transact!
                                            (async/onto-chan (http/json! (route/get-path target))
                                                             (choose-route target id)))
                                          (.dismiss fl/Keyboard)
@@ -119,30 +64,54 @@
          [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
                        (str/join ", " (map :text (:context target)))]]])]))
 
+(defn autocomplete
+  "request an autocomplete geocoding result from mapbox and adds its result to the
+   app state"
+  [text data]
+  (if (empty? text)
+    (update-places data)
+    (let [args {::geocoding/query text
+                ::geocoding/proximity (:user/position data)
+                ::geocoding/access_token (:token/mapbox data)
+                ::geocoding/bbox (:city/bbox (:user/city data))}
+          validated (tool/validate ::geocoding/request args ::invalid-input)]
+      (if (tool/error? validated)
+        [{:user/id (:user/id data)
+          :user/places validated}] ;; handle error in UI
+        (let [args (geocoding/defaults validated)
+              url  (geocoding/autocomplete args)
+              xform (comp (map tool/keywordize)
+                          (map #(assoc % :user/id (:user/id data)))
+                          (map update-places))]
+          [http/json! url {} xform])))))
+;(go-try
+;  (work/transact! (<? (geocode! text)))
+;  (catch :default _
+;    (try (work/transact! (<? (location/watch! position/defaults)))
+;         (catch :default _
+;           (.dismiss fl/Keyboard)
+;           (navigate "location-error")))))))
+
+
 (defn- search-bar
   [props places]
-  (let [id       (:user/id props)
-        data     (select-keys props [:user/position :user/city])
-        token    (work/q queries/mapbox-token)
-        ref      (volatile! nil)]
+  (let [data     (work/inject props :token/mapbox queries/mapbox-token)
+        ref      (volatile! nil)
+        listener (if (empty? places) {}
+                   {:on-press #(do (.clear @ref)
+                                   (work/transact! (update-places props)))})]
     [:> react/View {:style {:flex 1 :backgroundColor "white" :elevation 5
                             :borderRadius 5 :justifyContent "center"
                             :shadowColor "#000000" :shadowRadius 5
                             :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
      [:> base/Item
-      [:> base/Button {:transparent true :full true
-                       :on-press    #(do (.clear @ref)
-                                         (work/transact! (clear-places id)))}
+      [:> base/Button (merge {:transparent true :full true} listener)
         (if (empty? places)
           [:> base/Icon {:name "ios-search"}]
           [:> base/Icon {:name "close"}])]
       [:> base/Input {:placeholder "Where would you like to go?"
                       :ref #(when % (vreset! ref (.-_root %)))
-                      :onChangeText #(if (empty? %) (work/transact! (clear-places id))
-                                       (let [r (autocomplete % id data token)]
-                                         (if (tool/error? r)
-                                           (tool/log! (ex-message r))
-                                           (work/transact-chan (http/json! r)))))}]]]))
+                      :onChangeText #(work/transact! (autocomplete % data))}]]]))
 
 (defn city-map
   "a React Native MapView component which will only re-render on user-city change"

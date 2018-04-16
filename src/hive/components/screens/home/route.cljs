@@ -84,7 +84,7 @@
      [:> base/Button {:warning true :iconRight true :bordered false
                       :on-press #(do (swap! i inc)
                                      (when (nil? (get @routes @i))
-                                       (work/transact-chan
+                                       (work/transact!
                                          (http/json! (get-path @goal)))))}
       [:> base/Text "next"]
       [:> base/Icon {:name "ios-arrow-forward"}]]]))

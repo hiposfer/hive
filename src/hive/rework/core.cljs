@@ -93,22 +93,27 @@
   (r/track rtx/q* query (::rtx/ratom @state/conn) inputs))
 
 (defn transact!
-  "'Updates' the DataScript state with tx-data.
+  "'Updates' the DataScript state with data.
 
-   See Datomic's API documentation for more information.
-   http://docs.datomic.com/transactions.html
+   data can be:
+   - a standard Datomic transaction. See Datomic's API documentation for more
+    information. http://docs.datomic.com/transactions.html
+   - a channel containing one or more transactions
+   - a vector whose first element is a function and the rest are its argument.
+    Useful for keeping functions side-effect free
 
-   Returns tx-data"
-  [tx-data]
-  (data/transact! state/conn tx-data))
+   If an [f & args] argument is given, the function is executed and its return
+   value is passed to transact! again.
 
-(defn transact-chan
-  "same as transact! but accepts a port over which (map transact!)
-   will be executed. Stops on any Error.
-
-   Returns a channel with the result of the transduction"
-  ([port]
-   (transact-chan port (map identity)))
+   Returns Datascript transact! return value or a channel
+   with the content of each transact! result"
+  ([data]
+   (if (tool/chan? data)
+     (transact! data (map identity))
+     ;; vector otherwise
+     (if (fn? (first data))
+       (recur (apply (first data) (rest data)))
+       (data/transact! state/conn data))))
   ([port xform]
    (let [c (async/chan 1 (comp xform
                                (halt-when #(instance? js/Error %))

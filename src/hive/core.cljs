@@ -85,7 +85,7 @@
     (let [default (work/inject state/defaults :user/id queries/user-id)
           tx      (async/into [default] config)]
       (async/pipe w report)
-      (work/transact-chan tx (remove tool/error?)))))
+      (work/transact! tx (remove tool/error?)))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 
