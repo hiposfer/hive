@@ -43,14 +43,17 @@
   (let [data (store/load! ks)
         c    (async/chan 1 (comp (map (tool/validate not-empty ::missing-data))
                                  tool/bypass-error
-                                 (map (work/inject :user/id queries/user-id))
-                                 (map vector)))]
+                                 (map (work/inject :user/id queries/user-id))))]
     (async/pipe data c)))
 
-;; TODO: for some reason, the app seems to not exit directly through
-;; the back button but keep removing some stacks? I think it might be
-;; related to the DrawerToggle
-(defn back-listener []
+(defn back-listener
+  "a generic Android back button listener which pops the last element from the
+  navigation stack or exists otherwise.
+
+  Note: for Component specific back listeners it might be necessary to unsubscribe
+  this listener and subscribe your own for the lifecycle of the UI component.
+  See `with-let` https://reagent-project.github.io/news/news060-alpha.html"
+  []
   (let [r @(work/q! router/data-query)
         tx (delay (router/goBack r))]
     (cond
@@ -80,9 +83,9 @@
     ((:addEventListener fl/back-handler) "hardwareBackPress"
       back-listener)
     (let [default (work/inject state/defaults :user/id queries/user-id)
-          tx      (async/merge [(async/to-chan [default]) config])]
+          tx      (async/into [default] config)]
       (async/pipe w report)
-      (work/transact-chan tx (comp (remove tool/error?))))))
+      (work/transact-chan tx (remove tool/error?)))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 

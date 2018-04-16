@@ -144,21 +144,27 @@
                                            (tool/log! (ex-message r))
                                            (work/transact-chan (http/json! r)))))}]]]))
 
+(defn city-map
+  "a React Native MapView component which will only re-render on user-city change"
+  [user]
+  (let [info  @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
+                           user)
+        coords (:coordinates (:city/geometry (:user/city info)))]
+    [:> expo/MapView {:region (merge (latlng coords)
+                                     {:latitudeDelta 0.02 :longitudeDelta 0.02})
+                      :showsUserLocation true :style {:flex 1}
+                      :showsMyLocationButton true}]))
+
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
         info    @(work/pull! [:user/places :user/goal :user/position
-                              {:user/city [:city/geometry :city/bbox :city/name]}
                               {:user/directions [:route/routes]}]
-                             [:user/id id])
-        coords   (:coordinates (:city/geometry (:user/city info)))]
+                             [:user/id id])]
     [:> react/View {:style {:flex 1}}
-      [:> expo/MapView {:region (merge (latlng coords)
-                                       {:latitudeDelta 0.02 :longitudeDelta 0.02})
-                        :showsUserLocation true :style {:flex 1}
-                        :showsMyLocationButton true}]
+      [city-map [:user/id id]]
       [:> react/View {:style {:position "absolute" :top 35 :left 20 :width 340 :height 42}}
        [search-bar (merge info {:user/id id})
                    (:user/places info)]]
