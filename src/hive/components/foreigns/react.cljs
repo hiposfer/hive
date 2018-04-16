@@ -5,3 +5,4 @@
 (def Image  (.-Image fl/ReactNative))
 (def Modal  (.-Modal fl/ReactNative))
 (def TouchableHighlight (.-TouchableHighlight fl/ReactNative))
+(def ScrollView (.-ScrollView fl/ReactNative))

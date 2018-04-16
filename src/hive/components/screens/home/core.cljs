@@ -139,15 +139,16 @@
                                 :width 340 :height 42}}
           [search-bar (merge info {:user/id id})
                       (:user/places info)]]
-        [:> react/View {:style {:position "absolute" :bottom 20 :right 20
-                                :width 52 :height 52 :borderRadius 52/2
-                                :alignItems "center" :justifyContent "center"
-                                :backgroundColor "#FF5722" :elevation 3
-                                :shadowColor "#000000" :shadowRadius 5
-                                :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-          [:> base/Button {:transparent true :full true
-                           :onPress #(navigate "settings" {:user/id id})}
-            [:> base/Icon {:name "md-apps" :style {:color "white"}}]]]])))
+        (when (empty? (:user/places info))
+          [:> react/View {:style {:position "absolute" :bottom 20 :right 20
+                                  :width 52 :height 52 :borderRadius 52/2
+                                  :alignItems "center" :justifyContent "center"
+                                  :backgroundColor "#FF5722" :elevation 3
+                                  :shadowColor "#000000" :shadowRadius 5
+                                  :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+            [:> base/Button {:transparent true :full true
+                             :onPress #(navigate "settings" {:user/id id})}
+              [:> base/Icon {:name "md-apps" :style {:color "white"}}]]])])))
 
 
       ;[search-bar props (:user/places info)]]]
