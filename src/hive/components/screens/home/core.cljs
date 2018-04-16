@@ -130,8 +130,7 @@
                               {:user/directions [:route/routes]}]
                              [:user/id id])]
     (if (tool/error? (:user/places info))
-      (do (cljs.pprint/pprint (:user/places info))
-          [errors/user-location props])
+      [errors/user-location props]
       [:> react/View {:style {:flex 1}}
         (if (empty? (:user/places info))
           [city-map [:user/id id]]
