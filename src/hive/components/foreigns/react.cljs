@@ -1,4 +1,4 @@
-(ns hive.components.react
+(ns hive.components.foreigns.react
   (:require [hive.foreigns :as fl]))
 
 (def View   (.-View fl/ReactNative))

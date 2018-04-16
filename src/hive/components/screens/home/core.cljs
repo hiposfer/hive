@@ -1,8 +1,7 @@
 (ns hive.components.screens.home.core
-  (:require [hive.components.native-base :as base]
-            [hive.components.expo :as expo]
+  (:require [hive.components.foreigns.native-base :as base]
+            [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.components.navigation :as nav]
             [reagent.core :as r]
             [clojure.string :as str]
             [hive.queries :as queries]
@@ -11,7 +10,7 @@
             [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
             [hive.services.geocoding :as geocoding]
-            [hive.components.react :as react]
+            [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
             [hive.libs.geometry :as geometry]
             [hive.services.raw.http :as http]
@@ -29,10 +28,10 @@
 
 (defn choose-route
   "associates a target and a path to get there with the user"
-  [target id]
-  (let [places [{:user/id id
+  [target props]
+  (let [places [{:user/id props
                  :user/goal target}
-                [:db.fn/retractAttribute [:user/id id] :user/places]]
+                [:db.fn/retractAttribute [:user/id props] :user/places]]
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]
     (concat places garbage)))
@@ -40,18 +39,17 @@
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
-  [props features]
-  (let [position @(work/q! queries/user-position)
-        navigate (:navigate (:navigation props))
-        id       (work/q queries/user-id)]
-    [:> base/List {:icon true :style {:flex 1}}
-     (for [target features
-           :let [distance (/ (geometry/haversine position target) 1000)]]
+  [props]
+  (let [navigate (:navigate (:navigation props))]
+    [:> base/List {:icon true :style {:flex 1 :paddingTop 100}}
+     (for [target (:user/places props)
+           :let [distance (/ (geometry/haversine (:user/position props) target)
+                             1000)]]
        ^{:key (:id target)}
        [:> base/ListItem {:icon     true
                           :on-press #(do (work/transact!
                                            (async/onto-chan (http/json! (route/get-path target))
-                                                            (choose-route target id)))
+                                                            (choose-route target props)))
                                          (.dismiss fl/Keyboard)
                                          (navigate "directions"))
                           :style    {:height 50 :paddingVertical 30}}
@@ -116,9 +114,7 @@
 (defn city-map
   "a React Native MapView component which will only re-render on user-city change"
   [user]
-  (let [info  @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
-                           user)
-        coords (:coordinates (:city/geometry (:user/city info)))]
+  (let [coords (:coordinates (:city/geometry (:user/city user)))]
     [:> expo/MapView {:region (merge (latlng coords)
                                      {:latitudeDelta 0.02 :longitudeDelta 0.02})
                       :showsUserLocation true :style {:flex 1}
@@ -130,23 +126,30 @@
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
         info    @(work/pull! [:user/places :user/goal :user/position
+                              {:user/city [:city/geometry :city/bbox :city/name]}
                               {:user/directions [:route/routes]}]
                              [:user/id id])]
-    [:> react/View {:style {:flex 1}}
-      [city-map [:user/id id]]
-      [:> react/View {:style {:position "absolute" :top 35 :left 20 :width 340 :height 42}}
-       [search-bar (merge info {:user/id id})
-                   (:user/places info)]]
-      [:> react/View {:style {:position "absolute" :bottom 20 :right 20
-                              :width 52 :height 52 :borderRadius 52/2
-                              :alignItems "center" :justifyContent "center"
-                              :backgroundColor "#FF5722" :elevation 3
-                              :shadowColor "#000000" :shadowRadius 5
-                              :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-       [:> base/Button {:transparent true :full true
-                        :onPress #(navigate "settings" {:user/id id})}
-         [:> base/Icon {:name "md-apps" :style {:color "white"}}]]]]))
-       ;[:> react/View {:style {:backgroundColor "red" :width 30 :height 30}}]]]))
+    (if (tool/error? (:user/places info))
+      (do (cljs.pprint/pprint (:user/places info))
+          [errors/user-location props])
+      [:> react/View {:style {:flex 1}}
+        (if (empty? (:user/places info))
+          [city-map [:user/id id]]
+          [places (merge props info)])
+        [:> react/View {:style {:position "absolute" :top 35 :left 20
+                                :width 340 :height 42}}
+          [search-bar (merge info {:user/id id})
+                      (:user/places info)]]
+        [:> react/View {:style {:position "absolute" :bottom 20 :right 20
+                                :width 52 :height 52 :borderRadius 52/2
+                                :alignItems "center" :justifyContent "center"
+                                :backgroundColor "#FF5722" :elevation 3
+                                :shadowColor "#000000" :shadowRadius 5
+                                :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+          [:> base/Button {:transparent true :full true
+                           :onPress #(navigate "settings" {:user/id id})}
+            [:> base/Icon {:name "md-apps" :style {:color "white"}}]]]])))
+
 
       ;[search-bar props (:user/places info)]]]
       ;(if (not-empty (:user/places info))

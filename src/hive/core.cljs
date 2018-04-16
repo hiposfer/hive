@@ -4,7 +4,6 @@
             [hive.state :as state]
             [hive.services.location :as position]
             [hive.services.raw.location :as location]
-            [hive.components.navigation :as nav]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [datascript.core :as data]
             [hive.services.store :as store]

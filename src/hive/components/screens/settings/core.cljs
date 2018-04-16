@@ -1,9 +1,9 @@
 (ns hive.components.screens.settings.core
-  (:require [hive.components.native-base :as base]
+  (:require [hive.components.foreigns.native-base :as base]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
-            [hive.components.react :as react]
+            [hive.components.foreigns.react :as react]
             [hive.components.symbols :as symbols]
             [hive.components.screens.settings.city-picker :as cities]))
 

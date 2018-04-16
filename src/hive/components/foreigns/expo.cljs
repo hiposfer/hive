@@ -1,4 +1,4 @@
-(ns hive.components.expo
+(ns hive.components.foreigns.expo
   (:require [hive.foreigns :as fl]))
 
 (def MapView   (.-MapView fl/Expo))

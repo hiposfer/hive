@@ -1,6 +1,6 @@
 (ns hive.components.symbols
-  (:require [hive.components.react :as react]
-            [hive.components.native-base :as base]))
+  (:require [hive.components.foreigns.react :as react]
+            [hive.components.foreigns.native-base :as base]))
 
 (defn point-of-interest
   [{:keys [left-icon icon-text title subtitle right-icon]}]

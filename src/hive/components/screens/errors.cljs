@@ -1,6 +1,6 @@
 (ns hive.components.screens.errors
-  (:require [hive.components.native-base :as base]
-            [hive.components.react :as react]
+  (:require [hive.components.foreigns.native-base :as base]
+            [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
             [hive.rework.util :as tool]
             [hive.services.location :as position]

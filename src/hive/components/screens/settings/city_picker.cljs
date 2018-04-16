@@ -1,11 +1,11 @@
 (ns hive.components.screens.settings.city-picker
   (:require [hive.rework.core :as work]
             [hive.services.store :as store]
-            [hive.components.native-base :as base]
+            [hive.components.foreigns.native-base :as base]
             [hive.queries :as queries]
             [clojure.string :as str]
             [hive.components.symbols :as symbols]
-            [hive.components.react :as react]))
+            [hive.components.foreigns.react :as react]))
 
 (defn move-to!
   [city user goBack]

@@ -1,8 +1,8 @@
 (ns hive.components.screens.home.route
   (:require [reagent.core :as r]
             [hive.queries :as queries]
-            [hive.components.native-base :as base]
-            [hive.components.react :as react]
+            [hive.components.foreigns.native-base :as base]
+            [hive.components.foreigns.react :as react]
             [hive.services.directions :as directions]
             [hive.rework.util :as tool]
             [datascript.core :as data]

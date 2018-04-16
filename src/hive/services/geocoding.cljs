@@ -1,9 +1,6 @@
 (ns hive.services.geocoding
   (:require [clojure.string :as str]
             [cljs.spec.alpha :as s]
-            [hive.services.raw.http :as http]
-            [hive.rework.core :as work]
-            [hive.rework.util :as tool]
             [hiposfer.geojson.specs :as geojson]))
 
 (s/def ::input (s/and string? not-empty))

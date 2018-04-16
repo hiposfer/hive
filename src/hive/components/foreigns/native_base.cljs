@@ -1,4 +1,4 @@
-(ns hive.components.native-base
+(ns hive.components.foreigns.native-base
   (:refer-clojure :exclude [List])
   (:require [hive.foreigns :as fl]))
 

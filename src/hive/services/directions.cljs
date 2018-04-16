@@ -1,10 +1,6 @@
 (ns hive.services.directions
   (:require [clojure.string :as str]
-            [cljs.spec.alpha :as s]
-            [hive.services.raw.http :as http]
-            [hive.rework.core :as rework]
-            [hive.queries :as queries]
-            [hive.rework.util :as tool]))
+            [cljs.spec.alpha :as s]))
 
 (s/def ::input (s/and string? not-empty))
 (s/def ::coordinates (s/tuple number? number?))
