@@ -147,17 +147,16 @@
 (defn home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [navigate   (:navigate (:navigation props))
-        id         (work/q queries/user-id)
-        info      @(work/pull! [:user/places :user/goal :user/position
-                                {:user/city [:city/geometry :city/bbox :city/name]}
-                                {:user/directions [:route/routes]}]
-                               [:user/id id])
-        coords     (:coordinates (:city/geometry (:user/city info)))]
-        ;_ (println (:user/city info))]
+  (let [navigate (:navigate (:navigation props))
+        id       (work/q queries/user-id)
+        info    @(work/pull! [:user/places :user/goal :user/position
+                              {:user/city [:city/geometry :city/bbox :city/name]}
+                              {:user/directions [:route/routes]}]
+                             [:user/id id])
+        coords   (:coordinates (:city/geometry (:user/city info)))]
     [:> react/View {:style {:flex 1}}
-      [:> expo/MapView {:initialRegion (merge (latlng coords)
-                                        {:latitudeDelta 0.02 :longitudeDelta 0.02})
+      [:> expo/MapView {:region (merge (latlng coords)
+                                       {:latitudeDelta 0.02 :longitudeDelta 0.02})
                         :showsUserLocation true :style {:flex 1}
                         :showsMyLocationButton true}]
       [:> react/View {:style {:position "absolute" :top 35 :left 20 :width 340 :height 42}}
@@ -172,7 +171,6 @@
        [:> base/Button {:transparent true :full true
                         :onPress #(navigate "settings" {:user/id id})}
          [:> base/Icon {:name "md-apps" :style {:color "white"}}]]]]))
-
        ;[:> react/View {:style {:backgroundColor "red" :width 30 :height 30}}]]]))
 
       ;[search-bar props (:user/places info)]]]
