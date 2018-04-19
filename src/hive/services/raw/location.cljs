@@ -58,16 +58,16 @@
     (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
       (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
     (let [js-opts (clj->js opts)
-          xform  (comp (map tool/keywordize)
-                       (map #(when (not= (:status %) "granted")
-                               (ex-info "permission denied" % ::permission-denied)))
-                       tool/bypass-error
-                       (map #((:watchPositionAsync fl/Location) js-opts
-                                                                (::callback opts)))
-                       (map #(hash-map ::watcher %))
-                       (map (rework/inject :session/uuid queries/session))
-                       (map set-watcher))]
-      (watch xform))))
+          request (fn [response]
+                    (let [data (tool/keywordize response)]
+                      (if (not= (:status %) "granted")
+                        (ex-info "permission denied" (assoc data ::reason ::permission-denied))
+                        (let [wp  (:watchPositionAsync fl/Location)
+                              ref (wp js-opts (::callback opts))]
+                          {::watcher ref}))))]
+      (watch (comp (map request)
+                   (map (rework/inject :session/uuid queries/session))
+                   (map set-watcher))))))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"
