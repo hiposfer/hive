@@ -63,5 +63,3 @@
 (defn error? [o] (instance? js/Error o))
 
 (def bypass-error (halt-when error?))
-
-

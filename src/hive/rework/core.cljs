@@ -48,12 +48,9 @@
 ;; we can think in graph while re-using the code from Datascript. Pulling as in
 ;; Om.Next comes for free.
 ;; - the app must use reagent. As described in reagent.tx, we dont want to recreate
-;; all the functionality that they have so reagent will server us as rendering model
+;; all the functionality that they have so reagent will serve us as rendering model
 ;; - the app should use Clojure's core.async to handle all asynchronous operations
 ;; - the app state can only be "changed" through the use of pure functions
-
-;; the way to combine functionality in REWORK is with "pipes". See below for a
-;; full description
 
 (defn init!
   "takes a Datascript conn and starts listening to its transactor for changes"
@@ -106,17 +103,23 @@
    value is passed to transact! again.
 
    Returns Datascript transact! return value or a channel
-   with the content of each transact! result"
+   with the content of each transact! result. Not supported data types
+   are ignored"
   ([data]
-   (if (tool/chan? data)
+   (cond
+     (tool/chan? data) ;; async transaction
      (transact! data (map identity))
-     ;; vector otherwise
-     (if (fn? (first data))
-       (recur (apply (first data) (rest data)))
-       (data/transact! state/conn data))))
+     ;; side effect declaration. Execute it and try to transact it
+     (and (vector? data) (fn? (first data)))
+     (recur (apply (first data) (rest data)))
+     ;; simple transaction
+     (vector? data)
+     (data/transact! state/conn data)
+
+     :else data)) ;; js/Errors, side effects with no return value ...
   ([port xform]
    (let [c (async/chan 1 (comp xform
-                               (halt-when #(instance? js/Error %))
+                               (remove tool/error?)
                                (map transact!)))]
      (async/pipe port c))))
 
