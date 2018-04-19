@@ -25,7 +25,7 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn root-ui []
+(defn root-ui []-
   (let [Navigator     (rn-nav/stack-navigator
                         {:map            {:screen home/Screen}
                          :directions     {:screen home/Directions}
@@ -69,7 +69,8 @@
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
   (let [conn   (data/create-conn state/schema)
-        data   (cons {:app/session (data/squuid)}
+        data   (cons {:session/uuid (data/squuid)
+                      :session/start (js/Date.now)}
                      state/init-data)
         w      (location/watch! position/defaults) ;; displays Toast on error
         config (reload-config! [:user/city])

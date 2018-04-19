@@ -46,8 +46,9 @@
 
 (defn- set-watcher
   [data]
-  [{:app/session (:app/session data)
-    :app.location/watcher (::watcher data)}])
+  [{:session/uuid                   (:session/uuid data)
+    :app.location.watcher/ref       (::watcher data)
+    :app.location.watcher/timestamp (js/Date.now)}])
 
 (defn watch!
   "watch the user location. Receives an options object according to
@@ -55,7 +56,7 @@
   [opts]
   (if (and (= "android" (:OS fl/Platform)) (not (:isDevice fl/Constants)))
     (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
-      (async/to-chan [(ex-info msg opts ::emulator-denial)]))
+      (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
     (let [js-opts (clj->js opts)
           xform  (comp (map tool/keywordize)
                        (map #(when (not= (:status %) "granted")
@@ -64,7 +65,7 @@
                        (map #((:watchPositionAsync fl/Location) js-opts
                                                                 (::callback opts)))
                        (map #(hash-map ::watcher %))
-                       (map (rework/inject :app/session queries/session))
+                       (map (rework/inject :session/uuid queries/session))
                        (map set-watcher))]
       (watch xform))))
 

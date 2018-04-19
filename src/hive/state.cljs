@@ -7,19 +7,19 @@
 (def tokens (js->clj (js/require "./assets/init.json")
               :keywordize-keys true))
 
-(def schema {:user/city {:db.valueType     :db.type/ref
-                         :db.cardinality   :db.cardinality/one}
+(def schema {:user/city             {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
 
-             :user/directions {:db.valueType :db.type/ref
-                               :db.cardinality :db.cardinality/one}
+             :user/directions       {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
 
-             :user/id {:db.unique :db.unique/identity}
+             :user/id               {:db.unique :db.unique/identity}
 
-             :city/name {:db.unique :db.unique/identity}
+             :city/name             {:db.unique :db.unique/identity}
 
-             :app/session {:db.unique :db.unique/identity}
+             :session/uuid          {:db.unique :db.unique/identity}
 
-             :route/uuid {:db.unique :db.unique/identity}
+             :route/uuid            {:db.unique :db.unique/identity}
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}})
 

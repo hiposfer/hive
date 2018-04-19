@@ -28,7 +28,7 @@
                     :where [_ :token/mapbox ?token]])
 
 (def session '[:find ?session .
-               :where [_ :app/session ?session]])
+               :where [_ :session/uuid ?session]])
 
 ;(work/q '{:find [(pull ?city [*]) .]
 ;          :where [[?id :user/id]
