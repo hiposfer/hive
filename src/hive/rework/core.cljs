@@ -133,6 +133,24 @@
   ([key query] ;; not possible to have & inputs due to conflict with upper args
    (fn inject* [m] (inject m key query))))
 
+(deftype DelayJS [body ^:mutable f ^:mutable value]
+  IDeref
+  (-deref [_]
+    (when f
+      (set! value (f))
+      (set! f nil))
+    value)
+  IPending
+  (-realized? [_]
+    (not f))
+  IEquiv
+  (-equiv [_ that]
+    (when (instance? DelayJS that)
+      (= body (.-body ^DelayJS that)))))
+
+(defn delay-js?
+  [o]
+  (instance? DelayJS o))
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
 ;(q '[:find [(pull ?entity [*]) ...]
