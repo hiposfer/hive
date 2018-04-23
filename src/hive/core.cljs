@@ -53,7 +53,7 @@
   this listener and subscribe your own for the lifecycle of the UI component.
   See `with-let` https://reagent-project.github.io/news/news060-alpha.html"
   []
-  (let [r @(work/q! router/data-query)
+  (let [r  (work/q router/data-query)
         tx (delay (router/goBack r))]
     (cond
       (nil? (second r))
