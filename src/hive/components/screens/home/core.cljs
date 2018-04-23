@@ -133,7 +133,7 @@
       [errors/user-location props]
       [:> react/View {:style {:flex 1}}
         (if (empty? (:user/places info))
-          [city-map [:user/id id]]
+          [city-map info]
           [places (merge props info)])
         [:> react/View {:style {:position "absolute" :top 35 :left 20
                                 :width 340 :height 42}}
