@@ -8,16 +8,17 @@
 (defn channel
   "transforms a promise into a channel. Catches js/Errors and puts them in the
   channel as well. If the catch value is not an error, yields an ex-info with
-  ::promise-rejected as cause otherwise yields the js/Error provided"
+  ::oops as message. Accepts a transducer that applies to the channel"
   ([promise]
-   (channel promise ::promise-rejected))
-  ([promise cause]
-   (let [result (async/chan 1)]
+   (channel promise))
+  ([promise xform]
+   (let [result (async/chan 1 xform)]
      (-> promise
-         (.then #(async/put! result %))
+         (.then #(do (async/put! result %)
+                     (async/close! result)))
          (.catch #(if (instance? js/Error %)
                     (async/put! result %)
-                    (async/put! result (ex-info "oops" % cause)))))
+                    (async/put! result (ex-info ::oops %)))))
      result)))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise

@@ -9,6 +9,7 @@
                  [org.clojure/core.async "0.3.465"]
                  [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.2"]
+                 [binaryage/oops "0.6.1"]
                  [cljs-react-navigation "0.1.1"]
                  [hiposfer/geojson.specs "0.2.0"]]
   :plugins [[lein-cljsbuild "1.1.4"]

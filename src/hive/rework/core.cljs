@@ -110,13 +110,14 @@
      (tool/chan? data) ;; async transaction
      (transact! data (map identity))
      ;; side effect declaration. Execute it and try to transact it
-     (and (vector? data) (fn? (first data)))
+     (and (sequential? data) (fn? (first data)))
      (recur (apply (first data) (rest data)))
      ;; simple transaction
-     (vector? data)
+     (sequential? data)
      (data/transact! state/conn data)
 
-     :else data)) ;; js/Errors, side effects with no return value ...
+     :else (do (println "unknown transact! type argument" data)
+               data))) ;; js/Errors, side effects with no return value ...
   ([port xform]
    (let [c (async/chan 1 (comp xform
                                (remove tool/error?)
