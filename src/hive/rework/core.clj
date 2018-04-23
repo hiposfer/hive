@@ -14,6 +14,8 @@
   `(cljs.core.async/go
      (try ~@body)))
 
+;; based on the nice quote blog post
+;; https://8thlight.com/blog/colin-jones/2012/05/22/quoting-without-confusion.html
 (defmacro delay-js
   "same as Clojurescript delay but supports equivalence comparison based on body"
   [& body]
