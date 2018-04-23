@@ -1,5 +1,5 @@
 (ns hive.services.raw.location
-  (:require [hive.rework.core :as rework]
+  (:require [hive.rework.core :as work]
             [hive.foreigns :as fl]
             [cljs.core.async :as async]
             [hive.rework.util :as tool]
@@ -32,17 +32,9 @@
     :user/position (dissoc data :user/id)}])
 
 (def update-position (comp tx-position
-                           (rework/inject :user/id queries/user-id)
+                           (work/inject :user/id queries/user-id)
                            point
                            tool/keywordize))
-
-(defn- watch
-  [xform]
-  (let [result (async/chan 1 (comp tool/bypass-error xform))]
-    (-> ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
-        (.then #(do (async/put! result %) (async/close! result)))
-        (.catch #(async/put! result %)))
-    result))
 
 (defn- set-watcher
   [data]
@@ -65,14 +57,17 @@
                         (let [wp  (:watchPositionAsync fl/Location)
                               ref (wp js-opts (::callback opts))]
                           {::watcher ref}))))]
-      (watch (comp (map request)
-                   (map (rework/inject :session/uuid queries/session))
-                   (map set-watcher))))))
+      ;; convert promise to channel and execute it
+      (tool/channel ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
+                    (comp tool/bypass-error
+                          (map request)
+                          (map (work/inject :session/uuid queries/session))
+                          (map set-watcher))))))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"
   [query]
-  (let [sub (rework/q query)
+  (let [sub (work/q query)
         f   (:remove sub)]
     (when f ;;todo: is it necessary to remove it from the state?
       (f))))
