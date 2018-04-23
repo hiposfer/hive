@@ -61,6 +61,28 @@
   (set! state/conn dsconn)
   (rtx/listen! state/conn))
 
+;; copy of Clojure delay with equality implementation
+;; useful for testing of side effects !!
+(deftype DelayJS [body ^:mutable f ^:mutable value]
+  IDeref
+  (-deref [_]
+    (when f
+      (set! value (f))
+      (set! f nil))
+    value)
+  IPending
+  (-realized? [_]
+    (not f))
+  IEquiv
+  (-equiv [_ that]
+    (when (instance? DelayJS that)
+      (= body (.-body ^DelayJS that)))))
+
+(defn delay-js?
+  "check if o is an instance of DelayJS"
+  [o]
+  (instance? DelayJS o))
+
 (defn pull
   "same as datascript pull but uses the app state as connection"
   [selector eid]
@@ -109,9 +131,14 @@
    (cond
      (tool/chan? data) ;; async transaction
      (transact! data (map identity))
-     ;; side effect declaration. Execute it and try to transact it
-     (and (sequential? data) (fn? (first data)))
+     ;; functional side effect declaration
+     ;; Execute it and try to transact it
+     (and (vector? data) (fn? (first data)))
      (recur (apply (first data) (rest data)))
+     ;; side effect declaration wrapped with DelayJS to allow testing
+     ;; Force it and try to transact it
+     (delay-js? data)
+     (recur (deref data))
      ;; simple transaction
      (sequential? data)
      (data/transact! state/conn data)
@@ -133,24 +160,6 @@
   ([key query] ;; not possible to have & inputs due to conflict with upper args
    (fn inject* [m] (inject m key query))))
 
-(deftype DelayJS [body ^:mutable f ^:mutable value]
-  IDeref
-  (-deref [_]
-    (when f
-      (set! value (f))
-      (set! f nil))
-    value)
-  IPending
-  (-realized? [_]
-    (not f))
-  IEquiv
-  (-equiv [_ that]
-    (when (instance? DelayJS that)
-      (= body (.-body ^DelayJS that)))))
-
-(defn delay-js?
-  [o]
-  (instance? DelayJS o))
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
 ;(q '[:find [(pull ?entity [*]) ...]
