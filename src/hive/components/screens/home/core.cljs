@@ -11,6 +11,7 @@
             [hive.services.geocoding :as geocoding]
             [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
+            [oops.core :as oops]
             [hive.libs.geometry :as geometry]
             [hive.services.raw.http :as http]
             [cljs.core.async :as async]))

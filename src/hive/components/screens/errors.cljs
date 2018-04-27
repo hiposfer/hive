@@ -22,8 +22,8 @@
               tx     (<? (location/watch! position/defaults))]
           (work/transact! tx))
         (goBack)
-        (catch :default error
-          (fl/toast! (ex-message error)))))))
+        (catch :default error)))))
+          ;(fl/toast! (ex-message error)))))))
 
 (defn user-location
   [props]
