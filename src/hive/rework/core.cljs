@@ -12,7 +12,8 @@
             [reagent.core :as r]
             [hive.rework.util :as tool]
             [hive.rework.state :as state]
-            [cljs.core.async :as async]))
+            [cljs.core.async :as async]
+            [oops.core :as oops]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -143,7 +144,9 @@
      ;; simple transaction
      (sequential? data)
      (data/transact! state/conn data)
-
+     ;; useful for debugging
+     (tool/error? data)
+     (js/console.error (clj->js data))
      :else (do (println "unknown transact! type argument" data)
                data))) ;; js/Errors, side effects with no return value ...
   ([port xform]

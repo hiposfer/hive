@@ -56,10 +56,11 @@
   ([spec value cause]
    (if (s/valid? spec value) value
      (ex-info (s/explain-str spec value)
-              (s/explain-data spec value)
-              cause)))
+              (assoc (s/explain-data spec value) ::reason cause))))
   ([spec cause]
-   (fn validate* [value] (validate spec value cause))))
+   (fn validate* [value] (validate spec value cause)))
+  ([spec]
+   (fn validate* [value] (validate spec value ::invalid-data))))
 
 (defn error? [o] (instance? js/Error o))
 

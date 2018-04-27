@@ -6,6 +6,7 @@
             [hive.services.location :as position]
             [hive.services.raw.location :as location]
             [hive.rework.core :as work]
+            [hive.components.screens.home.welcome :as welcome]
             [datascript.core :as data]
             [hive.services.store :as store]
             [hive.queries :as queries]
@@ -28,12 +29,16 @@
 (defn root-ui []-
   (let [Navigator     (rn-nav/stack-navigator
                         {:map            {:screen home/Screen}
+                         :welcome        {:screen welcome/Screen}
                          :directions     {:screen home/Directions}
                          :settings       {:screen settings/Screen}
                          :select-city    {:screen settings/SelectCity}
                          :location-error {:screen home/LocationError}}
-                        {:headerMode "none"})]
-    [router/router {:root Navigator :init "map"}]))
+                        {:headerMode "none"})
+        id       @(work/q! queries/user-id)]
+    (if (= -1 id) ;; default
+      [router/router {:root Navigator :init "welcome"}]
+      [router/router {:root Navigator :init "home"}])))
 
 (defn reload-config!
   "takes a sequence of keys and attempts to read them from LocalStorage.
