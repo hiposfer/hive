@@ -49,7 +49,7 @@
                           :on-press #(do (work/transact!
                                            (async/onto-chan (http/json! (route/get-path target))
                                                             (choose-route target props)))
-                                         (.dismiss fl/Keyboard)
+                                         (oops/ocall fl/ReactNative "dismiss")
                                          (navigate "directions"))
                           :style    {:height 50 :paddingVertical 30}}
         [:> base/Left

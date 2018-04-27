@@ -4,7 +4,8 @@
             [cljs.core.async :as async]
             [hive.rework.util :as tool]
             [hive.queries :as queries]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [oops.core :as oops]))
 
 (s/def ::enableHighAccuracy boolean?)
 (s/def ::timeInterval (s/and number? pos?))
@@ -46,7 +47,8 @@
   "watch the user location. Receives an options object according to
   Expo's API: https://docs.expo.io/versions/latest/sdk/location.html"
   [opts]
-  (if (and (= "android" (:OS fl/Platform)) (not (:isDevice fl/Constants)))
+  (if (and (= "android" (oops/oget fl/ReactNative "Platform.OS"))
+           (not (oops/oget fl/Expo "Constants.isDevice")))
     (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
       (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
     (let [js-opts (clj->js opts)
@@ -54,11 +56,11 @@
                     (let [data (tool/keywordize response)]
                       (if (not= (:status response) "granted")
                         (ex-info "permission denied" (assoc data ::reason ::permission-denied))
-                        (let [wp  (:watchPositionAsync fl/Location)
+                        (let [wp  (oops/ocall fl/Expo "Location.watchPositionAsync")
                               ref (wp js-opts (::callback opts))]
                           {::watcher ref}))))]
       ;; convert promise to channel and execute it
-      (tool/channel ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
+      (tool/channel (oops/ocall fl/Expo "Permissions.askAsync" "location")
                     (comp (map request)
                           tool/bypass-error
                           (map (work/inject :session/uuid queries/session))

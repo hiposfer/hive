@@ -1,32 +1,17 @@
-(ns hive.foreigns)
+(ns hive.foreigns
+  (:require [oops.core :as oops]))
 
 (def React       (js/require "react"))
 (def Expo        (js/require "expo"))
 (def ReactNative (js/require "react-native"))
 (def NativeBase  (js/require "native-base"))
+(def JwtDecode   (js/require "jwt-decode"))
 (def ReactNavigation (js/require "react-navigation"))
 
-(def Location (js->clj (.-Location Expo)
-                       :keywordize-keys true))
-(def Constants (js->clj (.-Constants Expo)
-                        :keywordize-keys true))
-(def Permissions (js->clj (.-Permissions Expo)
-                          :keywordize-keys true))
-(def Platform (js->clj (.-Platform ReactNative)
-                       :keywordize-keys true))
+(def AuthSession (oops/oget Expo "AuthSession"))
+
 (def Store (js->clj (.-SecureStore Expo)
                     :keywordize-keys true))
-(def IntentLauncherAndroid (js->clj (.-IntentLauncherAndroid Expo)
-                                    :keywordize-keys true))
-(def Keyboard (.-Keyboard ReactNative))
-
-(def app-registry  (.-AppRegistry ReactNative))
-(def back-handler  (js->clj (aget ReactNative "BackHandler")
-                            :keywordize-keys true))
-;(def async-storage (.-AsyncStorage ReactNative))
-(def toast-android (js->clj (.-ToastAndroid ReactNative)
-                            :keywordize-keys true))
-(def dimensions    (.-Dimensions ReactNative))
 
 (defn alert [title] (.alert (.-Alert ReactNative) title))
 
@@ -38,9 +23,3 @@
 
 (def init-config (js->clj (js/require "./assets/init.json")
                    :keywordize-keys true))
-
-;;; - - -- - - - - - -
-(defn toast!
-  ([text] (toast! text nil))
-  ([text duration]
-   ((:show toast-android) text (or duration (:SHORT toast-android)))))

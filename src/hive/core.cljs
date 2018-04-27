@@ -1,5 +1,6 @@
 (ns hive.core
   (:require [reagent.core :as r]
+            [oops.core :as oops]
             [hive.foreigns :as fl]
             [hive.state :as state]
             [hive.services.location :as position]
@@ -13,7 +14,6 @@
             [hive.components.router :as router]
             [hive.components.screens.settings.core :as settings]
             [cljs.core.async :as async]
-            [clojure.data]
             [cljs-react-navigation.reagent :as rn-nav]))
 
 "Each Screen will receive two props:
@@ -76,10 +76,12 @@
     (work/init! conn)
     (work/transact! data)
     (location/watch! position/defaults) ;; displays Toast on error
-    (.registerComponent fl/app-registry "main" #(r/reactify-component root-ui))
+    (oops/ocall fl/ReactNative "AppRegistry.registerComponent" "main"
+                               #(r/reactify-component root-ui))
     ;; handles Android BackButton
-    ((:addEventListener fl/back-handler) "hardwareBackPress"
-      back-listener)
+    (oops/ocall fl/ReactNative "BackHandler.addEventListener"
+                "hardwareBackPress"
+                back-listener)
     (let [default (work/inject state/defaults :user/id queries/user-id)
           tx      (async/into [default] config)]
       (work/transact! tx))))
