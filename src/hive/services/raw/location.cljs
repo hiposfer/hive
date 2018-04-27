@@ -52,7 +52,7 @@
     (let [js-opts (clj->js opts)
           request (fn [response]
                     (let [data (tool/keywordize response)]
-                      (if (not= (:status %) "granted")
+                      (if (not= (:status response) "granted")
                         (ex-info "permission denied" (assoc data ::reason ::permission-denied))
                         (let [wp  (:watchPositionAsync fl/Location)
                               ref (wp js-opts (::callback opts))]

@@ -6,6 +6,7 @@
 
   Furthermore since they are independent of the context of their
   invocation, generative testing is even possible"
+  (:require-macros [hive.rework.core])
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
@@ -63,7 +64,7 @@
 
 ;; copy of Clojure delay with equality implementation
 ;; useful for testing of side effects !!
-(deftype DelayJS [body ^:mutable f ^:mutable value]
+(deftype DelayEffect [body ^:mutable f ^:mutable value]
   IDeref
   (-deref [_]
     (when f
@@ -75,13 +76,13 @@
     (not f))
   IEquiv
   (-equiv [_ that]
-    (when (instance? DelayJS that)
-      (= body (.-body ^DelayJS that)))))
+    (when (instance? DelayEffect that)
+      (= body (.-body ^DelayEffect that)))))
 
-(defn delay-js?
+(defn delay-effect?
   "check if o is an instance of DelayJS"
   [o]
-  (instance? DelayJS o))
+  (instance? DelayEffect o))
 
 (defn pull
   "same as datascript pull but uses the app state as connection"
@@ -137,7 +138,7 @@
      (recur (apply (first data) (rest data)))
      ;; side effect declaration wrapped with DelayJS to allow testing
      ;; Force it and try to transact it
-     (delay-js? data)
+     (delay-effect? data)
      (recur (deref data))
      ;; simple transaction
      (sequential? data)

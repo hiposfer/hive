@@ -1,4 +1,5 @@
-(ns hive.rework.core)
+(ns hive.rework.core
+  (:refer-clojure :exclude [delay]))
 
 (defmacro <?
   "Like <! but throws errors."
@@ -16,9 +17,10 @@
 
 ;; based on the nice quote blog post
 ;; https://8thlight.com/blog/colin-jones/2012/05/22/quoting-without-confusion.html
-(defmacro delay-js
+(defmacro delay
   "same as Clojurescript delay but supports equivalence comparison based on body"
   [& body]
-  `(new hive.rework.core/DelayJS '~@(rest &form) ;; use arguments as data
-                                 (fn [] ~@body)
-                                 nil))
+  `(new hive.rework.core/DelayEffect
+        '~@(rest &form) ;; use arguments as data
+        (fn [] ~@body)
+        nil))
