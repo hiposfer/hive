@@ -46,9 +46,11 @@
         act                       (getActionForPathAndParams (:init props))
         init                      (getStateForAction act)
         routing-sub               (work/q! state-query)
-        routing-state             (or @routing-sub init)]
+        routing-state             (or @routing-sub init)
+        add-listener              (fn [a] a)] ;; HACK !! I am not sure how to handle this
     [:> root-router
         {:navigation
          (base/addNavigationHelpers
            (clj->js {:state routing-state
+                     :addListener add-listener
                      :dispatch #(dispatch routing-state root-router %)}))}]))

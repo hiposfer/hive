@@ -59,8 +59,8 @@
                           {::watcher ref}))))]
       ;; convert promise to channel and execute it
       (tool/channel ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
-                    (comp tool/bypass-error
-                          (map request)
+                    (comp (map request)
+                          tool/bypass-error
                           (map (work/inject :session/uuid queries/session))
                           (map set-watcher))))))
 

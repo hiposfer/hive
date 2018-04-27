@@ -147,9 +147,7 @@
      :else (do (println "unknown transact! type argument" data)
                data))) ;; js/Errors, side effects with no return value ...
   ([port xform]
-   (let [c (async/chan 1 (comp xform
-                               (remove tool/error?)
-                               (map transact!)))]
+   (let [c (async/chan 1 (comp xform (map transact!)))]
      (async/pipe port c))))
 
 (defn inject

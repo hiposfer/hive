@@ -72,20 +72,17 @@
         data   (cons {:session/uuid (data/squuid)
                       :session/start (js/Date.now)}
                      state/init-data)
-        w      (location/watch! position/defaults) ;; displays Toast on error
-        config (reload-config! [:user/city])
-        report (async/chan 1 (comp (filter tool/error?)
-                                   (map #(fl/toast! (ex-message %)))))]
+        config (reload-config! [:user/city])]
     (work/init! conn)
     (work/transact! data)
+    (location/watch! position/defaults) ;; displays Toast on error
     (.registerComponent fl/app-registry "main" #(r/reactify-component root-ui))
     ;; handles Android BackButton
     ((:addEventListener fl/back-handler) "hardwareBackPress"
       back-listener)
     (let [default (work/inject state/defaults :user/id queries/user-id)
           tx      (async/into [default] config)]
-      (async/pipe w report)
-      (work/transact! tx (remove tool/error?)))))
+      (work/transact! tx))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 
