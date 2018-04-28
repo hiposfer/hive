@@ -121,14 +121,15 @@
     information. http://docs.datomic.com/transactions.html
    - a channel containing one or more transactions
    - a vector whose first element is a function and the rest are its argument.
-    Useful for keeping functions side-effect free
-
-   If an [f & args] argument is given, the function is executed and its return
-   value is passed to transact! again.
+     The function will be executed and its return value is passed to transact!
+     again. Useful for keeping functions side-effect free
+   - a delay-effect whose content will be executed and passed to transact!
+     again. Useful for keeping function side-effect free when doing Js interop
 
    Returns Datascript transact! return value or a channel
-   with the content of each transact! result. Not supported data types
-   are ignored"
+   with the content of each transact! result.
+
+   Not supported data types are ignored"
   ([data]
    (cond
      (tool/chan? data) ;; async transaction
