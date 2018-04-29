@@ -30,12 +30,12 @@
                (str (js/encodeURIComponent (name k)) "=" (js/encodeURIComponent v)))
         opts #js {:authUrl (str "https://" domain "/authorize?" (str/join "&" lp))}
         cb   (fn [result] (fl/JwtDecode (:id_token (:params result))))]
-    (work/delay (tool/channel (oops/ocall fl/Expo "AuthSession.startAsync" opts)
-                              (comp (map tool/keywordize)
-                                    (map (tool/validate ::response))
-                                    tool/bypass-error
-                                    (map cb))))))
-                                    ;(map println)))))) TODO
+    (work/delay (oops/ocall fl/Expo "AuthSession.startAsync" opts)
+                (comp (map tool/keywordize)
+                      (map (tool/validate ::response))
+                      tool/bypass-error
+                      (map cb)
+                      (map cljs.pprint/pprint))))) ;TODO
 
 (defn view
   "the main screen of the app. Contains a search bar and a mapview"
