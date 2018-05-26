@@ -6,11 +6,14 @@
 
   Furthermore since they are independent of the context of their
   invocation, generative testing is even possible"
+  (:require-macros [hive.rework.core])
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
             [hive.rework.util :as tool]
-            [hive.rework.state :as state]))
+            [hive.rework.state :as state]
+            [cljs.core.async :as async]
+            [oops.core :as oops]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -47,12 +50,9 @@
 ;; we can think in graph while re-using the code from Datascript. Pulling as in
 ;; Om.Next comes for free.
 ;; - the app must use reagent. As described in reagent.tx, we dont want to recreate
-;; all the functionality that they have so reagent will server us as rendering model
+;; all the functionality that they have so reagent will serve us as rendering model
 ;; - the app should use Clojure's core.async to handle all asynchronous operations
 ;; - the app state can only be "changed" through the use of pure functions
-
-;; the way to combine functionality in REWORK is with "pipes". See below for a
-;; full description
 
 (defn init!
   "takes a Datascript conn and starts listening to its transactor for changes"
@@ -62,6 +62,28 @@
     (rtx/unlisten! dsconn))
   (set! state/conn dsconn)
   (rtx/listen! state/conn))
+
+;; copy of Clojure delay with equality implementation
+;; useful for testing of side effects !!
+(deftype DelayEffect [body ^:mutable f ^:mutable value]
+  IDeref
+  (-deref [_]
+    (when f
+      (set! value (f))
+      (set! f nil))
+    value)
+  IPending
+  (-realized? [_]
+    (not f))
+  IEquiv
+  (-equiv [_ that]
+    (when (instance? DelayEffect that)
+      (= body (.-body ^DelayEffect that)))))
+
+(defn delay-effect?
+  "check if o is an instance of DelayJS"
+  [o]
+  (instance? DelayEffect o))
 
 (defn pull
   "same as datascript pull but uses the app state as connection"
@@ -79,12 +101,6 @@
   [eid]
   (data/entity @state/conn eid))
 
-(defn entity!
-  "same as datascript/entity but returns a ratom which will be updated
-  every time that the value of conn changes"
-  [eid]
-  (r/track rtx/entity* (::rtx/ratom @state/conn) eid))
-
 (defn q
   "same as datascript/q but uses the app state as connection"
   [query & inputs]
@@ -98,15 +114,45 @@
   (r/track rtx/q* query (::rtx/ratom @state/conn) inputs))
 
 (defn transact!
-  "'Updates' the DataScript state with tx-data.
+  "'Updates' the DataScript state with data.
 
-   See Datomic's API documentation for more information.
-   http://docs.datomic.com/transactions.html
+   data can be:
+   - a standard Datomic transaction. See Datomic's API documentation for more
+    information. http://docs.datomic.com/transactions.html
+   - a channel containing one or more transactions
+   - a vector whose first element is a function and the rest are its argument.
+     The function will be executed and its return value is passed to transact!
+     again. Useful for keeping functions side-effect free
+   - a delay-effect whose content will be executed and passed to transact!
+     again. Useful for keeping function side-effect free when doing Js interop
 
-   Returns tx-data"
-  [tx-data]
-  (do (data/transact! state/conn tx-data)
-      tx-data))
+   Returns Datascript transact! return value or a channel
+   with the content of each transact! result.
+
+   Not supported data types are ignored"
+  ([data]
+   (cond
+     (tool/chan? data) ;; async transaction
+     (transact! data (map identity))
+     ;; functional side effect declaration
+     ;; Execute it and try to transact it
+     (and (vector? data) (fn? (first data)))
+     (recur (apply (first data) (rest data)))
+     ;; side effect declaration wrapped with DelayJS to allow testing
+     ;; Force it and try to transact it
+     (delay-effect? data)
+     (recur (deref data))
+     ;; simple transaction
+     (sequential? data)
+     (data/transact! state/conn data)
+     ;; useful for debugging
+     (tool/error? data)
+     (js/console.error (clj->js data))
+     :else (do (println "unknown transact! type argument" data)
+               data))) ;; js/Errors, side effects with no return value ...
+  ([port xform]
+   (let [c (async/chan 1 (comp xform (map transact!)))]
+     (async/pipe port c))))
 
 (defn inject
   "runs query with provided inputs and associates its result into m
@@ -116,43 +162,6 @@
      (assoc m key result)))
   ([key query] ;; not possible to have & inputs due to conflict with upper args
    (fn inject* [m] (inject m key query))))
-
-;; Pipes are a combination of 3 concepts:
-;; - UNIX pipes
-;; - Haskell's Maybe Monad
-;; - Haskell's IO Monads
-;; Pipes are a sequence of functions executed one after the other with each
-;; function receiving the result of the previous one
-;; Pipes have 3 main purposes:
-;; - allow the combination of sync and async code into a single go loop
-;; - separate effectful code from pure functions
-;; - provide a way to convey errors during the process without silently
-;;   throwing on the background
-;; The problem with normal effectful code is that is it is not possible to
-;; use it without the user-function becoming effectful itself. This leads to
-;; a propagation of impure-functions for every action that the user wants to
-;; perform. With pipes, it is possible to separate the effectful functions from
-;; the pure ones. Furthermore since the input to each function is synchronous
-;; there is no need for glue code in synchronous functions.
-;; Finally, there should be a way to stop a pipe execution in case something goes
-;; wrong. Therefore, pipes are short-circuited if a js/Error is returned by any
-;; function. In that case, the js/Error is returned as the result of the pipe i.e.
-;; it is NOT thrown.
-
-
-(defn pipe
-  "Takes a sequence of functions and returns a fn that is the composition of those fns.
-  The returned fn takes a single argument (request), applies the leftmost of fns to
-  it, the next fn (left-to-right) to the result, etc (like transducer composition).
-
-  Returns a channel which will receive the result of the body when completed
-
-  If any function returns an exception, the execution will stop and returns it
-
-  The function composition handles async channels, promises and sync values
-  transparently"
-  [f g & more]
-  (tool/->Pipe (concat [f g] more)))
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 

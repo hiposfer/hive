@@ -1,10 +1,11 @@
 (ns hive.services.raw.location
-  (:require [hive.rework.core :as rework]
+  (:require [hive.rework.core :as work]
             [hive.foreigns :as fl]
             [cljs.core.async :as async]
             [hive.rework.util :as tool]
             [hive.queries :as queries]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [oops.core :as oops]))
 
 (s/def ::enableHighAccuracy boolean?)
 (s/def ::timeInterval (s/and number? pos?))
@@ -32,47 +33,43 @@
     :user/position (dissoc data :user/id)}])
 
 (def update-position (comp tx-position
-                           (rework/inject :user/id queries/user-id)
+                           (work/inject :user/id queries/user-id)
                            point
                            tool/keywordize))
 
-(defn- watch
-  [opts]
-  (if (and (= "android" (:OS fl/Platform))
-           (not (:isDevice fl/Constants)))
-    (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
-             {} ::emulator-denial)
-    (let [result (async/chan)
-          js-opts (clj->js opts)]
-      (-> ((:askAsync fl/Permissions) (:LOCATION fl/Permissions))
-          (.then tool/keywordize)
-          (.then #(when (not= (:status %) "granted")
-                    (async/put! result
-                      (ex-info "permission denied" % ::permission-denied))))
-          (.then #((:watchPositionAsync fl/Location) js-opts (::callback opts)))
-          (.then #(async/put! result %))
-          (.catch #(async/put! result
-                               (ex-info "no location provider" % ::missing-provider))))
-      result)))
-
 (defn- set-watcher
   [data]
-  [{:app/session (:app/session data)
-    :app.location/watcher (::watcher data)}])
+  [{:session/uuid                   (:session/uuid data)
+    :app.location.watcher/ref       (::watcher data)
+    :app.location.watcher/timestamp (js/Date.now)}])
 
-(def watch!
+(defn watch!
   "watch the user location. Receives an options object according to
   Expo's API: https://docs.expo.io/versions/latest/sdk/location.html"
-  (rework/pipe watch
-               tool/keywordize
-               #(hash-map ::watcher %)
-               (rework/inject :app/session queries/session)
-               set-watcher))
+  [opts]
+  (if (and (= "android" (oops/oget fl/ReactNative "Platform.OS"))
+           (not (oops/oget fl/Expo "Constants.isDevice")))
+    (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
+      (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
+    (let [js-opts (clj->js opts)
+          request (fn [response]
+                    (let [data (tool/keywordize response)]
+                      (if (not= (:status response) "granted")
+                        (ex-info "permission denied" (assoc data ::reason ::permission-denied))
+                        (let [wp  (oops/ocall fl/Expo "Location.watchPositionAsync")
+                              ref (wp js-opts (::callback opts))]
+                          {::watcher ref}))))]
+      ;; convert promise to channel and execute it
+      (tool/channel (oops/ocall fl/Expo "Permissions.askAsync" "location")
+                    (comp (map request)
+                          tool/bypass-error
+                          (map (work/inject :session/uuid queries/session))
+                          (map set-watcher))))))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"
   [query]
-  (let [sub (rework/q query)
+  (let [sub (work/q query)
         f   (:remove sub)]
     (when f ;;todo: is it necessary to remove it from the state?
       (f))))

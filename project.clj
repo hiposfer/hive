@@ -1,14 +1,15 @@
 (defproject hive "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url  "http://www.eclipse.org/legal/epl-v10.html"}
+  :description "Your go-to routing app for public transport"
+  :url "https://github.com/hiposfer/hive"
+  :license {:name "LGPL v3"
+            :url  "https://choosealicense.com/licenses/gpl-3.0/"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [react-native-externs "0.1.0"]
                  [org.clojure/core.async "0.3.465"]
                  [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.2"]
+                 [binaryage/oops "0.6.1"]
                  [cljs-react-navigation "0.1.1"]
                  [hiposfer/geojson.specs "0.2.0"]]
   :plugins [[lein-cljsbuild "1.1.4"]
@@ -23,7 +24,7 @@
                               ["with-profile" "prod" "cljsbuild" "once" "main"]}
   :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.10"]
                                    [com.cemerick/piggieback "0.2.1"]
-                                   [expound "0.3.4"]
+                                   [expound "0.5.0"]
                                    [org.clojure/test.check "0.9.0"]]
                     :source-paths ["src" "env/dev"]
                     :cljsbuild    {:builds [{:id           "main"

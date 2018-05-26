@@ -5,30 +5,20 @@
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
 
-(defprotocol Pipe*
-  (unfold [this] "unfold (disassemble) this pipe into its constituents parts recursively"))
-
-(defn pipe?
-  "a pipe should behave just like a callable collection; with the exception of
-  implementing the Pipe* marker protocol"
-  [x]
-  (and (satisfies? cljs.core/IFn x)
-       (satisfies? cljs.core/ICollection x)
-       (satisfies? Pipe* x)))
-
 (defn channel
   "transforms a promise into a channel. Catches js/Errors and puts them in the
   channel as well. If the catch value is not an error, yields an ex-info with
-  ::promise-rejected as cause otherwise yields the js/Error provided"
+  ::oops as message. Accepts a transducer that applies to the channel"
   ([promise]
-   (channel promise ::promise-rejected))
-  ([promise cause]
-   (let [result (async/chan 1)]
+   (channel promise))
+  ([promise xform]
+   (let [result (async/chan 1 xform)]
      (-> promise
-         (.then #(async/put! result %))
+         (.then #(do (async/put! result %)
+                     (async/close! result)))
          (.catch #(if (instance? js/Error %)
                     (async/put! result %)
-                    (async/put! result (ex-info "oops" % cause)))))
+                    (async/put! result (ex-info ::oops %)))))
      result)))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
@@ -37,33 +27,11 @@
   (exists? (.-then value)))
 
 (defn- print-warning!
-  [e]
-  (let [error (if (instance? js/Error (ex-data e)) (ex-data e) e)]
-    (.warn js/console error)))
-
-;; TODO: only print stacktrace if we are in DEBUG mode
-;; TODO: allow returning pipes to have dynamic pipe dispatch?
-(defrecord Pipe [sections]
-  cljs.core/IFn
-  (-invoke [this request]
-    (go
-      (loop [queue  (unfold this)
-             value  request]
-        (if (instance? js/Error value)
-          (do (print-warning! value) value) ;; short-circuit
-          (let [f   (first queue)
-                rr  (f value)
-                rr2 (if (promise? rr) (channel value) rr)
-                ;; get the value sync or async
-                rr3 (if (chan? rr) (async/<! rr2) rr2)]
-            (if (empty? (rest queue)) rr3
-              (recur (rest queue) rr3)))))))
-  Pipe*
-  (unfold [this]
-    (flatten ;; unroll the individual pipes into a bigger one
-      (for [p (:sections this)]
-        (if-not (pipe? p) p
-          (unfold p))))))
+  [e pipe request]
+  (if (instance? js/Error (ex-data e))
+    (.warn js/console (ex-data e))
+    (do (.info js/console (clj->js pipe) (pr-str request))
+        (.warn js/console (ex-message e) (str (ex-cause e))))))
 
 (defn with-ns
   "modify a map keys to be namespaced with ns"
@@ -79,7 +47,7 @@
 (defn log!
   "pretty prints the input and returns it"
   [o]
-  (do (print/pprint o)
+  (do (.log js/console o)
       o))
 
 (defn validate
@@ -87,10 +55,13 @@
   or an ex-info with cause otherwise"
   ([spec value cause]
    (if (s/valid? spec value) value
-                             (ex-info (s/explain-str spec value)
-                                      (s/explain-data spec value)
-                                      cause)))
+     (ex-info (s/explain-str spec value)
+              (assoc (s/explain-data spec value) ::reason cause))))
   ([spec cause]
-   (fn validate* [value] (validate spec value cause))))
+   (fn validate* [value] (validate spec value cause)))
+  ([spec]
+   (fn validate* [value] (validate spec value ::invalid-data))))
 
+(defn error? [o] (instance? js/Error o))
 
+(def bypass-error (halt-when error?))

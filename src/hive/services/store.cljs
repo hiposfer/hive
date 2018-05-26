@@ -35,7 +35,7 @@
   (let [keys  (distinct keys)
         chans (map #(store/load! % {}) keys)
         res   (async/merge chans (count keys))
-        to    (async/chan (count keys) (remove #(instance? js/Error %)))
+        to    (async/chan (count keys) (remove tool/error?))
         clean (async/pipe res to)]
     (async/into {} clean)))
 
@@ -53,7 +53,7 @@
   (let [keys  (distinct keys)
         chans (map #(store/delete! % {}) keys)
         res   (async/merge chans (count keys))
-        to    (async/chan (count keys) (remove #(instance? js/Error %)))
+        to    (async/chan (count keys) (remove tool/error?))
         clean (async/pipe res to)]
     (async/into [] clean)))
 

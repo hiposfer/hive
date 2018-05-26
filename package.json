@@ -1,17 +1,17 @@
 {
   "name": "hive",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Your go-to app for public transport routing",
+  "author": "Camilo Roca",
   "private": true,
   "main": "main.js",
   "scripts": {
     "exp": "exp"
   },
   "dependencies": {
-    "@expo/vector-icons": "^6.2.2",
     "create-react-class": "15.6.0",
     "expo": "^21.0.0",
+    "jwt-decode": "^2.2.0",
     "native-base": "^2.3.3",
     "react": "16.0.0-alpha.12",
     "react-native": "https://github.com/expo/react-native/archive/sdk-21.0.2.tar.gz",
