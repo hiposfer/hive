@@ -6,21 +6,23 @@
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]))
 
-(defn move-to!
-  [city user goBack]
-  (let [tx {:user/id user
-            :user/city [:city/name (:city/name city)]}]
-    (work/transact! [tx])
-    (store/save! (select-keys tx [:user/city]))
-    (goBack)))
+(defn change-city
+  "returns a Datascript transaction to change the user city, an effect
+  to store the new setting and an effect to go back in the navigation"
+  [city props]
+  (let [user   (:user/id props)
+        goBack (:goBack (:navigation props))
+        tx     {:user/id user
+                :user/city [:city/name (:city/name city)]}]
+    [[tx]
+     [store/save! (select-keys tx [:user/city])]
+     [goBack]]))
 
 (defn city-entry
   [props]
   (let [params   (:params (:state (:navigation props)))
-        city     (:city props)
-        user     (:user/id props)
-        goBack   (:goBack (:navigation props))]
-    [:> react/TouchableOpacity {:onPress #(move-to! city user goBack)}
+        city     (:city props)]
+    [:> react/TouchableOpacity {:onPress #(run! work/transact! (change-city city props))}
      [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
                              :borderBottomWidth 1 :paddingTop 5}}
       [symbols/point-of-interest
