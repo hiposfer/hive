@@ -4,7 +4,6 @@
 (def React       (js/require "react"))
 (def Expo        (js/require "expo"))
 (def ReactNative (js/require "react-native"))
-(def NativeBase  (js/require "native-base"))
 (def JwtDecode   (js/require "jwt-decode"))
 (def ReactNavigation (js/require "react-navigation"))
 

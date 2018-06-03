@@ -26,19 +26,19 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn root-ui []-
+(defn root-ui []
   (let [Navigator     (rn-nav/stack-navigator
-                        {:map            {:screen home/Screen}
+                        {:home            {:screen home/Screen}
                          :welcome        {:screen welcome/Screen}
                          :directions     {:screen home/Directions}
                          :settings       {:screen settings/Screen}
                          :select-city    {:screen settings/SelectCity}
                          :location-error {:screen home/LocationError}}
-                        {:headerMode "none"})
-        id       @(work/q! queries/user-id)]
-    (if (= -1 id) ;; default
-      [router/router {:root Navigator :init "welcome"}]
-      [router/router {:root Navigator :init "home"}])))
+                        {:headerMode "none"})]
+        ;id       @(work/q! queries/user-id)]
+    ;(if (= -1 id) ;; default
+     ; [router/router {:root Navigator :init "welcome"}]
+    [router/router {:root Navigator :init "home"}]))
 
 (defn reload-config!
   "takes a sequence of keys and attempts to read them from LocalStorage.

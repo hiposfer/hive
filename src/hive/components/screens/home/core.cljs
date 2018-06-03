@@ -1,6 +1,5 @@
 (ns hive.components.screens.home.core
-  (:require [hive.components.foreigns.native-base :as base]
-            [hive.components.foreigns.expo :as expo]
+  (:require [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
             [hive.queries :as queries]
@@ -40,27 +39,27 @@
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [props]
-  (let [navigate (:navigate (:navigation props))]
-    [:> base/List {:icon true :style {:flex 1 :paddingTop 100}}
+  (let [navigate (:navigate (:navigation props))
+        height   (* 80 (count (:user/places props)))]
+    [:> react/View {:style {:height height :paddingTop 100 :paddingLeft 10}}
      (for [target (:user/places props)
            :let [distance (/ (geometry/haversine (:user/position props) target)
                              1000)]]
        ^{:key (:id target)}
-       [:> base/ListItem {:icon     true
-                          :on-press #(do (work/transact!
-                                           (async/onto-chan (http/json! (route/get-path target))
-                                                            (choose-route target props)))
-                                         (oops/ocall fl/ReactNative "dismiss")
-                                         (navigate "directions"))
-                          :style    {:height 50 :paddingVertical 30}}
-        [:> base/Left
-         [:> react/View {:align-items "center"}
-          [:> base/Icon {:name "pin"}]
-          [:> base/Text {:note true} (str (.toPrecision distance 3) " km")]]]
-        [:> base/Body
-         [:> base/Text {:numberOfLines 1} (:text target)]
-         [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
-                       (str/join ", " (map :text (:context target)))]]])]))
+       [:> react/TouchableOpacity
+         {:style {:flex 1 :flexDirection "row"}
+          :on-press #(do (work/transact!
+                           (async/onto-chan (http/json! (route/get-path target))
+                                            (choose-route target props)))
+                         (oops/ocall fl/ReactNative "Keyboard.dismiss")
+                         (navigate "directions"))}
+         [:> react/View {:style {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}}
+           [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
+           [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
+         [:> react/View {:style {:flex 0.8 :justifyContent "flex-end"}}
+           [:> react/Text {:numberOfLines 1} (:text target)]
+           [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
+             (str/join ", " (map :text (:context target)))]]])]))
 
 (defn autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
@@ -94,22 +93,22 @@
 (defn- search-bar
   [props places]
   (let [data     (work/inject props :token/mapbox queries/mapbox-token)
-        ref      (volatile! nil)
-        listener (if (empty? places) {}
-                   {:on-press #(do (.clear @ref)
-                                   (work/transact! (update-places props)))})]
-    [:> react/View {:style {:flex 1 :backgroundColor "white" :elevation 5
-                            :borderRadius 5 :justifyContent "center"
-                            :shadowColor "#000000" :shadowRadius 5
-                            :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-     [:> base/Item
-      [:> base/Button (merge {:transparent true :full true} listener)
-        (if (empty? places)
-          [:> base/Icon {:name "ios-search"}]
-          [:> base/Icon {:name "close"}])]
-      [:> base/Input {:placeholder "Where would you like to go?"
-                      :ref #(when % (vreset! ref (.-_root %)))
-                      :onChangeText #(work/transact! (autocomplete % data))}]]]))
+        ref      (volatile! nil)]
+    [:> react/View {:style {:flex 1 :flexDirection "row" :backgroundColor "white"
+                            :elevation 5 :borderRadius 5 :shadowColor "#000000"
+                            :shadowRadius 5 :shadowOffset {:width 0 :height 3}
+                            :shadowOpacity 1.0}}
+     [:> react/View {:style {:height 30 :width 30 :padding 8 :flex 0.1}}
+       (if (empty? places)
+         [:> expo/Ionicons {:name "ios-search" :size 26}]
+         [:> react/TouchableWithoutFeedback
+           {:on-press #(do (when (some? @ref) (.clear @ref))
+                           (work/transact! (update-places props)))}
+           [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
+     [:> react/Input {:placeholder "Where would you like to go?"
+                      :ref #(vreset! ref %) :style {:flex 0.9}
+                      :underlineColorAndroid "transparent"
+                      :onChangeText #(work/transact! (autocomplete % data))}]]))
 
 (defn city-map
   "a React Native MapView component which will only re-render on user-city change"
@@ -146,9 +145,9 @@
                                   :backgroundColor "#FF5722" :elevation 3
                                   :shadowColor "#000000" :shadowRadius 5
                                   :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-            [:> base/Button {:transparent true :full true
-                             :onPress #(navigate "settings" {:user/id id})}
-              [:> base/Icon {:name "md-apps" :style {:color "white"}}]]])])))
+            [:> react/TouchableOpacity
+              {:onPress #(navigate "settings" {:user/id id})}
+              [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
 
 
       ;[search-bar props (:user/places info)]]]

@@ -10,12 +10,11 @@
   channel as well. If the catch value is not an error, yields an ex-info with
   ::oops as message. Accepts a transducer that applies to the channel"
   ([promise]
-   (channel promise))
+   (channel promise (map identity)))
   ([promise xform]
    (let [result (async/chan 1 xform)]
      (-> promise
-         (.then #(do (async/put! result %)
-                     (async/close! result)))
+         (.then #(async/put! result %))
          (.catch #(if (instance? js/Error %)
                     (async/put! result %)
                     (async/put! result (ex-info ::oops %)))))

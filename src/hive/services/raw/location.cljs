@@ -27,16 +27,6 @@
     {:type "Feature" :geometry point
      :properties (merge ncords (dissoc expo-loc :coords))}))
 
-(defn- tx-position
-  [data]
-  [{:user/id (:user/id data)
-    :user/position (dissoc data :user/id)}])
-
-(def update-position (comp tx-position
-                           (work/inject :user/id queries/user-id)
-                           point
-                           tool/keywordize))
-
 (defn- set-watcher
   [data]
   [{:session/uuid                   (:session/uuid data)
@@ -53,15 +43,14 @@
       (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
     (let [js-opts (clj->js opts)
           request (fn [response]
-                    (let [data (tool/keywordize response)]
-                      (if (not= (:status response) "granted")
-                        (ex-info "permission denied" (assoc data ::reason ::permission-denied))
-                        (let [wp  (oops/ocall fl/Expo "Location.watchPositionAsync")
-                              ref (wp js-opts (::callback opts))]
-                          {::watcher ref}))))]
+                    (if (not= (:status response) "granted")
+                      (ex-info "permission denied" (assoc response ::reason ::permission-denied))
+                      {::watcher (oops/ocall fl/Expo "Location.watchPositionAsync"
+                                             js-opts (::callback opts))}))]
       ;; convert promise to channel and execute it
       (tool/channel (oops/ocall fl/Expo "Permissions.askAsync" "location")
-                    (comp (map request)
+                    (comp (map tool/keywordize)
+                          (map request)
                           tool/bypass-error
                           (map (work/inject :session/uuid queries/session))
                           (map set-watcher))))))

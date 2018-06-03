@@ -1,18 +1,18 @@
 (ns hive.components.screens.errors
-  (:require [hive.components.foreigns.native-base :as base]
-            [hive.components.foreigns.react :as react]
+  (:require [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
             [oops.core :as oops]
             [hive.rework.util :as tool]
             [hive.services.location :as position]
             [hive.services.raw.location :as location]
-            [hive.rework.core :as work :refer-macros [go-try <?]]))
+            [hive.rework.core :as work :refer-macros [go-try <?]]
+            [hive.components.foreigns.expo :as expo]))
 
 (defn launch-location-settings
   "launch the android location settings hoping that the user enables
   the gps"
   [props]
-  (if (= "android" (oops/oget fl/Expo "Platform.OS"))
+  (if (= "android" (oops/oget fl/ReactNative "Platform.OS"))
     (let [settings (oops/oget fl/Expo "IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS")
           goBack   (:goBack (:navigation props) settings)
           p (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
@@ -27,42 +27,50 @@
 
 (defn user-location
   [props]
-  (let [dims (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
-    [:> base/Container {:style {:paddingVertical "20%"}}
-     [:> base/Content
-      [:> base/Card
-       [:> base/CardItem {:cardBody true}
-        [:> react/Image {:style  {:width (* (:width dims) 0.8)
-                                  :height (* (:height dims) 0.5)
-                                  :resizeMode "contain" :flex 1}
-                         :source fl/thumb-run}]]
-       [:> base/CardItem
-        [:> base/Body {:style {:alignItems "center"}}
-         [:> base/Text {:style {:flexWrap "wrap"}}
-                       "We couldn't find your current location"]
-         [:> base/Text]
-         [:> base/Text "Please enable your GPS to continue"]
-         [:> react/View {:style {:flexDirection "row" :alignItems "flex-start"
-                                 :flex 1}}
-          [:> base/Button {:danger true :bordered false
-                           :on-press #((:goBack (:navigation props)))}
-            [:> base/Icon {:name "ios-close-circle"}]]
-          [:> base/Button {:success true :iconRight true :bordered false
-                           :on-press #(launch-location-settings props)}
-           [:> base/Text "OK"] [:> base/Icon {:name "ios-arrow-forward"}]]]]]]]]))
+  (let [dims   (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))
+        goBack (:goBack (:navigation props))]
+    [:> react/View {:style {:flex 1 :backgroundColor "white" :paddingVertical "20%"
+                            :elevation 5 :shadowColor "#000000"
+                            :shadowRadius 5 :shadowOffset {:width 0 :height 3}
+                            :shadowOpacity 1.0}}
+     [:> react/Image {:style  {:width (* (:width dims) 0.8)
+                               :height (* (:height dims) 0.5)
+                               :resizeMode "contain" :flex 1}
+                      :source fl/thumb-run}]
+     [:> react/View {:style {:height 200 :alignItems "center"}}
+      [:> react/Text {:style {:flexWrap "wrap"}}
+        "We couldn't find your current location"]
+      [:> react/Text]
+      [:> react/Text "Please enable your GPS to continue"]
+      [:> react/View {:style {:flexDirection "row" :alignItems "flex-start" :flex 1}}
+       [:> react/TouchableOpacity
+         {:style {:borderRadius 5 :backgroundColor "red" :height 40 :width 60
+                  :justifyContent "center" :alignItems "center"}
+          :on-press goBack}
+         [:> expo/Ionicons {:name "ios-close-circle" :size 30}]]
+       [:> react/TouchableOpacity
+         {:on-press #(launch-location-settings props)
+          :style {:borderRadius 5 :backgroundColor "lawngreen"
+                  :height 40 :width 60 :flexDirection "row"
+                  :alignItems "center" :justifyContent "space-around"}}
+         [:> expo/Ionicons {:name "ios-checkmark-circle" :size 30}]]]]]))
 
-(defn no-internet
-  "display a nice little monster asking for internet connection"
-  []
-  (let [dims (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
-    [:> base/Container
-     [:> base/Content {:style {:padding 10}}
-      [:> base/Card {:style {:width (* (:width dims) 0.95)}}
-       [:> base/CardItem {:cardBody true}
-        [:> react/Image {:style  {:width (* (:width dims) 0.9)
-                                  :height (* (:height dims) 0.8)
-                                  :resizeMode "contain" :flex 1}
-                         :source fl/thumb-sign}]]]]]))
+;; TODO: bring this back when needed
+;(defn no-internet
+;  "display a nice little monster asking for internet connection"
+;  []
+;  (let [dims (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
+;    [:> base/Container
+;     [:> base/Content {:style {:padding 10}}
+;      [:> base/Card {:style {:width (* (:width dims) 0.95)}}
+;       [:> base/CardItem {:cardBody true}
+;        [:> react/Image {:style  {:width (* (:width dims) 0.9)
+;                                  :height (* (:height dims) 0.8)
+;                                  :resizeMode "contain" :flex 1}
+;                         :source fl/thumb-sign}]]]]]))
 
 
 ;hive.rework.state/conn
+
+
+;; NUMMER 340
