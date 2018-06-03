@@ -5,7 +5,8 @@
             [hive.queries :as queries]
             [clojure.string :as str]
             [hive.components.symbols :as symbols]
-            [hive.components.foreigns.react :as react]))
+            [hive.components.foreigns.react :as react]
+            [hive.components.foreigns.expo :as expo]))
 
 (defn move-to!
   [city user goBack]
@@ -28,11 +29,12 @@
      [:> base/Button {:on-press #(move-to! city user goBack)
                       :transparent true}
       [symbols/point-of-interest
-       (merge check
-              {:left-icon  "md-map"
-               :title      (:city/name city)
-               :subtitle   (str/join ", " [(:city/region city)
-                                           (:city/country city)])})]]]))
+        [:> expo/Ionicons {:name "md-map"}]
+        [:> react/Text ""]
+        [:> react/Text (:city/name city)]
+        [:> react/Text {:style {:color "gray"}}
+          (str (:city/region city) ", " (:city/country city))]
+        [:> expo/Ionicons {:name "ios-checkmark"}]]]]))
 
 (defn selector
   [props]

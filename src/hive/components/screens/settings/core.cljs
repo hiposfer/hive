@@ -5,7 +5,8 @@
             [clojure.string :as str]
             [hive.components.foreigns.react :as react]
             [hive.components.symbols :as symbols]
-            [hive.components.screens.settings.city-picker :as cities]))
+            [hive.components.screens.settings.city-picker :as cities]
+            [hive.components.foreigns.expo :as expo]))
 
 (defn settings
   [props]
@@ -48,11 +49,13 @@
                                       :city/name (:city/name (:user/city city))})
                          :transparent true}
          [symbols/point-of-interest
-          {:left-icon "md-map"
-           :title (:city/name (:user/city city))
-           :subtitle (str/join ", " [(:city/region (:user/city city))
-                                     (:city/country (:user/city city))])
-           :right-icon "ios-checkmark"}]]]]]]))
+           [:> expo/Ionicons {:name "md-map" :size 26}]
+           [:> react/Text ""]
+           [:> react/Text (:city/name (:user/city city))]
+           [:> react/Text {:style {:color "gray"}}
+             (str (:city/region (:user/city city)) ", "
+                  (:city/country (:user/city city)))]
+           [:> expo/Ionicons {:name "ios-checkmark" :size 26}]]]]]]]))
 
 
 (def SelectCity (rn-nav/stack-screen cities/selector

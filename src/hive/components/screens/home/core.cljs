@@ -1,6 +1,5 @@
 (ns hive.components.screens.home.core
-  (:require [hive.components.foreigns.native-base :as base]
-            [hive.components.foreigns.expo :as expo]
+  (:require [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
             [hive.queries :as queries]
