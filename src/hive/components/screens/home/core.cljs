@@ -94,20 +94,19 @@
 (defn- search-bar
   [props places]
   (let [data     (work/inject props :token/mapbox queries/mapbox-token)
-        ref      (volatile! nil)
-        listener (if (empty? places) {}
-                   {:on-press #(do (when (some? @ref) (.clear @ref))
-                                   (work/transact! (update-places props)))})]
+        ref      (volatile! nil)]
     [:> react/View {:style {:flex 1 :flexDirection "row" :backgroundColor "white"
                             :elevation 5 :borderRadius 5 :shadowColor "#000000"
                             :shadowRadius 5 :shadowOffset {:width 0 :height 3}
                             :shadowOpacity 1.0}}
 
-     [:> react/View (merge {:style {:height 30 :width 30 :padding 7 :flex 0.1}}
-                           listener)
+     [:> react/View {:style {:height 30 :width 30 :padding 8 :flex 0.1}}
        (if (empty? places)
          [:> expo/Ionicons {:name "ios-search" :size 26}]
-         [:> expo/Ionicons {:name "ios-close-circle" :size 26}])]
+         [:> react/TouchableWithoutFeedback
+           {:on-press #(do (when (some? @ref) (.clear @ref))
+                           (work/transact! (update-places props)))}
+           [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %)
                       :style {:flex 0.9}
