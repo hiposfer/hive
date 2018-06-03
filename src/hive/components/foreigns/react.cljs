@@ -17,3 +17,5 @@
 (def Input (oops/oget fl/ReactNative "TextInput"))
 
 (def FlatList (oops/oget fl/ReactNative "FlatList"))
+
+(def ActivityIndicator (oops/oget fl/ReactNative "ActivityIndicator"))
