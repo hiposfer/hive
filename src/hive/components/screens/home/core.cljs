@@ -106,8 +106,8 @@
                            (work/transact! (update-places props)))}
            [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"
-                      :ref #(vreset! ref %)
-                      :style {:flex 0.9}
+                      :ref #(vreset! ref %) :style {:flex 0.9}
+                      :underlineColorAndroid "transparent"
                       :onChangeText #(work/transact! (autocomplete % data))}]]))
 
 (defn city-map
