@@ -21,20 +21,19 @@
   (let [params   (:params (:state (:navigation props)))
         city     (:city props)
         user     (:user/id props)
-        goBack   (:goBack (:navigation props))
-        check    (conj {} (when (= (:city/name params) (:city/name city))
-                            [:right-icon "ios-checkmark"]))]
+        goBack   (:goBack (:navigation props))]
     [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
                             :borderBottomWidth 1 :paddingTop 5}}
      [:> base/Button {:on-press #(move-to! city user goBack)
                       :transparent true}
       [symbols/point-of-interest
-        [:> expo/Ionicons {:name "md-map"}]
+        [:> expo/Ionicons {:name "md-map" :size 26}]
         [:> react/Text ""]
         [:> react/Text (:city/name city)]
         [:> react/Text {:style {:color "gray"}}
           (str (:city/region city) ", " (:city/country city))]
-        [:> expo/Ionicons {:name "ios-checkmark"}]]]]))
+        (when (= (:city/name params) (:city/name city))
+          [:> expo/Ionicons {:name "ios-checkmark" :size 26}])]]]))
 
 (defn selector
   [props]
