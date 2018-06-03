@@ -98,18 +98,20 @@
         listener (if (empty? places) {}
                    {:on-press #(do (.clear @ref)
                                    (work/transact! (update-places props)))})]
-    [:> react/View {:style {:flex 1 :backgroundColor "white" :elevation 5
-                            :borderRadius 5 :justifyContent "center"
-                            :shadowColor "#000000" :shadowRadius 5
-                            :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-     [:> base/Item
-      [:> base/Button (merge {:transparent true :full true} listener)
-        (if (empty? places)
-          [:> base/Icon {:name "ios-search"}]
-          [:> base/Icon {:name "close"}])]
-      [:> base/Input {:placeholder "Where would you like to go?"
-                      :ref #(when % (vreset! ref (.-_root %)))
-                      :onChangeText #(work/transact! (autocomplete % data))}]]]))
+    [:> react/View {:style {:flex 1 :flexDirection "row" :backgroundColor "white"
+                            :elevation 5 :borderRadius 5 :shadowColor "#000000"
+                            :shadowRadius 5 :shadowOffset {:width 0 :height 3}
+                            :shadowOpacity 1.0}}
+
+     [:> react/View (merge {:style {:height 30 :width 30 :padding 5 :flex 0.1}}
+                           listener)
+       (if (empty? places)
+         [:> expo/Ionicons {:name "ios-search" :size 26}]
+         [:> expo/Ionicons {:name "close" :size 26}])]
+     [:> base/Input {:placeholder "Where would you like to go?"
+                     :ref #(when % (vreset! ref (.-_root %)))
+                     :style {:flex 0.9}
+                     :onChangeText #(work/transact! (autocomplete % data))}]]))
 
 (defn city-map
   "a React Native MapView component which will only re-render on user-city change"
