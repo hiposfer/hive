@@ -56,18 +56,19 @@
                   :alignItems "center" :justifyContent "space-around"}}
          [:> expo/Ionicons {:name "ios-checkmark-circle" :size 30}]]]]]))
 
-(defn no-internet
-  "display a nice little monster asking for internet connection"
-  []
-  (let [dims (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
-    [:> base/Container
-     [:> base/Content {:style {:padding 10}}
-      [:> base/Card {:style {:width (* (:width dims) 0.95)}}
-       [:> base/CardItem {:cardBody true}
-        [:> react/Image {:style  {:width (* (:width dims) 0.9)
-                                  :height (* (:height dims) 0.8)
-                                  :resizeMode "contain" :flex 1}
-                         :source fl/thumb-sign}]]]]]))
+;; TODO: bring this back when needed
+;(defn no-internet
+;  "display a nice little monster asking for internet connection"
+;  []
+;  (let [dims (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
+;    [:> base/Container
+;     [:> base/Content {:style {:padding 10}}
+;      [:> base/Card {:style {:width (* (:width dims) 0.95)}}
+;       [:> base/CardItem {:cardBody true}
+;        [:> react/Image {:style  {:width (* (:width dims) 0.9)
+;                                  :height (* (:height dims) 0.8)
+;                                  :resizeMode "contain" :flex 1}
+;                         :source fl/thumb-sign}]]]]]))
 
 
 ;hive.rework.state/conn
