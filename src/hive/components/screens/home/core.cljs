@@ -147,9 +147,9 @@
                                   :backgroundColor "#FF5722" :elevation 3
                                   :shadowColor "#000000" :shadowRadius 5
                                   :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-            [:> base/Button {:transparent true :full true
-                             :onPress #(navigate "settings" {:user/id id})}
-              [:> base/Icon {:name "md-apps" :style {:color "white"}}]]])])))
+            [:> react/TouchableOpacity
+              {:onPress #(navigate "settings" {:user/id id})}
+              [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
 
 
       ;[search-bar props (:user/places info)]]]
