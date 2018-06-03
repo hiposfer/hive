@@ -20,7 +20,7 @@
   [coordinates]
   {:latitude (second coordinates) :longitude (first coordinates)})
 
-(defn- log-in
+(defn- log-in! ;; TODO: finish this
   [domain clientId redirect]
   (let [params {:client_id clientId
                 :response_type "token"
@@ -35,7 +35,7 @@
                         (map (tool/validate ::response))
                         tool/bypass-error
                         (map cb)
-                        (map cljs.pprint/pprint))))) ;TODO
+                        (map cljs.pprint/pprint)))))
 
 (defn view
   "the main screen of the app. Contains a search bar and a mapview"
@@ -63,7 +63,7 @@
                              :shadowColor "#000000" :shadowRadius 20
                              :shadowOffset {:width 0 :height 10} :shadowOpacity 1.0}}
        [:> react/TouchableOpacity {:style {:flex 1 :alignItems "center" :justifyContent "center"}
-                                   :onPress #(work/transact! (log-in domain cid redirectUrl))}
+                                   :onPress #(work/transact! (log-in! domain cid redirectUrl))}
          [:> react/Text {:style {:color "white" :fontWeight "bold" :fontSize 15}}
                         "Login"]]]]))
 
