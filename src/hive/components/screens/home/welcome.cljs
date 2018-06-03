@@ -8,6 +8,7 @@
             [hive.rework.util :as tool]
             [hive.foreigns :as fl]
             [clojure.string :as str]
+            [cljs.pprint :as pprint]
             [cljs.spec.alpha :as s]))
 
 (s/def ::type     #{"success"})
@@ -35,7 +36,7 @@
                         (map (tool/validate ::response))
                         tool/bypass-error
                         (map cb)
-                        (map cljs.pprint/pprint)))))
+                        (map pprint/pprint)))))
 
 (defn view
   "the main screen of the app. Contains a search bar and a mapview"

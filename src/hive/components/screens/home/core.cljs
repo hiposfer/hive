@@ -23,9 +23,10 @@
   "associates a target and a path to get there with the user"
   [target props]
   (let [navigate (:navigate (:navigation props))
-        places [{:user/id props
+        places [{:user/id (:user/id props)
                  :user/goal target}
-                [:db.fn/retractAttribute [:user/id props] :user/places]]
+                [:db.fn/retractAttribute [:user/id (:user/id props)]
+                                         :user/places]]
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]
     [(concat places garbage)
@@ -80,14 +81,6 @@
                           (map #(assoc % :user/id (:user/id data)))
                           (map update-places))]
           [http/json! url {} xform])))))
-;(go-try
-;  (work/transact! (<? (geocode! text)))
-;  (catch :default _
-;    (try (work/transact! (<? (location/watch! position/defaults)))
-;         (catch :default _
-;           (.dismiss fl/Keyboard)
-;           (navigate "location-error")))))))
-
 
 (defn- search-bar
   [props places]
@@ -132,7 +125,7 @@
       [:> react/View {:style {:flex 1}}
         (if (empty? (:user/places info))
           [city-map info]
-          [places (merge props info)])
+          [places (merge props info {:user/id id})])
         [:> react/View {:style {:position "absolute" :top 35 :left 20
                                 :width 340 :height 42}}
           [search-bar (merge info {:user/id id})
@@ -147,18 +140,6 @@
             [:> react/TouchableOpacity
               {:onPress #(navigate "settings" {:user/id id})}
               [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
-
-
-      ;[search-bar props (:user/places info)]]]
-      ;(if (not-empty (:user/places info))
-      ;[places props (:user/places info)]
-      ;[:> react/View {:style {:flex 1}}
-
-;(when (some? (:user/goal info))
-    ;  [:> base/Button {:full true
-    ;                   :on-press #((:navigate (:navigation props)) "directions")}
-    ;   [:> base/Icon {:name "information-circle" :transparent true}]
-    ;   [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])))
 
 (def Directions    (rn-nav/stack-screen route/instructions
                      {:title "directions"}))
