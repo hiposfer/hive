@@ -12,7 +12,7 @@
   "launch the android location settings hoping that the user enables
   the gps"
   [props]
-  (if (= "android" (oops/oget fl/Expo "Platform.OS"))
+  (if (= "android" (oops/oget fl/ReactNative "Platform.OS"))
     (let [settings (oops/oget fl/Expo "IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS")
           goBack   (:goBack (:navigation props) settings)
           p (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
