@@ -63,28 +63,6 @@
   (set! state/conn dsconn)
   (rtx/listen! state/conn))
 
-;; copy of Clojure delay with equality implementation
-;; useful for testing of side effects !!
-(deftype DelayEffect [body ^:mutable f ^:mutable value]
-  IDeref
-  (-deref [_]
-    (when f
-      (set! value (f))
-      (set! f nil))
-    value)
-  IPending
-  (-realized? [_]
-    (not f))
-  IEquiv
-  (-equiv [_ that]
-    (when (instance? DelayEffect that)
-      (= body (.-body ^DelayEffect that)))))
-
-(defn delay-effect?
-  "check if o is an instance of DelayJS"
-  [o]
-  (instance? DelayEffect o))
-
 (defn pull
   "same as datascript pull but uses the app state as connection"
   [selector eid]
@@ -130,29 +108,27 @@
    with the content of each transact! result.
 
    Not supported data types are ignored"
-  ([data]
-   (cond
-     (tool/chan? data) ;; async transaction
-     (transact! data (map identity))
-     ;; functional side effect declaration
-     ;; Execute it and try to transact it
-     (and (vector? data) (fn? (first data)))
-     (recur (apply (first data) (rest data)))
-     ;; side effect declaration wrapped with DelayJS to allow testing
-     ;; Force it and try to transact it
-     (delay-effect? data)
-     (recur (deref data))
-     ;; simple transaction
-     (sequential? data)
-     (data/transact! state/conn data)
-     ;; useful for debugging
-     (tool/error? data)
-     (js/console.error (clj->js data))
-     :else (do (println "unknown transact! type argument" data)
-               data))) ;; js/Errors, side effects with no return value ...
-  ([port xform]
-   (let [c (async/chan 1 (comp xform (map transact!)))]
-     (async/pipe port c))))
+  [data]
+  (cond
+    (tool/chan? data) ;; async transaction
+    (let [c (async/chan 1 (map transact!))]
+      (async/pipe data c))
+    ;; functional side effect declaration
+    ;; Execute it and try to transact it
+    (and (vector? data) (fn? (first data)))
+    (recur (apply (first data) (rest data)))
+    ;; side effect declaration wrapped with DelayJS to allow testing
+    ;; Force it and try to transact it
+    (delay? data)
+    (recur (deref data))
+    ;; simple transaction
+    (sequential? data)
+    (data/transact! state/conn data)
+    ;; useful for debugging
+    (tool/error? data)
+    (js/console.error (clj->js data))
+    :else (do (println "unknown transact! type argument" data)
+              data))) ;; js/Errors, side effects with no return value ...
 
 (defn inject
   "runs query with provided inputs and associates its result into m

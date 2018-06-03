@@ -80,7 +80,7 @@
         config (reload-config! [:user/city])]
     (work/init! conn)
     (work/transact! data)
-    (location/watch! position/defaults) ;; displays Toast on error
+    (location/watch! position/defaults)
     (oops/ocall fl/ReactNative "AppRegistry.registerComponent" "main"
                                #(r/reactify-component root-ui))
     ;; handles Android BackButton
