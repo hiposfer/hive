@@ -10,3 +10,5 @@
 (def TouchableOpacity (oops/oget fl/ReactNative "TouchableOpacity"))
 (def TouchableHighlight (oops/oget fl/ReactNative "TouchableHighlight"))
 (def ScrollView (oops/oget fl/ReactNative "ScrollView"))
+
+(def Input (oops/oget fl/ReactNative "TextInput"))
