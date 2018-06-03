@@ -3,7 +3,6 @@
             [hive.services.store :as store]
             [hive.components.foreigns.native-base :as base]
             [hive.queries :as queries]
-            [clojure.string :as str]
             [hive.components.symbols :as symbols]
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]))
@@ -22,10 +21,9 @@
         city     (:city props)
         user     (:user/id props)
         goBack   (:goBack (:navigation props))]
-    [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
-                            :borderBottomWidth 1 :paddingTop 5}}
-     [:> base/Button {:on-press #(move-to! city user goBack)
-                      :transparent true}
+    [:> react/TouchableOpacity {:onPress #(move-to! city user goBack)}
+     [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
+                             :borderBottomWidth 1 :paddingTop 5}}
       [symbols/point-of-interest
         [:> expo/Ionicons {:name "md-map" :size 26}]
         [:> react/Text ""]
