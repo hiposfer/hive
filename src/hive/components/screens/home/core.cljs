@@ -40,27 +40,26 @@
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [props]
-  (let [navigate (:navigate (:navigation props))]
-    [:> base/List {:icon true :style {:flex 1 :paddingTop 100}}
+  (let [navigate (:navigate (:navigation props))
+        height   (* 80 (count (:user/places props)))]
+    [:> react/View {:style {:height height :paddingTop 100 :paddingLeft 10}}
      (for [target (:user/places props)
            :let [distance (/ (geometry/haversine (:user/position props) target)
                              1000)]]
        ^{:key (:id target)}
-       [:> base/ListItem {:icon     true
-                          :on-press #(do (work/transact!
-                                           (async/onto-chan (http/json! (route/get-path target))
-                                                            (choose-route target props)))
-                                         (oops/ocall fl/ReactNative "Keyboard.dismiss")
-                                         (navigate "directions"))
-                          :style    {:height 50 :paddingVertical 30}}
-        [:> base/Left
-         [:> react/View {:align-items "center"}
-          [:> base/Icon {:name "pin"}]
-          [:> base/Text {:note true} (str (.toPrecision distance 3) " km")]]]
-        [:> base/Body
-         [:> base/Text {:numberOfLines 1} (:text target)]
-         [:> base/Text {:note true :style {:color "gray"} :numberOfLines 1}
-                       (str/join ", " (map :text (:context target)))]]])]))
+       [:> react/View {:on-press #(do (work/transact!
+                                        (async/onto-chan (http/json! (route/get-path target))
+                                                         (choose-route target props)))
+                                      (oops/ocall fl/ReactNative "Keyboard.dismiss")
+                                      (navigate "directions"))
+                       :style    {:flex 1 :flexDirection "row"}}
+        [:> react/View {:style {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}}
+          [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
+          [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
+        [:> react/View {:style {:flex 0.8 :justifyContent "flex-end"}}
+          [:> react/Text {:numberOfLines 1} (:text target)]
+          [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
+            (str/join ", " (map :text (:context target)))]]])]))
 
 (defn autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the

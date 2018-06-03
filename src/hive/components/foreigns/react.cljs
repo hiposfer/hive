@@ -15,3 +15,5 @@
 (def ScrollView (oops/oget fl/ReactNative "ScrollView"))
 
 (def Input (oops/oget fl/ReactNative "TextInput"))
+
+(def FlatList (oops/oget fl/ReactNative "FlatList"))
