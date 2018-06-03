@@ -47,19 +47,20 @@
            :let [distance (/ (geometry/haversine (:user/position props) target)
                              1000)]]
        ^{:key (:id target)}
-       [:> react/View {:on-press #(do (work/transact!
-                                        (async/onto-chan (http/json! (route/get-path target))
-                                                         (choose-route target props)))
-                                      (oops/ocall fl/ReactNative "Keyboard.dismiss")
-                                      (navigate "directions"))
-                       :style    {:flex 1 :flexDirection "row"}}
-        [:> react/View {:style {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}}
-          [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-          [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
-        [:> react/View {:style {:flex 0.8 :justifyContent "flex-end"}}
-          [:> react/Text {:numberOfLines 1} (:text target)]
-          [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
-            (str/join ", " (map :text (:context target)))]]])]))
+       [:> react/TouchableOpacity
+         {:style {:flex 1 :flexDirection "row"}
+          :on-press #(do (work/transact!
+                           (async/onto-chan (http/json! (route/get-path target))
+                                            (choose-route target props)))
+                         (oops/ocall fl/ReactNative "Keyboard.dismiss")
+                         (navigate "directions"))}
+         [:> react/View {:style {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}}
+           [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
+           [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
+         [:> react/View {:style {:flex 0.8 :justifyContent "flex-end"}}
+           [:> react/Text {:numberOfLines 1} (:text target)]
+           [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
+             (str/join ", " (map :text (:context target)))]]])]))
 
 (defn autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
