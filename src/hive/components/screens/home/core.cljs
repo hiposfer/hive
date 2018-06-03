@@ -98,7 +98,6 @@
                             :elevation 5 :borderRadius 5 :shadowColor "#000000"
                             :shadowRadius 5 :shadowOffset {:width 0 :height 3}
                             :shadowOpacity 1.0}}
-
      [:> react/View {:style {:height 30 :width 30 :padding 8 :flex 0.1}}
        (if (empty? places)
          [:> expo/Ionicons {:name "ios-search" :size 26}]
