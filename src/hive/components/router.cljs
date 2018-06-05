@@ -1,4 +1,10 @@
 (ns hive.components.router
+  "Utility functions for linking the React Navigation router implementation
+  with Datascript.
+
+  We create a custom router to be able to keep the router state even after
+  hot reloading the code. Otherwise we would be send back to the home page
+  on every reload"
   (:require [cljs-react-navigation.base :as base]
             [cljs-react-navigation.reagent :as reagent]
             [hive.rework.core :as work]))
@@ -25,6 +31,8 @@
 ;(type (get reagent/NavigationActionsMap "Navigation/BACK"))
 
 (defn goBack
+  "Dispatches an action in the router to Pop one item off the stack. The app
+  will exit by default if the stack is empty"
   [[state router]]
   (let [back              (get reagent/NavigationActionsMap "Navigation/BACK")
         getStateForAction (aget router "router" "getStateForAction")
@@ -32,6 +40,7 @@
     (set-routing router new-state)))
 
 (defn- dispatch
+  "dispatch an action to the router. See React Navigation for more information"
   [state root-router action]
   (let [getStateForAction (aget root-router "router" "getStateForAction")
         next-state        (getStateForAction action state)]
@@ -39,7 +48,9 @@
     (when (some? next-state) ;; nil on DrawerClose
       (work/transact! (set-routing root-router next-state)))))
 
-(defn router [props]
+(defn router
+  "creates a React Navigation Router Component linked to Datascript storage"
+  [props]
   (let [root-router               (:root props)
         getActionForPathAndParams (aget root-router "router" "getActionForPathAndParams")
         getStateForAction         (aget root-router "router" "getStateForAction")

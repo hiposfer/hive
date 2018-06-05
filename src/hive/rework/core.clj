@@ -17,19 +17,19 @@
 
 ;; based on the nice quote blog post
 ;; https://8thlight.com/blog/colin-jones/2012/05/22/quoting-without-confusion.html
-(defmacro delay
-  "same as Clojurescript delay but supports equivalence comparison based
-   the arguments. Useful for avoiding executing effects inside function
-
-   The two arity form takes a promise and a transducer. The promise is
-   transformed into a channel and the transducer is used for its values"
-  ([effect]
-   `(new hive.rework.core/DelayEffect
-         '~@(rest &form) ;; use arguments as data
-         (fn [] ~effect)
-         nil))
-  ([promise xform]
-   `(new hive.rework.core/DelayEffect
-         '~@(rest &form) ;; use arguments as data
-         (fn [] (hive.rework.util/channel ~promise ~xform))
-         nil)))
+;(defmacro delay
+;  "same as Clojurescript delay but supports equivalence comparison based
+;   the arguments. Useful for avoiding executing effects inside function
+;
+;   The two arity form takes a promise and a transducer. The promise is
+;   transformed into a channel and the transducer is used for its values"
+;  ([effect]
+;   `(new hive.rework.core/DelayEffect
+;         '~@(rest &form) ;; use arguments as data
+;         (fn [] ~effect)
+;         nil))
+;  ([promise xform]
+;   `(new hive.rework.core/DelayEffect
+;         '~@(rest &form) ;; use arguments as data
+;         (fn [] (hive.rework.util/channel ~promise ~xform))
+;         nil)))

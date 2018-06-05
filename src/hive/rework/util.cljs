@@ -1,7 +1,6 @@
 (ns hive.rework.util
-  (:require [cljs.core.async :as async :refer [go]]
-            [clojure.spec.alpha :as s]
-            [cljs.pprint :as print]))
+  (:require [cljs.core.async :as async]
+            [clojure.spec.alpha :as s]))
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
 
@@ -61,6 +60,11 @@
   ([spec]
    (fn validate* [value] (validate spec value ::invalid-data))))
 
-(defn error? [o] (instance? js/Error o))
+(defn error?
+  "checks if o is an instance of the Javascript base type Error"
+  [o] (instance? js/Error o))
 
-(def bypass-error (halt-when error?))
+(def bypass-error
+  "transducer for stopping the execution of a channel transducer if
+  an error is encountered"
+  (halt-when error?))

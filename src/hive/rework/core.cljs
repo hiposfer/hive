@@ -1,19 +1,60 @@
 (ns hive.rework.core
-  "mini framework for handling state in a reagent app.
+  "This namespace contains a mini framework which is just basically glue code
+   between the different libraries used. Its main purpose is state management
+   for Clojurescript Single Page Applications. Its secondary purposes are
+   ease of use, no magic involved and testing support. Read below for more
+   information on these
 
-  By using transact! all effectful functions can be made
-  pure, thus easing testing significantly.
+  This mini-framework simply uses the technologies out there to achieve its
+  purpose, thus avoiding reinventing the wheel. A couple of decisions are made
+  up front for the user.
+  - the app state MUST be represented with a single Datascript connection. This
+    way it is possible to represent the app state as a complex interconnected
+    structure while being able to navigate it through its query/pull system
+  - the app must use reagent. As described in reagent.tx, we dont want to recreate
+    all the functionality that they have so reagent will serve us as rendering model
+    and as reactive data framework
+  - the app should use Clojure's core.async to handle complex asynchronous
+    operations
 
-  Furthermore since they are independent of the context of their
-  invocation, generative testing is even possible"
+  Since the app is represented as a single Datascript atom. All state changes
+  can be represented by Datascript transaction, which means that the functions
+  that create those transactions can be pure, which will later on have an impact
+  on testing.
+  ;; example
+  (work/transact [{:user/id :user/favorites data}]
+  (work/transact (compute-favorites data))
+  (work/trasact (async-chan-with-transaction))
+
+  However no app can survive only with state changes. You always need to perform
+  server synchronization, api calls, read/write from local storage, among others.
+  Those *intended-effects* (as opposed to side-effects) are inevitable. This
+  framework doesnt try to avoid them nor to mark them as evil, instead it accepts
+  them as a necessary evil. We encourage the logic of side effect to be encapsulated
+  in frameworks intented for it, like Promises or core.async channels. However we
+  prefer for functions to *declare* their intended-effects instead of performing them.
+  This is meant to ease testing. It is much more easy to test a function that returns
+  a sequence of vector with values inside than it is to test a function which returns
+  nothing but performs some effects inside.
+  ;; example
+  (work/transact [http/json url options])
+  (work/transact (delay (hide-keyboard))
+
+  Last but not least is error handling. Core.async promotes queues as data transfer
+  mechanism. This also implies that both errors and success would flow through the
+  same channel. We propose the inclusion of errors as data values as opposed to their
+  classical view of 'anomalous or exceptional conditions requiring special
+  processing – often changing the normal flow of program execution'
+  Therefore we separate between expected errors like, no internet connection, malformed
+  json response or unauthorized app permissions from those arising from incorrect code
+  a.k.a bugs"
   (:require-macros [hive.rework.core])
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
             [hive.rework.util :as tool]
             [hive.rework.state :as state]
-            [cljs.core.async :as async]
-            [oops.core :as oops]))
+            [cljs.core.async :as async]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -44,15 +85,7 @@
 ;; mutations is great.
 
 ;; rework tries to combine the strengths of both while mitigating its weaknesses
-;; with an extra goal of trying not to reinvent the wheel. Therefore a couple
-;; of decision are made up front for the user.
-;; - the app state MUST be represented with a Datascript connection. This way
-;; we can think in graph while re-using the code from Datascript. Pulling as in
-;; Om.Next comes for free.
-;; - the app must use reagent. As described in reagent.tx, we dont want to recreate
-;; all the functionality that they have so reagent will serve us as rendering model
-;; - the app should use Clojure's core.async to handle all asynchronous operations
-;; - the app state can only be "changed" through the use of pure functions
+;; with an extra goal of trying not to reinvent the wheel.
 
 (defn init!
   "takes a Datascript conn and starts listening to its transactor for changes"
@@ -62,28 +95,6 @@
     (rtx/unlisten! dsconn))
   (set! state/conn dsconn)
   (rtx/listen! state/conn))
-
-;; copy of Clojure delay with equality implementation
-;; useful for testing of side effects !!
-(deftype DelayEffect [body ^:mutable f ^:mutable value]
-  IDeref
-  (-deref [_]
-    (when f
-      (set! value (f))
-      (set! f nil))
-    value)
-  IPending
-  (-realized? [_]
-    (not f))
-  IEquiv
-  (-equiv [_ that]
-    (when (instance? DelayEffect that)
-      (= body (.-body ^DelayEffect that)))))
-
-(defn delay-effect?
-  "check if o is an instance of DelayJS"
-  [o]
-  (instance? DelayEffect o))
 
 (defn pull
   "same as datascript pull but uses the app state as connection"
@@ -130,29 +141,27 @@
    with the content of each transact! result.
 
    Not supported data types are ignored"
-  ([data]
-   (cond
-     (tool/chan? data) ;; async transaction
-     (transact! data (map identity))
-     ;; functional side effect declaration
-     ;; Execute it and try to transact it
-     (and (vector? data) (fn? (first data)))
-     (recur (apply (first data) (rest data)))
-     ;; side effect declaration wrapped with DelayJS to allow testing
-     ;; Force it and try to transact it
-     (delay-effect? data)
-     (recur (deref data))
-     ;; simple transaction
-     (sequential? data)
-     (data/transact! state/conn data)
-     ;; useful for debugging
-     (tool/error? data)
-     (js/console.error (clj->js data))
-     :else (do (println "unknown transact! type argument" data)
-               data))) ;; js/Errors, side effects with no return value ...
-  ([port xform]
-   (let [c (async/chan 1 (comp xform (map transact!)))]
-     (async/pipe port c))))
+  [data]
+  (cond
+    (tool/chan? data) ;; async transaction
+    (let [c (async/chan 1 (map transact!))]
+      (async/pipe data c))
+    ;; functional side effect declaration
+    ;; Execute it and try to transact it
+    (and (vector? data) (fn? (first data)))
+    (recur (apply (first data) (rest data)))
+    ;; side effect declaration wrapped with DelayJS to allow testing
+    ;; Force it and try to transact it
+    (delay? data)
+    (recur (deref data))
+    ;; simple transaction
+    (sequential? data)
+    (data/transact! state/conn data)
+    ;; useful for debugging
+    (tool/error? data)
+    (js/console.error (clj->js data))
+    :else (do (println "unknown transact! type argument" data)
+              data))) ;; js/Errors, side effects with no return value ...
 
 (defn inject
   "runs query with provided inputs and associates its result into m

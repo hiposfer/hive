@@ -19,28 +19,26 @@
   [coordinates]
   {:latitude (second coordinates) :longitude (first coordinates)})
 
-(defn- update-places
-  "transact the geocoding result under the user id"
-  [data]
-  [{:user/id (:user/id data)
-    :user/places (or (:features data) [])}])
-
 (defn choose-route
   "associates a target and a path to get there with the user"
   [target props]
-  (let [places [{:user/id props
+  (let [navigate (:navigate (:navigation props))
+        places [{:user/id (:user/id props)
                  :user/goal target}
-                [:db.fn/retractAttribute [:user/id props] :user/places]]
+                [:db.fn/retractAttribute [:user/id (:user/id props)]
+                                         :user/places]]
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]
-    (concat places garbage)))
+    [(concat places garbage)
+     [http/json! (route/get-path target)]
+     (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
+     [navigate "directions"]]))
 
 (defn places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [props]
-  (let [navigate (:navigate (:navigation props))
-        height   (* 80 (count (:user/places props)))]
+  (let [height   (* 80 (count (:user/places props)))]
     [:> react/View {:style {:height height :paddingTop 100 :paddingLeft 10}}
      (for [target (:user/places props)
            :let [distance (/ (geometry/haversine (:user/position props) target)
@@ -48,11 +46,7 @@
        ^{:key (:id target)}
        [:> react/TouchableOpacity
          {:style {:flex 1 :flexDirection "row"}
-          :on-press #(do (work/transact!
-                           (async/onto-chan (http/json! (route/get-path target))
-                                            (choose-route target props)))
-                         (oops/ocall fl/ReactNative "Keyboard.dismiss")
-                         (navigate "directions"))}
+          :on-press #(run! work/transact! (choose-route target props))}
          [:> react/View {:style {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
            [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
@@ -60,6 +54,12 @@
            [:> react/Text {:numberOfLines 1} (:text target)]
            [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
              (str/join ", " (map :text (:context target)))]]])]))
+
+(defn- update-places
+  "transact the geocoding result under the user id"
+  [data]
+  [{:user/id (:user/id data)
+    :user/places (or (:features data) [])}])
 
 (defn autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
@@ -81,14 +81,6 @@
                           (map #(assoc % :user/id (:user/id data)))
                           (map update-places))]
           [http/json! url {} xform])))))
-;(go-try
-;  (work/transact! (<? (geocode! text)))
-;  (catch :default _
-;    (try (work/transact! (<? (location/watch! position/defaults)))
-;         (catch :default _
-;           (.dismiss fl/Keyboard)
-;           (navigate "location-error")))))))
-
 
 (defn- search-bar
   [props places]
@@ -133,7 +125,7 @@
       [:> react/View {:style {:flex 1}}
         (if (empty? (:user/places info))
           [city-map info]
-          [places (merge props info)])
+          [places (merge props info {:user/id id})])
         [:> react/View {:style {:position "absolute" :top 35 :left 20
                                 :width 340 :height 42}}
           [search-bar (merge info {:user/id id})
@@ -148,18 +140,6 @@
             [:> react/TouchableOpacity
               {:onPress #(navigate "settings" {:user/id id})}
               [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
-
-
-      ;[search-bar props (:user/places info)]]]
-      ;(if (not-empty (:user/places info))
-      ;[places props (:user/places info)]
-      ;[:> react/View {:style {:flex 1}}
-
-;(when (some? (:user/goal info))
-    ;  [:> base/Button {:full true
-    ;                   :on-press #((:navigate (:navigation props)) "directions")}
-    ;   [:> base/Icon {:name "information-circle" :transparent true}]
-    ;   [:> base/Text {:numberOfLines 1} (:text (:user/goal info))]])))
 
 (def Directions    (rn-nav/stack-screen route/instructions
                      {:title "directions"}))

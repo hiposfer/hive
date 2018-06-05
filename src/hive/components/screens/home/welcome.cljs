@@ -8,6 +8,7 @@
             [hive.rework.util :as tool]
             [hive.foreigns :as fl]
             [clojure.string :as str]
+            [cljs.pprint :as pprint]
             [cljs.spec.alpha :as s]))
 
 (s/def ::type     #{"success"})
@@ -20,7 +21,7 @@
   [coordinates]
   {:latitude (second coordinates) :longitude (first coordinates)})
 
-(defn- log-in
+(defn- log-in! ;; TODO: finish this
   [domain clientId redirect]
   (let [params {:client_id clientId
                 :response_type "token"
@@ -30,12 +31,12 @@
                (str (js/encodeURIComponent (name k)) "=" (js/encodeURIComponent v)))
         opts #js {:authUrl (str "https://" domain "/authorize?" (str/join "&" lp))}
         cb   (fn [result] (fl/JwtDecode (:id_token (:params result))))]
-    (work/delay (oops/ocall fl/Expo "AuthSession.startAsync" opts)
-                (comp (map tool/keywordize)
-                      (map (tool/validate ::response))
-                      tool/bypass-error
-                      (map cb)
-                      (map cljs.pprint/pprint))))) ;TODO
+    (tool/channel (oops/ocall fl/Expo "AuthSession.startAsync" opts)
+                  (comp (map tool/keywordize)
+                        (map (tool/validate ::response))
+                        tool/bypass-error
+                        (map cb)
+                        (map pprint/pprint)))))
 
 (defn view
   "the main screen of the app. Contains a search bar and a mapview"
@@ -63,7 +64,7 @@
                              :shadowColor "#000000" :shadowRadius 20
                              :shadowOffset {:width 0 :height 10} :shadowOpacity 1.0}}
        [:> react/TouchableOpacity {:style {:flex 1 :alignItems "center" :justifyContent "center"}
-                                   :onPress #(work/transact! (log-in domain cid redirectUrl))}
+                                   :onPress #(work/transact! (log-in! domain cid redirectUrl))}
          [:> react/Text {:style {:color "white" :fontWeight "bold" :fontSize 15}}
                         "Login"]]]]))
 

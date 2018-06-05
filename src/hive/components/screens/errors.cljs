@@ -8,22 +8,22 @@
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.components.foreigns.expo :as expo]))
 
+(defn start-location-intent
+  "attempt to start the Android location settings and start watching the position
+  on success"
+  [settings]
+  (tool/channel
+    (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
+    (comp tool/bypass-error (map (fn [] [location/watch! position/defaults])))))
+
 (defn launch-location-settings
-  "launch the android location settings hoping that the user enables
-  the gps"
+  "launch the android location settings hoping that the user enables the gps"
   [props]
   (if (= "android" (oops/oget fl/ReactNative "Platform.OS"))
     (let [settings (oops/oget fl/Expo "IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS")
-          goBack   (:goBack (:navigation props) settings)
-          p (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
-          c (tool/channel p)]
-      (go-try
-        (let [answer (tool/log! (<? c))
-              tx     (<? (location/watch! position/defaults))]
-          (work/transact! tx))
-        (goBack)
-        (catch :default error)))))
-          ;(fl/toast! (ex-message error)))))))
+          goBack   (:goBack (:navigation props) settings)]
+      [[start-location-intent settings]
+       [goBack]])))
 
 (defn user-location
   [props]
@@ -49,7 +49,7 @@
           :on-press goBack}
          [:> expo/Ionicons {:name "ios-close-circle" :size 30}]]
        [:> react/TouchableOpacity
-         {:on-press #(launch-location-settings props)
+         {:on-press #(run! work/transact! (launch-location-settings props))
           :style {:borderRadius 5 :backgroundColor "lawngreen"
                   :height 40 :width 60 :flexDirection "row"
                   :alignItems "center" :justifyContent "space-around"}}
