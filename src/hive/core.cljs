@@ -28,7 +28,7 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn RootUI []
+(defn RootUi []
   (let [Navigator     (rn-nav/stack-navigator
                         {:home           {:screen home/Screen}
                          :welcome        {:screen welcome/Screen}
@@ -84,7 +84,7 @@
     (work/transact! data)
     (location/watch! position/defaults)
     (oops/ocall fl/ReactNative "AppRegistry.registerComponent" "main"
-                #(r/reactify-component RootUI))
+                #(r/reactify-component RootUi))
     ;; handles Android BackButton
     (oops/ocall fl/ReactNative "BackHandler.addEventListener"
                 "hardwareBackPress"
