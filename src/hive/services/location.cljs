@@ -14,11 +14,11 @@
                            location/point
                            tool/keywordize))
 
-(def set-location (comp work/transact! update-position))
+(def set-location! (comp work/transact! update-position))
 
 (def defaults {::location/enableHighAccuracy true
-               ::location/timeInterval 3000
-               ::location/callback set-location})
+               ::location/timeInterval       3000
+               ::location/callback           set-location!})
 
 ;; TODO: write a function that will retry every now and then to set up a location
 ;; listener if the previous set didnt succeed

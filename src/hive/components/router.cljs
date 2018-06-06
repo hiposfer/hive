@@ -48,7 +48,7 @@
     (when (some? next-state) ;; nil on DrawerClose
       (work/transact! (set-routing root-router next-state)))))
 
-(defn router
+(defn Router
   "creates a React Navigation Router Component linked to Datascript storage"
   [props]
   (let [root-router               (:root props)

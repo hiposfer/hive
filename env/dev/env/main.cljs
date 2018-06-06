@@ -24,7 +24,7 @@
 ;; region. I think that figwheel is loading the UI even before that I register it in
 ;; init!. If so then this glitch should only happen in development
 (def counter (r/atom 0))
-(defn reloader [] @counter [core/root-ui])
+(defn reloader [] @counter [core/RootUI])
 (def root-el (r/as-element [reloader]))
 
 (figwheel/start {:websocket-url (str "ws://" env.dev/ip ":3449/figwheel-ws")
