@@ -112,7 +112,7 @@
                       :showsMyLocationButton true}]))
 
 (defn home
-  "the main screen of the app. Contains a search bar and a mapview"
+  "The main screen of the app. Contains a search bar and a mapview."
   [props]
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
@@ -123,13 +123,17 @@
     (if (tool/error? (:user/places info))
       [errors/user-location props]
       [:> react/View {:style {:flex 1}}
+
         (if (empty? (:user/places info))
           [city-map info]
           [places (merge props info {:user/id id})])
-        [:> react/View {:style {:position "absolute" :top 35 :left 20
-                                :width 340 :height 42}}
-          [search-bar (merge info {:user/id id})
-                      (:user/places info)]]
+
+        [:> react/View {:style {:position "absolute"
+                                :top 0 :left 0 :right 0 :bottom 0 :alignItems "center"}}
+          [:> react/View {:style {:width "95%" :height 44 :top 35}}
+            [search-bar (merge info {:user/id id})
+                        (:user/places info)]]]
+
         (when (empty? (:user/places info))
           [:> react/View {:style {:position "absolute" :bottom 20 :right 20
                                   :width 52 :height 52 :borderRadius 52/2
