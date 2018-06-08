@@ -7,7 +7,7 @@
             [hive.components.screens.settings.city-picker :as cities]
             [hive.components.foreigns.expo :as expo]))
 
-(defn settings
+(defn Settings
   [props]
   (let [params   (:params (:state (:navigation props)))
         city     @(work/pull! [{:user/city [:city/name :city/region :city/country]}]
@@ -42,7 +42,7 @@
                             {:user/id (:user/id params)
                              :city/name (:city/name (:user/city city))})
         :style {:height 45}}
-       [symbols/point-of-interest
+       [symbols/PointOfInterest
          [:> expo/Ionicons {:name "md-map" :size 26}]
          [:> react/Text ""]
          [:> react/Text (:city/name (:user/city city))]
@@ -52,8 +52,5 @@
          [:> expo/Ionicons {:name "ios-checkmark" :size 26}]]]]]))
 
 
-(def SelectCity (rn-nav/stack-screen cities/selector
-                  {:title "Select City"}))
-
-(def Screen (rn-nav/stack-screen settings
+(def Screen (rn-nav/stack-screen Settings
               {:title "settings"}))

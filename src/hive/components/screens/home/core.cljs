@@ -15,11 +15,11 @@
             [hive.services.raw.http :as http]
             [cljs.core.async :as async]))
 
-(defn latlng
+(defn- latlng
   [coordinates]
   {:latitude (second coordinates) :longitude (first coordinates)})
 
-(defn choose-route
+(defn- choose-route
   "associates a target and a path to get there with the user"
   [target props]
   (let [navigate (:navigate (:navigation props))
@@ -34,7 +34,7 @@
      (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
      [navigate "directions"]]))
 
-(defn places
+(defn- Places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
   [props]
@@ -61,7 +61,7 @@
   [{:user/id (:user/id data)
     :user/places (or (:features data) [])}])
 
-(defn autocomplete
+(defn- autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   [text data]
@@ -82,7 +82,7 @@
                           (map update-places))]
           [http/json! url {} xform])))))
 
-(defn- search-bar
+(defn- SearchBar
   [props places]
   (let [data     (work/inject props :token/mapbox queries/mapbox-token)
         ref      (volatile! nil)]
@@ -102,7 +102,7 @@
                       :underlineColorAndroid "transparent"
                       :onChangeText #(work/transact! (autocomplete % data))}]]))
 
-(defn city-map
+(defn- CityMap
   "a React Native MapView component which will only re-render on user-city change"
   [user]
   (let [coords (:coordinates (:city/geometry (:user/city user)))]
@@ -111,7 +111,7 @@
                       :showsUserLocation true :style {:flex 1}
                       :showsMyLocationButton true}]))
 
-(defn home
+(defn Home
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [navigate (:navigate (:navigation props))
@@ -121,15 +121,15 @@
                               {:user/directions [:route/routes]}]
                              [:user/id id])]
     (if (tool/error? (:user/places info))
-      [errors/user-location props]
+      [errors/UserLocation props]
       [:> react/View {:style {:flex 1}}
         (if (empty? (:user/places info))
-          [city-map info]
-          [places (merge props info {:user/id id})])
+          [CityMap info]
+          [Places (merge props info {:user/id id})])
         [:> react/View {:style {:position "absolute" :top 35 :left 20
                                 :width 340 :height 42}}
-          [search-bar (merge info {:user/id id})
-                      (:user/places info)]]
+          [SearchBar (merge info {:user/id id})
+                     (:user/places info)]]
         (when (empty? (:user/places info))
           [:> react/View {:style {:position "absolute" :bottom 20 :right 20
                                   :width 52 :height 52 :borderRadius 52/2
@@ -141,12 +141,10 @@
               {:onPress #(navigate "settings" {:user/id id})}
               [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
 
-(def Directions    (rn-nav/stack-screen route/instructions
-                     {:title "directions"}))
-(def Screen        (rn-nav/stack-screen home
+(def Screen        (rn-nav/stack-screen Home
                      {:title "map"}))
-(def LocationError (rn-nav/stack-screen errors/user-location
-                     {:title "location-error"}))
+(def LocationError (rn-nav/stack-screen errors/UserLocation
+                                        {:title "location-error"}))
 
 ;(work/q queries/routes-ids)
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
