@@ -113,7 +113,7 @@
                       :showsMyLocationButton true}]))
 
 (defn Home
-  "the main screen of the app. Contains a search bar and a mapview"
+  "The main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
@@ -125,9 +125,10 @@
       (if (empty? (:user/places info))
         [CityMap info]
         [Places (merge props info {:user/id id})])
-      [:> react/View {:style {:position "absolute" :top 35 :left 20
-                              :width 340 :height 42}}
-        [SearchBar (merge info {:user/id id :user/places info} props)]]
+      [:> react/View {:style {:position "absolute" :width "95%" :height 44 :top 35
+                              :left "2.5%" :right "2.5%"}}
+        [SearchBar (merge info {:user/id id})
+                   (:user/places info)]]
       (when (empty? (:user/places info))
         [:> react/View {:style {:position "absolute" :bottom 20 :right 20
                                 :width 52 :height 52 :borderRadius 52/2
@@ -137,7 +138,7 @@
                                 :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
           [:> react/TouchableOpacity
             {:onPress #(navigate "settings" {:user/id id})}
-            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))
+            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
 
 (def Screen        (rn-nav/stack-screen Home
                      {:title "map"}))
