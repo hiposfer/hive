@@ -127,11 +127,10 @@
         (if (empty? (:user/places info))
           [CityMap info]
           [Places (merge props info {:user/id id})])
-        [:> react/View {:style {:position "absolute"
-                                :top 0 :left 0 :right 0 :bottom 0 :alignItems "center"}}
-          [:> react/View {:style {:width "95%" :height 44 :top 35}}
-            [SearchBar (merge info {:user/id id})
-                       (:user/places info)]]
+        [:> react/View {:style {:position "absolute" :width "95%" :height 44 :top 35
+                                :left "2.5%" :right "2.5%"}}
+          [SearchBar (merge info {:user/id id})
+                     (:user/places info)]]
         (when (empty? (:user/places info))
           [:> react/View {:style {:position "absolute" :bottom 20 :right 20
                                   :width 52 :height 52 :borderRadius 52/2
