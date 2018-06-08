@@ -103,6 +103,7 @@
                       :underlineColorAndroid "transparent"
                       :onChangeText #(run! work/transact! (autocomplete % data))}]]))
 
+
 (defn- CityMap
   "a React Native MapView component which will only re-render on user-city change"
   [user]
