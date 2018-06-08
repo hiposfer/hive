@@ -46,7 +46,7 @@
        [:> react/TouchableOpacity
          {:style {:borderRadius 5 :backgroundColor "red" :height 40 :width 60
                   :justifyContent "center" :alignItems "center"}
-          :on-press goBack}
+          :on-press #(goBack)}
          [:> expo/Ionicons {:name "ios-close-circle" :size 30}]]
        [:> react/TouchableOpacity
          {:on-press #(run! work/transact! (launch-location-settings props))
@@ -71,6 +71,3 @@
 
 
 ;hive.rework.state/conn
-
-
-;; NUMMER 340
