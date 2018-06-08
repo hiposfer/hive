@@ -15,8 +15,8 @@ pom.xml.asc
 figwheel_server.log
 main.js
 .js-modules.edn
-/env/dev/env/dev.cljs
-/env/dev/env/index.cljs
+/env/dev/env/expo/dev.cljs
+/env/dev/env/expo/index.cljs
 
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm
