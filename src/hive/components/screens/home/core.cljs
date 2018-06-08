@@ -138,7 +138,7 @@
                                 :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
           [:> react/TouchableOpacity
             {:onPress #(navigate "settings" {:user/id id})}
-            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
+            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))
 
 (def Screen        (rn-nav/stack-screen Home
                      {:title "map"}))
