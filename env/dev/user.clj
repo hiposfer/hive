@@ -4,8 +4,9 @@
             [clojure.data.json :as json]
             [clojure.string :as str]
             [hawk.core :as hawk]
-            [clojure.tools.reader.edn :as edn]
-            [clojure.set :as set]))
+            [clojure.tools.reader.edn :as edn])
+  (:import (java.net NetworkInterface InetAddress Inet4Address)
+           (java.io File)))
 ;; This namespace is loaded automatically by nREPL
 
 (defn get-cljs-builds
@@ -44,10 +45,10 @@
     (clojure.string/trim-newline ip)
     (cond
       (some #{(System/getProperty "os.name")} ["Mac OS X" "Windows 10"])
-      (.getHostAddress (java.net.InetAddress/getLocalHost))
+      (.getHostAddress (InetAddress/getLocalHost))
 
       :else
-      (->> (java.net.NetworkInterface/getNetworkInterfaces)
+      (->> (NetworkInterface/getNetworkInterfaces)
            (enumeration-seq)
            (filter #(not (or (str/starts-with? (.getName %) "docker")
                              (str/starts-with? (.getName %) "br-"))))
@@ -55,13 +56,13 @@
            (map
              (fn [ip]
                (seq (filter #(instance?
-                               java.net.Inet4Address
+                               Inet4Address
                                (.getAddress %))
                             ip))))
            (remove nil?)
            (first)
            (filter #(instance?
-                      java.net.Inet4Address
+                      Inet4Address
                       (.getAddress %)))
            (first)
            (.getAddress)
@@ -78,7 +79,7 @@
 (defn write-env-dev
   "First check the .expo/settings.json file to see what host is specified.  Then set the appropriate IP."
   []
-  (let [hostname (.getHostName (java.net.InetAddress/getLocalHost))
+  (let [hostname (.getHostName (InetAddress/getLocalHost))
         ip (get-expo-ip)]
     (-> "(ns env.dev)\n(def hostname \"%s\")\n(def ip \"%s\")"
         (format
@@ -168,10 +169,10 @@
   (let [path ".js-modules.edn"
         m (atom {})]
       ;; delete path
-    (when (.exists (java.io.File. path))
+    (when (.exists (File. path))
       (clojure.java.io/delete-file path))
 
-    (doseq [file (file-seq (java.io.File. "src"))]
+    (doseq [file (file-seq (File. "src"))]
       (when (.isFile file)
         (let [file-name (-> (.getPath file)
                             (str/replace (str (System/getProperty "user.dir") "/") ""))

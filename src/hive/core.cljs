@@ -83,8 +83,7 @@
     (work/init! conn)
     (work/transact! data)
     (location/watch! position/defaults)
-    (oops/ocall fl/ReactNative "AppRegistry.registerComponent" "main"
-                #(r/reactify-component RootUi))
+    (oops/ocall fl/Expo "registerRootComponent" (r/reactify-component RootUi))
     ;; handles Android BackButton
     (oops/ocall fl/ReactNative "BackHandler.addEventListener"
                 "hardwareBackPress"

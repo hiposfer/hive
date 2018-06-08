@@ -4,7 +4,7 @@
             [figwheel.client :as figwheel :include-macros true]
             [reagent.core :as r]
             [hive.core :as core]
-            [env.expo.dev]))
+            [env.dev]))
 
 (enable-console-print!)
 ;; Setting *explain-out* does not work correctly in ClojureScript versions prior
@@ -22,7 +22,7 @@
 (def root-el (r/as-element [reloader]))
 
 (figwheel/watch-and-reload
-  :websocket-url (str "ws://" env.expo.dev/ip ":3449/figwheel-ws")
+  :websocket-url (str "ws://" env.dev/ip ":3449/figwheel-ws")
   :heads-up-display false
   :jsload-callback #(swap! counter inc))
 

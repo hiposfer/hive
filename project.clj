@@ -16,9 +16,6 @@
             [lein-figwheel "0.5.14"]]
   :clean-targets ["target/" "main.js"]
   :aliases {"figwheel"        ["run" "-m" "user" "--figwheel"]
-            ; TODO: Remove custom extern inference as it's unreliable
-            ;"externs"         ["do" "clean"
-            ;                   ["run" "-m" "externs"]]
             "rebuild-modules" ["run" "-m" "user" "--rebuild-modules"]
             "prod-build"      ^{:doc "Recompile code with prod profile."}
                               ["with-profile" "prod" "cljsbuild" "once" "main"]}
