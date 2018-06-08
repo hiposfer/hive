@@ -14,8 +14,10 @@
             [hive.components.screens.home.core :as home]
             [hive.components.router :as router]
             [hive.components.screens.settings.core :as settings]
+            [hive.components.screens.settings.city-picker :as city-picker]
             [cljs.core.async :as async]
-            [cljs-react-navigation.reagent :as rn-nav]))
+            [cljs-react-navigation.reagent :as rn-nav]
+            [hive.components.screens.home.route :as route]))
 
 "Each Screen will receive two props:
  - screenProps - Extra props passed down from the router (rarely used)
@@ -26,21 +28,21 @@
     :navigate  - most common way to navigate to the next screen
     :setParams - used to change the params for the current screen}"
 
-(defn root-ui []
+(defn RootUi []
   (let [Navigator     (rn-nav/stack-navigator
-                        {:home            {:screen home/Screen}
+                        {:home           {:screen home/Screen}
                          :welcome        {:screen welcome/Screen}
-                         :directions     {:screen home/Directions}
+                         :directions     {:screen route/Screen}
                          :settings       {:screen settings/Screen}
-                         :select-city    {:screen settings/SelectCity}
+                         :select-city    {:screen city-picker/Screen}
                          :location-error {:screen home/LocationError}}
                         {:headerMode "none"})]
-        ;id       @(work/q! queries/user-id)]
+    ;id       @(work/q! queries/user-id)]
     ;(if (= -1 id) ;; default
-     ; [router/router {:root Navigator :init "welcome"}]
-    [router/router {:root Navigator :init "home"}]))
+    ; [router/router {:root Navigator :init "welcome"}]
+    [router/Router {:root Navigator :init "home"}]))
 
-(defn reload-config!
+(defn- reload-config!
   "takes a sequence of keys and attempts to read them from LocalStorage.
   Returns a channel with a transaction or Error"
   [ks]
@@ -50,7 +52,7 @@
                                  (map (work/inject :user/id queries/user-id))))]
     (async/pipe data c)))
 
-(defn back-listener
+(defn- back-listener
   "a generic Android back button listener which pops the last element from the
   navigation stack or exists otherwise.
 
@@ -82,7 +84,7 @@
     (work/transact! data)
     (location/watch! position/defaults)
     (oops/ocall fl/ReactNative "AppRegistry.registerComponent" "main"
-                               #(r/reactify-component root-ui))
+                #(r/reactify-component RootUi))
     ;; handles Android BackButton
     (oops/ocall fl/ReactNative "BackHandler.addEventListener"
                 "hardwareBackPress"

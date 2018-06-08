@@ -1,7 +1,7 @@
 (ns hive.components.symbols
   (:require [hive.components.foreigns.react :as react]))
 
-(defn point-of-interest
+(defn PointOfInterest
   "Components for displaying location related items. Usually used inside a List"
   [left-icon icon-text title subtitle right-icon]
   [:> react/View {:style {:flex-direction "row" :flex 1}}

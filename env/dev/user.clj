@@ -66,7 +66,7 @@
            (first)
            (.getAddress)
            (.getHostAddress)))))
-         
+
 (defn get-expo-ip []
   (if-let [expo-settings (get-expo-settings)]
     (case (get expo-settings "hostType")

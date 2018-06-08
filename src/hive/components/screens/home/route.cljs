@@ -7,7 +7,8 @@
             [datascript.core :as data]
             [hive.services.raw.http :as http]
             [clojure.core.async :as async]
-            [hive.rework.core :as work]))
+            [hive.rework.core :as work]
+            [cljs-react-navigation.reagent :as rn-nav]))
 
 ;(defn- tx-path
 ;  "takes a mapbox directions response and returns a transaction vector
@@ -131,7 +132,7 @@
 ;             [:> base/Icon {:name "ios-navigate-outline"}])
 ;           [:> base/Text text]])]]]))
 
-(defn instructions
+(defn Instructions
   "basic navigation directions"
   [props]
   (let [counter (r/atom 0)]
@@ -139,6 +140,9 @@
       [:> react/View {:style {:flex 1 :alignItems "center" :justifyContent "center"}}
         [:> react/ActivityIndicator {:size "large" :color "#0000ff"}]])))
         ;[route-details props counter]])))
+
+(def Screen    (rn-nav/stack-screen Instructions
+                                    {:title "directions"}))
 
 ;hive.rework.state/conn
 ;(work/q queries/routes-ids)

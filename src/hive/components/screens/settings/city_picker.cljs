@@ -4,7 +4,8 @@
             [hive.queries :as queries]
             [hive.components.symbols :as symbols]
             [hive.components.foreigns.react :as react]
-            [hive.components.foreigns.expo :as expo]))
+            [hive.components.foreigns.expo :as expo]
+            [cljs-react-navigation.reagent :as rn-nav]))
 
 (defn change-city
   "returns a Datascript transaction to change the user city, an effect
@@ -25,7 +26,7 @@
     [:> react/TouchableOpacity {:onPress #(run! work/transact! (change-city city props))}
      [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
                              :borderBottomWidth 1 :paddingTop 5}}
-      [symbols/point-of-interest
+      [symbols/PointOfInterest
         [:> expo/Ionicons {:name "md-map" :size 26}]
         [:> react/Text ""]
         [:> react/Text (:city/name city)]
@@ -34,7 +35,7 @@
         (when (= (:city/name params) (:city/name city))
           [:> expo/Ionicons {:name "ios-checkmark" :size 26}])]]]))
 
-(defn selector
+(defn Selector
   [props]
   (let [params   (:params (:state (:navigation props)))
         cities  @(work/q! queries/cities)
@@ -49,3 +50,5 @@
           ^{:key (:city/name city)}
           [city-entry (assoc props :city city :user/id id)])]]))
 
+(def Screen (rn-nav/stack-screen Selector
+                                 {:title "Select City"}))
