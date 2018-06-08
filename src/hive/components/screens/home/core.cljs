@@ -64,23 +64,24 @@
 (defn- autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  [text data]
+  [text props]
   (if (empty? text)
-    (update-places data)
+    (update-places nil)
     (let [args {::geocoding/query text
-                ::geocoding/proximity (:user/position data)
-                ::geocoding/access_token (:token/mapbox data)
-                ::geocoding/bbox (:city/bbox (:user/city data))}
-          validated (tool/validate ::geocoding/request args ::invalid-input)]
+                ::geocoding/proximity (:user/position props)
+                ::geocoding/access_token (:token/mapbox props)
+                ::geocoding/bbox (:city/bbox (:user/city props))}
+          validated (tool/validate ::geocoding/request args ::invalid-input)
+          navigate (:navigate (:navigation props))]
       (if (tool/error? validated)
-        [{:user/id (:user/id data)
-          :user/places validated}] ;; handle error in UI
+        [[navigate "location-error" validated]
+         (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
         (let [args (geocoding/defaults validated)
               url  (geocoding/autocomplete args)
               xform (comp (map tool/keywordize)
-                          (map #(assoc % :user/id (:user/id data)))
+                          (map #(assoc % :user/id (:user/id props)))
                           (map update-places))]
-          [http/json! url {} xform])))))
+          [[http/json! url {} xform]])))))
 
 (defn- SearchBar
   [props places]
@@ -100,7 +101,7 @@
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
                       :underlineColorAndroid "transparent"
-                      :onChangeText #(work/transact! (autocomplete % data))}]]))
+                      :onChangeText #(run! work/transact! (autocomplete % data))}]]))
 
 (defn- CityMap
   "a React Native MapView component which will only re-render on user-city change"
@@ -120,26 +121,23 @@
                               {:user/city [:city/geometry :city/bbox :city/name]}
                               {:user/directions [:route/routes]}]
                              [:user/id id])]
-    (if (tool/error? (:user/places info))
-      [errors/UserLocation props]
-      [:> react/View {:style {:flex 1}}
-        (if (empty? (:user/places info))
-          [CityMap info]
-          [Places (merge props info {:user/id id})])
-        [:> react/View {:style {:position "absolute" :top 35 :left 20
-                                :width 340 :height 42}}
-          [SearchBar (merge info {:user/id id})
-                     (:user/places info)]]
-        (when (empty? (:user/places info))
-          [:> react/View {:style {:position "absolute" :bottom 20 :right 20
-                                  :width 52 :height 52 :borderRadius 52/2
-                                  :alignItems "center" :justifyContent "center"
-                                  :backgroundColor "#FF5722" :elevation 3
-                                  :shadowColor "#000000" :shadowRadius 5
-                                  :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
-            [:> react/TouchableOpacity
-              {:onPress #(navigate "settings" {:user/id id})}
-              [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])])))
+    [:> react/View {:style {:flex 1}}
+      (if (empty? (:user/places info))
+        [CityMap info]
+        [Places (merge props info {:user/id id})])
+      [:> react/View {:style {:position "absolute" :top 35 :left 20
+                              :width 340 :height 42}}
+        [SearchBar (merge info {:user/id id :user/places info} props)]]
+      (when (empty? (:user/places info))
+        [:> react/View {:style {:position "absolute" :bottom 20 :right 20
+                                :width 52 :height 52 :borderRadius 52/2
+                                :alignItems "center" :justifyContent "center"
+                                :backgroundColor "#FF5722" :elevation 3
+                                :shadowColor "#000000" :shadowRadius 5
+                                :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+          [:> react/TouchableOpacity
+            {:onPress #(navigate "settings" {:user/id id})}
+            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))
 
 (def Screen        (rn-nav/stack-screen Home
                      {:title "map"}))
