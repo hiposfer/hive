@@ -9,3 +9,5 @@ script:
   - lein compile
   - lein check
   - lein prod-build
+  - yarn install
+  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then yarn appr; fi'
