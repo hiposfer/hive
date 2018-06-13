@@ -38,35 +38,56 @@
     (catch Exception e
       nil)))
 
+(def ip-validator #"\d+\.\d+\.\d+\.\d+")
+
+(defn- linux-ip
+  []
+  (try
+    (-> (Runtime/getRuntime)
+        (.exec "ip route get 8.8.8.8 | head -n 1 | tr -s ' ' | cut -d ' ' -f 7")
+        (.getInputStream)
+        (slurp)
+        (str/trim-newline)
+        (re-matches ip-validator))
+    (catch Exception e
+      nil)))
+
+(defn- standard-ip
+  "attemps to check the lan ip through the Java API"
+  []
+  (cond
+    (some #{(System/getProperty "os.name")} ["Mac OS X" "Windows 10"])
+    (.getHostAddress (InetAddress/getLocalHost))
+
+    :else
+    (->> (NetworkInterface/getNetworkInterfaces)
+         (enumeration-seq)
+         (filter #(not (or (str/starts-with? (.getName %) "docker")
+                           (str/starts-with? (.getName %) "br-"))))
+         (map #(.getInterfaceAddresses %))
+         (map
+           (fn [ip]
+             (seq (filter #(instance?
+                             Inet4Address
+                             (.getAddress %))
+                          ip))))
+         (remove nil?)
+         (first)
+         (filter #(instance?
+                    Inet4Address
+                    (.getAddress %)))
+         (first)
+         (.getAddress)
+         (.getHostAddress))))
+
 (defn get-lan-ip
   "If .lan-ip file exists, it fetches the ip from the file."
   []
-  (if-let [ip (try (slurp ".lan-ip") (catch Exception e nil))]
-    (clojure.string/trim-newline ip)
-    (cond
-      (some #{(System/getProperty "os.name")} ["Mac OS X" "Windows 10"])
-      (.getHostAddress (InetAddress/getLocalHost))
-
-      :else
-      (->> (NetworkInterface/getNetworkInterfaces)
-           (enumeration-seq)
-           (filter #(not (or (str/starts-with? (.getName %) "docker")
-                             (str/starts-with? (.getName %) "br-"))))
-           (map #(.getInterfaceAddresses %))
-           (map
-             (fn [ip]
-               (seq (filter #(instance?
-                               Inet4Address
-                               (.getAddress %))
-                            ip))))
-           (remove nil?)
-           (first)
-           (filter #(instance?
-                      Inet4Address
-                      (.getAddress %)))
-           (first)
-           (.getAddress)
-           (.getHostAddress)))))
+  (let [lip (linux-ip)
+        sip (standard-ip)
+        ip  (or lip sip)]
+    (println "using ip:" ip)
+    ip))
 
 (defn get-expo-ip []
   (if-let [expo-settings (get-expo-settings)]
