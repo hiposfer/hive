@@ -6,9 +6,7 @@ jdk:
 # stop if any of them fails
 #script: lein do clean, compile, check, eastwood '{:exclude-namespaces [service.conjectures.specs]}', test
 script:
-  - lein clean
-  - lein compile
-  - lein check
+  - lein do clean, compile, check
   - lein prod-build
   - yarn install
-  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then yarn appr; fi'
+  - yarn appr
