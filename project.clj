@@ -17,8 +17,8 @@
   :clean-targets ["target/" "main.js"]
   :aliases {"figwheel"        ["run" "-m" "user" "--figwheel"]
             "rebuild-modules" ["run" "-m" "user" "--rebuild-modules"]
-            "prod-build"      ^{:doc "Recompile code with prod profile."}
-                              ["with-profile" "prod" "cljsbuild" "once" "main"]}
+            "prod-build"      ["do" ["clean"]
+                                    ["with-profile" "prod" "cljsbuild" "once" "main"]]}
   :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.14"]
                                    [com.cemerick/piggieback "0.2.1"]
                                    [expound "0.5.0"]
