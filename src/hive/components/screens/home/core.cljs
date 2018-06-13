@@ -69,7 +69,7 @@
     (update-places nil)
     (let [args {::geocoding/query text
                 ::geocoding/proximity (:user/position props)
-                ::geocoding/access_token (:token/mapbox props)
+                ::geocoding/access_token (:ENV/MAPBOX props)
                 ::geocoding/bbox (:city/bbox (:user/city props))}
           validated (tool/validate ::geocoding/request args ::invalid-input)
           navigate (:navigate (:navigation props))]
@@ -85,7 +85,7 @@
 
 (defn- SearchBar
   [props places]
-  (let [data     (work/inject props :token/mapbox queries/mapbox-token)
+  (let [data     (work/inject props :ENV/MAPBOX queries/mapbox-token)
         ref      (volatile! nil)]
     [:> react/View {:style {:flex 1 :flexDirection "row" :backgroundColor "white"
                             :elevation 5 :borderRadius 5 :shadowColor "#000000"

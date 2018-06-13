@@ -17,8 +17,3 @@
 ;; ------ images -----
 (def thumb-sign (js/require "./assets/images/tb_sign2.png"))
 (def thumb-run  (js/require "./assets/images/tbrun1.png"))
-
-;; ----- config files ----
-
-(def init-config (js->clj (js/require "./assets/init.json")
-                   :keywordize-keys true))
