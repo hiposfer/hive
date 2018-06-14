@@ -9,17 +9,8 @@
            (java.io File)))
 ;; This namespace is loaded automatically by nREPL
 
-(defn get-cljs-builds
-  []
-  (let [project-config (->> "project.clj"
-                            slurp
-                            read-string
-                            (drop 1)
-                            (apply hash-map))
-        profiles (:profiles project-config)]
-    (get-in profiles [:dev :cljsbuild :builds])))
-
 (defn enable-source-maps
+  "patch the metro packager to use Clojurescript source maps"
   []
   (println "Source maps enabled.")
   (let [path "node_modules/metro/src/Server/index.js"]
@@ -27,6 +18,7 @@
           (str/replace (slurp path) "/\\.map$/" "/main.map$/"))))
 
 (defn write-main-js
+  "create a fake main.js file to make the metro packager happy"
   []
   (-> "'use strict';\n\n// cljsbuild adds a preamble mentioning goog so hack around it\nwindow.goog = {\n  provide() {},\n  require() {},\n};\nrequire('./target/expo/env/index.js');\n"
       ((partial spit "main.js"))))
@@ -35,38 +27,60 @@
   (try
     (let [settings (-> (slurp ".expo/settings.json") json/read-str)]
       settings)
-    (catch Exception e
+    (catch Exception _
       nil)))
 
-(defn get-lan-ip
-  "If .lan-ip file exists, it fetches the ip from the file."
-  []
-  (if-let [ip (try (slurp ".lan-ip") (catch Exception e nil))]
-    (clojure.string/trim-newline ip)
-    (cond
-      (some #{(System/getProperty "os.name")} ["Mac OS X" "Windows 10"])
-      (.getHostAddress (InetAddress/getLocalHost))
+(def ip-validator #"\d+\.\d+\.\d+\.\d+")
 
-      :else
-      (->> (NetworkInterface/getNetworkInterfaces)
-           (enumeration-seq)
-           (filter #(not (or (str/starts-with? (.getName %) "docker")
-                             (str/starts-with? (.getName %) "br-"))))
-           (map #(.getInterfaceAddresses %))
-           (map
-             (fn [ip]
-               (seq (filter #(instance?
-                               Inet4Address
-                               (.getAddress %))
-                            ip))))
-           (remove nil?)
-           (first)
-           (filter #(instance?
-                      Inet4Address
-                      (.getAddress %)))
-           (first)
-           (.getAddress)
-           (.getHostAddress)))))
+(defn- linux-ip
+  "attempts to retrieve the ip on linux OS"
+  []
+  (try
+    (-> (Runtime/getRuntime)
+        (.exec "ip route get 8.8.8.8 | head -n 1 | tr -s ' ' | cut -d ' ' -f 7")
+        (.getInputStream)
+        (slurp)
+        (str/trim-newline)
+        (re-matches ip-validator))
+    (catch Exception _
+      nil)))
+
+(defn- standard-ip
+  "attemps to check the lan ip through the Java API"
+  []
+  (cond
+    (some #{(System/getProperty "os.name")} ["Mac OS X" "Windows 10"])
+    (.getHostAddress (InetAddress/getLocalHost))
+
+    :else
+    (->> (NetworkInterface/getNetworkInterfaces)
+         (enumeration-seq)
+         (filter #(not (or (str/starts-with? (.getName %) "docker")
+                           (str/starts-with? (.getName %) "br-"))))
+         (map #(.getInterfaceAddresses %))
+         (map
+           (fn [ip]
+             (seq (filter #(instance?
+                             Inet4Address
+                             (.getAddress %))
+                          ip))))
+         (remove nil?)
+         (first)
+         (filter #(instance?
+                    Inet4Address
+                    (.getAddress %)))
+         (first)
+         (.getAddress)
+         (.getHostAddress))))
+
+(defn get-lan-ip
+  "fetch the ip of the computer that is available for expo app to communicate"
+  []
+  (let [lip (linux-ip)
+        sip (standard-ip)
+        ip  (or lip sip)]
+    (println "using ip:" ip)
+    ip))
 
 (defn get-expo-ip []
   (if-let [expo-settings (get-expo-settings)]
@@ -88,6 +102,7 @@
         ((partial spit "env/dev/env/dev.cljs")))))
 
 (defn rebuild-env-index
+  "prebuild the set of files that the metro packager requires in advance"
   [js-modules]
   (let [devHost (get-expo-ip)
         modules (->> (file-seq (io/file "assets"))
@@ -186,17 +201,13 @@
   ;; Lein
 (defn start-figwheel
   "Start figwheel for one or more builds"
-  [& build-ids]
+  [];& build-ids]
   (rebuild-modules)
   (enable-source-maps)
   (write-main-js)
   (write-env-dev)
   (watch-for-external-modules)
-  (ra/start-figwheel!
-    {:build-ids        (if (seq build-ids)
-                         build-ids
-                         ["main"])
-     :all-builds       (get-cljs-builds)})
+  (ra/start-figwheel! "main")
   (ra/cljs-repl))
 
 (defn stop-figwheel

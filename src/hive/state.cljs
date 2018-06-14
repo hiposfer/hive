@@ -23,9 +23,9 @@
         ks   (map #(keyword (name %))
                    (concat (:req-un data) (:opt-un data)))
         m    (select-keys m ks)]
-    (assert (s/valid? spec m)
-            (s/explain-str spec m))
-    m))
+    (if (s/valid? spec m) m
+      (throw (ex-info (s/explain-str spec m)
+                      m)))))
 
 (def tokens (tool/with-ns "ENV" (fetch-env ::env (work/env))))
 
