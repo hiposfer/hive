@@ -1,5 +1,6 @@
 (ns hive.rework.core
-  (:refer-clojure :exclude [delay]))
+  (:require [clojure.walk :as walk]
+            [cljs.spec.alpha :as s]))
 
 (defmacro <?
   "Like <! but throws errors."
@@ -33,3 +34,10 @@
 ;         '~@(rest &form) ;; use arguments as data
 ;         (fn [] (hive.rework.util/channel ~promise ~xform))
 ;         nil)))
+
+(defmacro env
+  "retrieve the environment variables at COMPILE TIME. Returns
+  a map of env vars as keywords"
+  []
+  (walk/keywordize-keys (into {} (System/getenv))))
+

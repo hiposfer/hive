@@ -6,7 +6,8 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "exp": "exp"
+    "exp": "exp",
+    "appr": "appr"
   },
   "dependencies": {
     "create-react-class": "15.6.3",
@@ -17,6 +18,7 @@
     "react-navigation": "^1.0.0-beta.19"
   },
   "devDependencies": {
-    "exp": "54.0.1"
+    "appr": "^2.0.0",
+    "exp": "^54.0.1"
   }
 }
