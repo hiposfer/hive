@@ -21,7 +21,7 @@
                                     ["with-profile" "prod" "cljsbuild" "once" "main"]]}
   :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.14"]
                                    [com.cemerick/piggieback "0.2.1"]
-                                   [expound "0.5.0"]
+                                   [expound "0.7.0"]
                                    [org.clojure/test.check "0.9.0"]]
                     :source-paths ["src" "env/dev"]
                     :cljsbuild    {:builds [{:id           "main"

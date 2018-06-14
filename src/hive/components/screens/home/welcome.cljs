@@ -44,8 +44,8 @@
   (let [navigate (:navigate (:navigation props))
         redirectUrl  (oops/ocall fl/Expo "AuthSession.getRedirectUrl")
         [domain cid] (work/q '[:find [?domain ?id]
-                               :where [_ :token/domain ?domain]
-                                      [_ :token/client-id ?id]])
+                               :where [_ :ENV/AUTH0_DOMAIN ?domain]
+                                      [_ :ENV/CLIENT_ID ?id]])
         id       (work/q queries/user-id)
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
                              [:user/id id])
