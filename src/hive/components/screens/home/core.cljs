@@ -13,11 +13,8 @@
             [oops.core :as oops]
             [hive.libs.geometry :as geometry]
             [hive.services.raw.http :as http]
-            [cljs.core.async :as async]))
-
-(defn- latlng
-  [coordinates]
-  {:latitude (second coordinates) :longitude (first coordinates)})
+            [cljs.core.async :as async]
+            [hive.components.symbols :as symbols]))
 
 (defn- choose-route
   "associates a target and a path to get there with the user"
@@ -104,15 +101,6 @@
                       :onChangeText #(run! work/transact! (autocomplete % data))}]]))
 
 
-(defn- CityMap
-  "a React Native MapView component which will only re-render on user-city change"
-  [user]
-  (let [coords (:coordinates (:city/geometry (:user/city user)))]
-    [:> expo/MapView {:region (merge (latlng coords)
-                                     {:latitudeDelta 0.02 :longitudeDelta 0.02})
-                      :showsUserLocation true :style {:flex 1}
-                      :showsMyLocationButton true}]))
-
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
@@ -124,7 +112,7 @@
                              [:user/id id])]
     [:> react/View {:style {:flex 1}}
       (if (empty? (:user/places info))
-        [CityMap info]
+        [symbols/CityMap info]
         [Places (merge props info {:user/id id})])
       [:> react/View {:style {:position "absolute" :width "95%" :height 44 :top 35
                               :left "2.5%" :right "2.5%"}}

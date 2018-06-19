@@ -1,5 +1,7 @@
 (ns hive.components.symbols
-  (:require [hive.components.foreigns.react :as react]))
+  (:require [hive.components.foreigns.react :as react]
+            [hive.libs.geometry :as geometry]
+            [hive.components.foreigns.expo :as expo]))
 
 (defn PointOfInterest
   "Components for displaying location related items. Usually used inside a List"
@@ -13,3 +15,12 @@
        subtitle]
     [:> react/View {:style {:flex 0.1 :justifyContent "flex-end"}}
       (when (some? right-icon) right-icon)]])
+
+(defn CityMap
+  "a React Native MapView component which will only re-render on user-city change"
+  [user]
+  (let [coords (:coordinates (:city/geometry (:user/city user)))]
+    [:> expo/MapView {:region (merge (geometry/latlng coords)
+                                     {:latitudeDelta 0.02 :longitudeDelta 0.02})
+                      :showsUserLocation     true :style {:flex 1}
+                      :showsMyLocationButton true}]))

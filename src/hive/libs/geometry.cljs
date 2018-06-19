@@ -35,3 +35,7 @@
                   (Math/cos φ2)
                   (Math/cos φ1)))]
      (* RADIOUS 2 (Math/asin (Math/sqrt a))))))
+
+(defn latlng
+  [coordinates]
+  {:latitude (second coordinates) :longitude (first coordinates)})
