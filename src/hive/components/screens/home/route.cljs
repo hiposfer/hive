@@ -66,6 +66,16 @@
             [{:user/id         (:user/id path)
               :user/directions [:route/uuid uuid]}])))
 
+(defn- Transfers
+  [window]
+  [:> react/View {:flexDirection "row" :width "40%" :justifyContent "space-around"
+                  :alignItems "center" :paddingTop "5%"}
+    [:> expo/Ionicons {:name "ios-walk" :size 32}]
+    [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
+    [:> expo/Ionicons {:name "ios-bus" :size 32}]
+    [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
+    [:> expo/Ionicons {:name "ios-train" :size 32}]])
+
 (defn Instructions
   "basic navigation directions"
   [props];(tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))
@@ -73,14 +83,15 @@
         id      (work/q queries/user-id)
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
                              [:user/id id])]
-    [:> react/ScrollView {:style {:flex 1}}
-      [:> react/View {:style {:height (* 0.9 (:height window))}}
+    [:> react/ScrollView {:flex 1}
+      [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap info]]
-      [:> react/View {:style {:height (* 1.1 (:height window))}}
-        [:> react/View {:style {:flex 1 :backgroundColor "white"}}]]
-      [:> react/View {:style (merge (symbols/circle 52) symbols/shadow
-                                    {:position "absolute" :right "10%"
-                                     :top (* 0.88 (:height window))})}
+      [:> react/View {:height (* 1.1 (:height window))
+                      :backgroundColor "white"}
+        [Transfers window]]
+      [:> react/View (merge (symbols/circle 52) symbols/shadow
+                            {:position "absolute" :right "10%"
+                             :top (* 0.88 (:height window))})
         [:> expo/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
       ;[:> react/ActivityIndicator {:size "large" :color "#0000ff"}]]))
       ;[route-details props counter]])))
