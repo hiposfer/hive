@@ -119,12 +119,9 @@
         [SearchBar (merge info {:user/id id})
                    (:user/places info)]]
       (when (empty? (:user/places info))
-        [:> react/View {:style {:position "absolute" :bottom 20 :right 20
-                                :width 52 :height 52 :borderRadius 52/2
-                                :alignItems "center" :justifyContent "center"
-                                :backgroundColor "#FF5722" :elevation 3
-                                :shadowColor "#000000" :shadowRadius 5
-                                :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+        [:> react/View {:style (merge (symbols/circle 52) symbols/shadow
+                                      {:position "absolute" :bottom 20 :right 20}
+                                      {:backgroundColor "#FF5722"})}
           [:> react/TouchableOpacity
             {:onPress #(navigate "settings" {:user/id id})}
             [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))

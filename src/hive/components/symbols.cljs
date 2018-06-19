@@ -24,3 +24,12 @@
                                      {:latitudeDelta 0.02 :longitudeDelta 0.02})
                       :showsUserLocation     true :style {:flex 1}
                       :showsMyLocationButton true}]))
+
+(def shadow
+  {:elevation 3 :shadowColor "#000000" :shadowRadius 5
+   :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0})
+
+(defn circle
+  [radius]
+  {:width radius :height radius :borderRadius (/ radius 2)
+   :alignItems "center" :justifyContent "center"})

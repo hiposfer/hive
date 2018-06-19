@@ -17,7 +17,8 @@
 (s/def ::request (s/keys :req-un [:hiposfer.geojson.specs.multipoint/coordinates]
                          :opt-un [::steps ::radiuses]))
 
-(def template "https://hive-6c54a.appspot.com/directions/v5")
+;(def template "https://hive-6c54a.appspot.com/directions/v5")
+(def template "http://192.168.0.45:3000/directions/v5")
 
 (defn request
   "takes a map with the items required by ::request and replaces their values into
