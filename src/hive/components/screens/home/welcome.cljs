@@ -9,17 +9,14 @@
             [hive.foreigns :as fl]
             [clojure.string :as str]
             [cljs.pprint :as pprint]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [hive.libs.geometry :as geometry]))
 
 (s/def ::type     #{"success"})
 (s/def ::errorCode nil?)
 (s/def ::id_token  string?)
 (s/def ::params    (s/keys :req-un [::id_token]))
 (s/def ::response  (s/keys :req-un [::type ::params ::errorCode]))
-
-(defn- latlng
-  [coordinates]
-  {:latitude (second coordinates) :longitude (first coordinates)})
 
 (defn- log-in! ;; TODO: finish this
   [domain clientId redirect]
@@ -53,8 +50,8 @@
         dims     (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
     [:> react/View {:style {:flex 1 :backgroundColor "#FFFFFF50"}}
       [:> react/View {:style {:flex 1} :pointerEvents "none"}
-        [:> expo/MapView {:style {:flex 1} :showsUserLocation true
-                          :region (merge (latlng coords)
+        [:> expo/MapView {:style  {:flex 1} :showsUserLocation true
+                          :region (merge (geometry/latlng coords)
                                          {:latitudeDelta 0.02 :longitudeDelta 0.02})
                           :showsMyLocationButton true}]]
      [:> react/View {:style {:position "absolute" :top (/ (:height dims) 2)

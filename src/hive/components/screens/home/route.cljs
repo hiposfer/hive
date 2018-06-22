@@ -12,7 +12,8 @@
             [hive.components.symbols :as symbols]
             [hive.foreigns :as fl]
             [oops.core :as oops]
-            [hive.components.foreigns.expo :as expo]))
+            [hive.components.foreigns.expo :as expo]
+            [hive.libs.geometry :as geometry]))
 
 ;(defn- tx-path
 ;  "takes a mapbox directions response and returns a transaction vector
@@ -83,7 +84,12 @@
                              [:user/id id])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
-        [symbols/CityMap info]]
+       (let [route (first (:route/routes (:user/route info)))
+             path (map geometry/latlng (:coordinates (:geometry route)))]
+        [symbols/CityMap info
+          [:> expo/MapPolyline {:coordinates path
+                                :strokeColor "#3bb2d0"
+                                :strokeWidth 4}]])]
       [:> react/View {:height (* 1.1 (:height window))
                       :backgroundColor "white"}
         [Transfers window]]
