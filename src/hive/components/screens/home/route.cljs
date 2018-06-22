@@ -71,41 +71,47 @@
               :user/route [:route/uuid uuid]}])))
 
 (defn- Transfers
-  [window]
-  (into [:> react/View {:flex 1 :flexDirection "row" :justifyContent "space-around"
-                         :top "2.5%"}]
+  []
+  (into [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
+                         :top "0.5%"}]
         [[:> expo/Ionicons {:name "ios-walk" :size 32}]
          [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
          [:> expo/Ionicons {:name "ios-bus" :size 32}]
          [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
          [:> expo/Ionicons {:name "ios-train" :size 32}]]))
 
+(defn- Info
+  [data]
+  (let [route   (first (:route/routes (:user/route data)))
+        poi     (:text (:user/goal data))]
+    [:> react/View {:flex 1 :paddingTop "1%"}
+      [:> react/View {:height "4%" :flexDirection "row"
+                      :paddingLeft "1.5%"}
+        [Transfers]
+        [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
+                                :paddingLeft "10%"}}
+          (duration/format (* 1000 (:duration route)))]]
+      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
+
 (defn Instructions
   "basic navigation directions"
   [props]
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
         id      (work/q queries/user-id)
-        info   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+        data   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
                              {:user/route [:route/routes]}
                              :user/goal]
                             [:user/id id])
-        route   (first (:route/routes (:user/route info)))
-        path    (map geometry/latlng (:coordinates (:geometry route)))
-        poi     (:text (:user/goal info))]
+        route   (first (:route/routes (:user/route data)))
+        path    (map geometry/latlng (:coordinates (:geometry route)))]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
-        [symbols/CityMap info
+        [symbols/CityMap data
           [:> expo/MapPolyline {:coordinates path
                                 :strokeColor "#3bb2d0"
                                 :strokeWidth 4}]]]
-      [:> react/View {:height (* 1.1 (:height window)) :flexDirection "row"
-                      :backgroundColor "white"}
-        [:> react/View {:flex 4 :height "7%"}
-          [Transfers window]
-          [:> react/Text {:style {:color "gray"}} poi]]
-        [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
-                                :paddingLeft "10%"}}
-                       (duration/format (* 1000 (:duration route)))]]
+      [:> react/View {:height (* 1.1 (:height window)) :backgroundColor "white"}
+        [Info data]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
