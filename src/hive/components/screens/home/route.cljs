@@ -28,22 +28,19 @@
 (defn- reform-path
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
-  [path]
-  (cond
-    (not= (:code path) "Ok")
-    (ex-info (or (:msg path) "invalid response")
-             path ::invalid-response)
-
-    (not (contains? path :uuid))
-    (recur (assoc path :uuid (data/squuid)))
-
-    :ok (tool/with-ns :route path)))
+  [path user]
+  (let [uid  (data/squuid)
+        path (->> (assoc path :uuid uid)
+                  (tool/with-ns :route))]
+    [path {:user/id user
+           :user/route [:route/uuid uid]}]))
 
 (defn get-path
   "takes a geocoded feature (target) and queries the path to get there
   from the current user position. Returns a transaction or error"
-  [goal]
-  (let [position (work/q queries/user-position)]
+  [data goal]
+  (let [position (:user/position data)
+        user     (:user/id data)]
     (if (nil? position)
       (ex-info "missing user location" goal ::user-position-unknown)
       (let [args {:coordinates [[8.645333, 50.087314]
@@ -52,8 +49,8 @@
                   :steps true}
             [url opts] (directions/request args)]
         [url opts (comp (map tool/keywordize)
-                        (map reform-path)
-                        (map vector))]))))
+                        (halt-when #(not= "Ok" (:code %)))
+                        (map #(reform-path % user)))]))))
 
 (defn set-route
   "takes a mapbox directions object and assocs the user/directions with
@@ -63,25 +60,26 @@
         uuid (:route/uuid path)
         garbage (remove #{uuid} (:route/remove path))]
     (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-            [{:user/id         (:user/id path)
-              :user/directions [:route/uuid uuid]}])))
+            [{:user/id    (:user/id path)
+              :user/route [:route/uuid uuid]}])))
 
 (defn- Transfers
   [window]
-  [:> react/View {:flexDirection "row" :width "40%" :justifyContent "space-around"
-                  :alignItems "center" :paddingTop "5%"}
-    [:> expo/Ionicons {:name "ios-walk" :size 32}]
-    [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
-    [:> expo/Ionicons {:name "ios-bus" :size 32}]
-    [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
-    [:> expo/Ionicons {:name "ios-train" :size 32}]])
+  (into [:> react/View {:flexDirection "row" :width "40%" :justifyContent "space-around"
+                        :alignItems "center" :paddingTop "5%"}]
+        [[:> expo/Ionicons {:name "ios-walk" :size 32}]
+         [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
+         [:> expo/Ionicons {:name "ios-bus" :size 32}]
+         [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
+         [:> expo/Ionicons {:name "ios-train" :size 32}]]))
 
 (defn Instructions
   "basic navigation directions"
-  [props];(tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))
+  [props]
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
         id      (work/q queries/user-id)
-        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
+        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+                              {:user/route [:route/routes]}]
                              [:user/id id])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
@@ -100,4 +98,5 @@
                                     {:title "directions"}))
 
 ;hive.rework.state/conn
+;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)

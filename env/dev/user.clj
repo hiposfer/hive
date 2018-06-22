@@ -207,7 +207,7 @@
   (write-main-js)
   (write-env-dev)
   (watch-for-external-modules)
-  (ra/start-figwheel! "main")
+  (time (ra/start-figwheel! "main"))
   (ra/cljs-repl))
 
 (defn stop-figwheel

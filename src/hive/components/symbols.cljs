@@ -18,12 +18,14 @@
 
 (defn CityMap
   "a React Native MapView component which will only re-render on user-city change"
-  [user]
+  [user & content]
   (let [coords (:coordinates (:city/geometry (:user/city user)))]
-    [:> expo/MapView {:region (merge (geometry/latlng coords)
-                                     {:latitudeDelta 0.02 :longitudeDelta 0.02})
-                      :showsUserLocation     true :style {:flex 1}
-                      :showsMyLocationButton true}]))
+    (into [:> expo/MapView
+             {:region (merge (geometry/latlng coords)
+                             {:latitudeDelta 0.02 :longitudeDelta 0.02})
+              :showsUserLocation     true :style {:flex 1}
+              :showsMyLocationButton true}]
+      content)))
 
 (def shadow
   {:elevation 3 :shadowColor "#000000" :shadowRadius 5

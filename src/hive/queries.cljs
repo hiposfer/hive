@@ -15,10 +15,6 @@
                  :where [?uid :user/id]
                         [?uid :user/city ?city]])
 
-(def user-goal '[:find ?goal .
-                 :where [?id :user/id]
-                        [?id :user/goal ?goal]])
-
 (def user-position '[:find ?position .
                      :where [?id :user/id]
                             [?id :user/position ?position]])

@@ -36,7 +36,7 @@
 (def schema {:user/city             {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
 
-             :user/directions       {:db.valueType   :db.type/ref
+             :user/route            {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
 
              :user/id               {:db.unique :db.unique/identity}
