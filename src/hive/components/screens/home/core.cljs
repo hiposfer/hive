@@ -73,11 +73,10 @@
         [[navigate "location-error" validated]
          (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
         (let [args (geocoding/defaults validated)
-              url  (geocoding/autocomplete args)
-              xform (comp (map tool/keywordize)
-                          (map #(assoc % :user/id (:user/id props)))
-                          (map update-places))]
-          [[http/json! url {} xform]])))))
+              url  (geocoding/autocomplete args)]
+          [[http/json! url {} (map tool/keywordize)
+                              (map #(assoc % :user/id (:user/id props)))
+                              (map update-places)]])))))
 
 (defn- SearchBar
   [props places]

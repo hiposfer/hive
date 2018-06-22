@@ -49,9 +49,9 @@
                   :departure "2018-05-07T10:15:30"
                   :steps true}
             [url opts] (directions/request args)]
-        [url opts (comp (map tool/keywordize)
-                        (halt-when #(not= "Ok" (:code %)))
-                        (map #(reform-path % user)))]))))
+        [url opts (map tool/keywordize)
+                  (halt-when #(not= "Ok" (:code %)))
+                  (map #(reform-path % user))]))))
 
 (defn set-route
   "takes a mapbox directions object and assocs the user/directions with

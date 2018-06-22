@@ -48,12 +48,12 @@
                       {::watcher (oops/ocall fl/Expo "Location.watchPositionAsync"
                                              js-opts (::callback opts))}))]
       ;; convert promise to channel and execute it
-      (tool/channel (oops/ocall fl/Expo "Permissions.askAsync" "location")
-                    (comp (map tool/keywordize)
-                          (map request)
-                          tool/bypass-error
-                          (map (work/inject :session/uuid queries/session))
-                          (map set-watcher))))))
+      (tool/async (oops/ocall fl/Expo "Permissions.askAsync" "location")
+                  (map tool/keywordize)
+                  (map request)
+                  tool/bypass-error
+                  (map (work/inject :session/uuid queries/session))
+                  (map set-watcher)))))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"
