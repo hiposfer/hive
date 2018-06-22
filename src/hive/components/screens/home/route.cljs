@@ -81,17 +81,23 @@
          [:> expo/Ionicons {:name "ios-train" :size 32}]]))
 
 (defn- Info
-  [data]
+  [props data]
   (let [route   (first (:route/routes (:user/route data)))
         poi     (:text (:user/goal data))]
-    [:> react/View {:flex 1 :paddingTop "1%"}
-      [:> react/View {:height "4%" :flexDirection "row"
-                      :paddingLeft "1.5%"}
+    [:> react/View props
+      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
         [Transfers]
         [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                                 :paddingLeft "10%"}}
           (duration/format (* 1000 (:duration route)))]]
       [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
+
+(defn- Route
+  [props data]
+  [:> react/View props
+    (for [step (:steps (first (:legs (first (:route/routes (:user/route data))))))]
+      ^{:key (:distance step)}
+       [:> react/Text (:name step)])])
 
 (defn Instructions
   "basic navigation directions"
@@ -111,7 +117,10 @@
                                 :strokeColor "#3bb2d0"
                                 :strokeWidth 4}]]]
       [:> react/View {:height (* 1.1 (:height window)) :backgroundColor "white"}
-        [Info data]]
+        [Info {:flex 1 :paddingTop "1%"} data]
+        [:> react/View {:flex 9 :flexDirection "row"}
+          [:> react/View {:flex 2}]
+          [Route {:flex 9} data]]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
@@ -120,6 +129,6 @@
 (def Screen    (rn-nav/stack-screen Instructions
                                     {:title "directions"}))
 
-;hive.rework.state/conn
+hive.rework.state/conn
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)
