@@ -21,7 +21,9 @@
   [target data]
   (let [navigate (:navigate (:navigation data))
         places   [[:db.fn/retractAttribute [:user/id (:user/id data)]
-                                           :user/places]]
+                   :user/places]
+                  {:user/id (:user/id data)
+                   :user/goal target}]
         ;; remove all previously computed routes
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]

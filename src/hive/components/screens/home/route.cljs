@@ -1,19 +1,18 @@
 (ns hive.components.screens.home.route
-  (:require [reagent.core :as r]
-            [hive.queries :as queries]
+  (:require [hive.queries :as queries]
             [hive.components.foreigns.react :as react]
             [hive.services.directions :as directions]
-            [hive.libs.time :as local]
             [hive.rework.util :as tool]
             [datascript.core :as data]
-            [clojure.core.async :as async]
             [hive.rework.core :as work]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.symbols :as symbols]
             [hive.foreigns :as fl]
-            [oops.core :as oops]
             [hive.components.foreigns.expo :as expo]
-            [hive.libs.geometry :as geometry]))
+            [hive.libs.geometry :as geometry]
+            [goog.date.duration :as duration]
+            [clojure.string :as str])
+  (:import (goog.date DateTime)))
 
 ;(defn- tx-path
 ;  "takes a mapbox directions response and returns a transaction vector
@@ -25,6 +24,13 @@
 ;            [(tool/with-ns :route (dissoc path :user/id))
 ;             {:user/id (:user/id path)
 ;              :user/directions [:route/uuid id]}])))
+
+(defn- local-time
+  "returns a compatible Java LocalDateTime string representation"
+  []
+  (let [now   (new DateTime)
+        gtime (-> now (.toIsoString true))]
+    (str/replace gtime " " "T")))
 
 (defn- reform-path
   "takes a mapbox directions response and returns it.
@@ -66,8 +72,8 @@
 
 (defn- Transfers
   [window]
-  (into [:> react/View {:flexDirection "row" :width "40%" :justifyContent "space-around"
-                        :alignItems "center" :paddingTop "5%"}]
+  (into [:> react/View {:flex 1 :flexDirection "row" :justifyContent "space-around"
+                         :top "2.5%"}]
         [[:> expo/Ionicons {:name "ios-walk" :size 32}]
          [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
          [:> expo/Ionicons {:name "ios-bus" :size 32}]
@@ -79,26 +85,31 @@
   [props]
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
         id      (work/q queries/user-id)
-        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
-                              {:user/route [:route/routes]}]
-                             [:user/id id])]
+        info   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+                             {:user/route [:route/routes]}
+                             :user/goal]
+                            [:user/id id])
+        route   (first (:route/routes (:user/route info)))
+        path    (map geometry/latlng (:coordinates (:geometry route)))
+        poi     (:text (:user/goal info))]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
-       (let [route (first (:route/routes (:user/route info)))
-             path (map geometry/latlng (:coordinates (:geometry route)))]
         [symbols/CityMap info
           [:> expo/MapPolyline {:coordinates path
                                 :strokeColor "#3bb2d0"
-                                :strokeWidth 4}]])]
-      [:> react/View {:height (* 1.1 (:height window))
+                                :strokeWidth 4}]]]
+      [:> react/View {:height (* 1.1 (:height window)) :flexDirection "row"
                       :backgroundColor "white"}
-        [Transfers window]]
+        [:> react/View {:flex 4 :height "7%"}
+          [Transfers window]
+          [:> react/Text {:style {:color "gray"}} poi]]
+        [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
+                                :paddingLeft "10%"}}
+                       (duration/format (* 1000 (:duration route)))]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
         [:> expo/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
-      ;[:> react/ActivityIndicator {:size "large" :color "#0000ff"}]]))
-      ;[route-details props counter]])))
 
 (def Screen    (rn-nav/stack-screen Instructions
                                     {:title "directions"}))
