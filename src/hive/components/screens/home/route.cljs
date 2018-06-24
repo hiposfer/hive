@@ -16,17 +16,20 @@
 
 (defn- local-time
   "returns a compatible Java LocalDateTime string representation"
-  []
-  (let [now   (new DateTime)
-        gtime (-> now (.toIsoString true))]
-    (str/replace gtime " " "T")))
+  ([]
+   (local-time (new DateTime)))
+  ([^js/DateTime now]
+   (let [gtime (-> now (.toIsoString true))]
+     (str/replace gtime " " "T"))))
+
+;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
 (defn- reform-path
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
-  [path user]
+  [path user now]
   (let [uid  (data/squuid)
-        path (->> (assoc path :uuid uid)
+        path (->> (assoc path :uuid uid :departure now)
                   (tool/with-ns :route))]
     [path {:user/id user
            :user/route [:route/uuid uid]}]))
@@ -35,18 +38,20 @@
   "takes a geocoded feature (target) and queries the path to get there
   from the current user position. Returns a transaction or error"
   [data goal]
-  (let [position (:user/position data)
-        user     (:user/id data)]
+  (let [position  (:user/position data)
+        start     (:coordinates (:geometry position))
+        end       (:coordinates (:geometry goal))
+        now       (new DateTime)
+        user      (:user/id data)]
     (if (nil? position)
       (ex-info "missing user location" goal ::user-position-unknown)
-      (let [args {:coordinates [[8.645333, 50.087314]
-                                [8.635897, 50.104172]]
-                  :departure "2018-05-07T10:15:30"
+      (let [args {:coordinates [start end]
+                  :departure (local-time now)
                   :steps true}
             [url opts] (directions/request args)]
         [url opts (map tool/keywordize)
                   (halt-when #(not= "Ok" (:code %)))
-                  (map #(reform-path % user))]))))
+                  (map #(reform-path % user now))]))))
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))
@@ -64,26 +69,29 @@
                      "21:54"]]
     [:> react/View {:flex 1 :alignItems "center"}
       [:> react/View (merge {:backgroundColor "red"} big-circle)]
-      [:> react/View {:backgroundColor "red" :width "8%" :height "70%"}]
-      [:> react/View (merge {:backgroundColor "red"} big-circle)]]])
+      [:> react/View {:backgroundColor "red" :width "8%" :height "93%"}]
+      [:> react/View (merge {:backgroundColor "red" :elevation 10}
+                            big-circle)]]])
 
 (defn- SectionDots
   [data]
   [:> react/View {:flex 2 :flexDirection "row"}
-   [:> react/View {:flex 1 :alignItems "center"}
-     [:> react/Text {:style {:color "gray" :fontSize 12}}
-                    "21:54"]]
-   [:> react/View {:flex 1 :alignItems "center"
-                   :justifyContent "space-around"}
-     [:> react/View (merge {:backgroundColor "gray"} big-circle)]
-     (for [i (range 5)]
-       ^{:key i}
-       [:> react/View (merge {:backgroundColor "gray"} small-circle)])]])
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/Text {:style {:color "gray" :fontSize 12}}
+                     "21:54"]]
+    [:> react/View {:flex 1 :alignItems "center"
+                    :justifyContent "space-around"}
+      [:> react/View (merge {:backgroundColor "gray"} big-circle)]
+      (for [i (range 5)]
+        ^{:key i}
+        [:> react/View (merge {:backgroundColor "gray"} small-circle)])]])
 
 (defn- Route
   [props data]
-  (let [steps (:steps (first (:legs (first (:route/routes (:user/route data))))))
-        sections (partition-by :mode steps)]
+  (let [route     (first (:route/routes (:user/route data)))
+        steps     (:steps (first (:legs route)))
+        sections  (partition-by :mode steps)]
+        ;departure (:route/departure route)]
     [:> react/View props
       (for [part sections]
         ^{:key (:distance (first part))}
@@ -121,7 +129,7 @@
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
         id      (work/q queries/user-id)
         data   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
-                             {:user/route [:route/routes]}
+                             {:user/route [:route/routes :route/departure]}
                              :user/goal]
                             [:user/id id])
         route   (first (:route/routes (:user/route data)))
@@ -143,6 +151,6 @@
 (def Screen    (rn-nav/stack-screen Instructions
                                     {:title "directions"}))
 
-hive.rework.state/conn
+;hive.rework.state/conn
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)

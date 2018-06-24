@@ -18,17 +18,17 @@
 
 (defn- choose-route
   "associates a target and a path to get there with the user"
-  [target data]
-  (let [navigate (:navigate (:navigation data))
-        places   [[:db.fn/retractAttribute [:user/id (:user/id data)]
+  [target props]
+  (let [navigate (:navigate (:navigation props))
+        places   [[:db.fn/retractAttribute [:user/id (:user/id props)]
                    :user/places]
-                  {:user/id (:user/id data)
+                  {:user/id (:user/id props)
                    :user/goal target}]
         ;; remove all previously computed routes
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]
     [(concat places garbage)
-     [http/json! (route/get-path data target)]
+     [http/json! (route/get-path props target)]
      (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
      [navigate "directions"]]))
 
@@ -106,8 +106,9 @@
   [props]
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
-        info    @(work/pull! [:user/places :user/position
-                              {:user/city [:city/geometry :city/bbox :city/name]}]
+        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+                              :user/places
+                              :user/position]
                              [:user/id id])]
     [:> react/View {:flex 1}
       (if (empty? (:user/places info))
