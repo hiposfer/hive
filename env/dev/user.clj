@@ -20,8 +20,14 @@
 (defn write-main-js
   "create a fake main.js file to make the metro packager happy"
   []
-  (-> "'use strict';\n\n// cljsbuild adds a preamble mentioning goog so hack around it\nwindow.goog = {\n  provide() {},\n  require() {},\n};\nrequire('./target/expo/env/index.js');\n"
-      ((partial spit "main.js"))))
+  (spit "main.js"
+    "'use strict';
+    // cljsbuild adds a preamble mentioning goog so hack around it
+    window.goog = {
+      provide: function() {},
+      require: function() {},
+      };
+    require('./target/expo/env/index.js');"))
 
 (defn get-expo-settings []
   (try
@@ -207,7 +213,7 @@
   (write-main-js)
   (write-env-dev)
   (watch-for-external-modules)
-  (time (ra/start-figwheel! "main"))
+  (ra/start-figwheel! "main")
   (ra/cljs-repl))
 
 (defn stop-figwheel
