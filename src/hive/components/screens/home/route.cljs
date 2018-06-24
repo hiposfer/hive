@@ -14,17 +14,6 @@
             [clojure.string :as str])
   (:import (goog.date DateTime)))
 
-;(defn- tx-path
-;  "takes a mapbox directions response and returns a transaction vector
-;  to use with transact!. Return an exception if no path was found"
-;  [path]
-;  (let [id      (:uuid path)
-;        garbage (remove #{id} (:route/remove path))]
-;    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-;            [(tool/with-ns :route (dissoc path :user/id))
-;             {:user/id (:user/id path)
-;              :user/directions [:route/uuid id]}])))
-
 (defn- local-time
   "returns a compatible Java LocalDateTime string representation"
   []
@@ -59,21 +48,51 @@
                   (halt-when #(not= "Ok" (:code %)))
                   (map #(reform-path % user))]))))
 
-(defn set-route
-  "takes a mapbox directions object and assocs the user/directions with
-  it. All other temporary paths are removed"
-  [epath user routes]
-  (let [path (into {:user/id user :route/remove routes} epath)
-        uuid (:route/uuid path)
-        garbage (remove #{uuid} (:route/remove path))]
-    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-            [{:user/id    (:user/id path)
-              :user/route [:route/uuid uuid]}])))
+(defn- SectionDetails
+  [data]
+  [:> react/View {:style {:flex 9}}
+    [:> react/Text (some (comp not-empty :name) data)]])
+
+(defn- SectionLine
+  [data]
+  [:> react/View {:flex 2 :alignItems "center"}
+    [:> react/View (merge {:backgroundColor "red"}
+                          (symbols/circle 16))]
+    [:> react/View {:backgroundColor "red" :width "5%" :height "70%"}]
+    [:> react/View (merge {:backgroundColor "red"}
+                          (symbols/circle 16))]])
+
+(defn- SectionDots
+  [data]
+  [:> react/View {:flex 2 :alignItems "center" :justifyContent "space-around"}
+   [:> react/View (merge {:backgroundColor "gray"}
+                         (symbols/circle 16))]
+   (for [i (range 5)]
+     ^{:key i}
+     [:> react/View (merge {:backgroundColor "gray"}
+                         (symbols/circle 12))])])
+
+(defn- Section
+  [data]
+  [:> react/View {:flex 9 :flexDirection "row"}
+    (if (= "walking" (some :mode data))
+      [SectionDots data]
+      [SectionLine data])
+    [SectionDetails data]])
+
+(defn- Route
+  [props data]
+  (let [steps (:steps (first (:legs (first (:route/routes (:user/route data))))))
+        sections (partition-by :mode steps)]
+    [:> react/View props
+      (for [part sections]
+        ^{:key (:distance (first part))}
+         [Section part])]))
 
 (defn- Transfers
   []
   (into [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
-                         :top "0.5%"}]
+                        :top "0.5%"}]
         [[:> expo/Ionicons {:name "ios-walk" :size 32}]
          [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
          [:> expo/Ionicons {:name "ios-bus" :size 32}]
@@ -85,19 +104,12 @@
   (let [route   (first (:route/routes (:user/route data)))
         poi     (:text (:user/goal data))]
     [:> react/View props
-      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
-        [Transfers]
-        [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
-                                :paddingLeft "10%"}}
-          (duration/format (* 1000 (:duration route)))]]
-      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
-
-(defn- Route
-  [props data]
-  [:> react/View props
-    (for [step (:steps (first (:legs (first (:route/routes (:user/route data))))))]
-      ^{:key (:distance step)}
-       [:> react/Text (:name step)])])
+     [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
+      [Transfers]
+      [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
+                              :paddingLeft "10%"}}
+       (duration/format (* 1000 (:duration route)))]]
+     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
 
 (defn Instructions
   "basic navigation directions"
@@ -118,9 +130,7 @@
                                 :strokeWidth 4}]]]
       [:> react/View {:height (* 1.1 (:height window)) :backgroundColor "white"}
         [Info {:flex 1 :paddingTop "1%"} data]
-        [:> react/View {:flex 9 :flexDirection "row"}
-          [:> react/View {:flex 2}]
-          [Route {:flex 9} data]]]
+        [Route {:flex 9} data]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})

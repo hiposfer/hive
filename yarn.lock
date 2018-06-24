@@ -2211,7 +2211,7 @@ exeunt@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/exeunt/-/exeunt-1.1.0.tgz#af72db6f94b3cb75e921aee375d513049843d284"
 
-exp@^54.0.1:
+exp@54.0.1:
   version "54.0.1"
   resolved "https://registry.yarnpkg.com/exp/-/exp-54.0.1.tgz#f3a03d94b08e837cc313c022103f9b82dbc2fbce"
   dependencies:
