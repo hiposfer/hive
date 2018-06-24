@@ -58,33 +58,27 @@
 
 (defn- SectionLine
   [data]
-  [:> react/View {:flex 1 :alignItems "center"}
-    [:> react/View (merge {:backgroundColor "red"} big-circle)]
-    [:> react/View {:backgroundColor "red" :width "8%" :height "70%"}]
-    [:> react/View (merge {:backgroundColor "red"} big-circle)]])
+  [:> react/View {:flex 2 :flexDirection "row"}
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/Text {:style {:color "gray" :fontSize 12}}
+                     "21:54"]]
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/View (merge {:backgroundColor "red"} big-circle)]
+      [:> react/View {:backgroundColor "red" :width "8%" :height "70%"}]
+      [:> react/View (merge {:backgroundColor "red"} big-circle)]]])
 
 (defn- SectionDots
   [data]
-  [:> react/View {:flex 1 :alignItems "center" :justifyContent "space-around"}
-   [:> react/View (merge {:backgroundColor "gray"} big-circle)]
-   (for [i (range 5)]
-     ^{:key i}
-     [:> react/View (merge {:backgroundColor "gray"} small-circle)])])
-
-(defn- SectionTimes
-  [data]
-  [:> react/View {:flex 1 :alignItems "center"}
-    [:> react/Text {:style {:color "gray" :fontSize 12}}
-                   "21:54"]])
-
-(defn- Section
-  [data]
-  [:> react/View {:flex 9 :flexDirection "row"}
-    [SectionTimes data]
-    (if (= "walking" (some :mode data))
-      [SectionDots data]
-      [SectionLine data])
-    [SectionDetails data]])
+  [:> react/View {:flex 2 :flexDirection "row"}
+   [:> react/View {:flex 1 :alignItems "center"}
+     [:> react/Text {:style {:color "gray" :fontSize 12}}
+                    "21:54"]]
+   [:> react/View {:flex 1 :alignItems "center"
+                   :justifyContent "space-around"}
+     [:> react/View (merge {:backgroundColor "gray"} big-circle)]
+     (for [i (range 5)]
+       ^{:key i}
+       [:> react/View (merge {:backgroundColor "gray"} small-circle)])]])
 
 (defn- Route
   [props data]
@@ -93,7 +87,11 @@
     [:> react/View props
       (for [part sections]
         ^{:key (:distance (first part))}
-         [Section part])]))
+         [:> react/View {:flex 9 :flexDirection "row"}
+           (if (= "walking" (some :mode part))
+             [SectionDots part]
+             [SectionLine part])
+           [SectionDetails part]])]))
 
 (defn- Transfers
   []
