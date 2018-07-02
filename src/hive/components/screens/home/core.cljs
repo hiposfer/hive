@@ -109,7 +109,7 @@
   [user]
   (let [coords (:coordinates (:city/geometry (:user/city user)))]
     (if (nil? coords)
-      [:> expo/Ionicons {:name "ios-close-circle" :size 26}]
+      [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
       [:> expo/MapView {:region (merge (latlng coords)
                                        {:latitudeDelta 0.02 :longitudeDelta 0.02})
                         :showsUserLocation true :style {:flex 1}
