@@ -1,8 +1,7 @@
 (ns hive.state
   (:require [hive.rework.core :as work]
             [hive.rework.util :as tool]
-            [cljs.spec.alpha :as s]
-            [figwheel.client.utils :as utils]))
+            [cljs.spec.alpha :as s]))
 
 (s/def ::token (s/and string? not-empty))
 (s/def ::MAPBOX ::token)
@@ -24,8 +23,9 @@
         ks   (map #(keyword (name %))
                    (concat (:req-un data) (:opt-un data)))
         m    (select-keys m ks)]
-    (if (s/valid? spec m) m
-      (utils/log :error "state.cljs: necessary env vars are missing."))))
+    (if (not (s/valid? spec m))
+      (js/console.error "The app is misconfigured. Add env vars and rebuild."))
+    m))
 
 (def tokens (tool/with-ns "ENV" (fetch-env ::env (work/env))))
 
