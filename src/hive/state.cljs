@@ -23,9 +23,9 @@
         ks   (map #(keyword (name %))
                    (concat (:req-un data) (:opt-un data)))
         m    (select-keys m ks)]
-    (if (s/valid? spec m) m
-      (throw (ex-info (s/explain-str spec m)
-                      m)))))
+    (if (not (s/valid? spec m))
+      (js/console.error "The app is misconfigured. Add env vars and rebuild."))
+    m))
 
 (def tokens (tool/with-ns "ENV" (fetch-env ::env (work/env))))
 
