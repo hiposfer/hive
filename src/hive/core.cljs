@@ -79,8 +79,7 @@
   (let [conn   (data/create-conn state/schema)
         data   (cons {:session/uuid (data/squuid)
                       :session/start (js/Date.now)}
-                     state/init-data)
-        config (reload-config! [:user/city])]
+                     state/init-data)]
     (work/init! conn)
     (work/transact! data)
     (location/watch! position/defaults)
@@ -89,7 +88,8 @@
     (oops/ocall fl/ReactNative "BackHandler.addEventListener"
                 "hardwareBackPress"
                 back-listener)
-    (let [id      (data/q queries/user-id (work/db))
+    (let [config (reload-config! [:user/city])
+          id      (data/q queries/user-id (work/db))
           default (assoc state/defaults :user/id id)
           tx      (async/into [default] config)]
       (work/transact! tx))))
