@@ -1,148 +1,156 @@
 (ns hive.components.screens.home.route
-  (:require [reagent.core :as r]
-            [hive.queries :as queries]
+  (:require [hive.queries :as queries]
             [hive.components.foreigns.react :as react]
             [hive.services.directions :as directions]
             [hive.rework.util :as tool]
             [datascript.core :as data]
-            [hive.services.raw.http :as http]
-            [clojure.core.async :as async]
             [hive.rework.core :as work]
-            [cljs-react-navigation.reagent :as rn-nav]))
+            [cljs-react-navigation.reagent :as rn-nav]
+            [hive.components.symbols :as symbols]
+            [hive.foreigns :as fl]
+            [hive.components.foreigns.expo :as expo]
+            [hive.libs.geometry :as geometry]
+            [goog.date.duration :as duration]
+            [clojure.string :as str])
+  (:import (goog.date DateTime)))
 
-;(defn- tx-path
-;  "takes a mapbox directions response and returns a transaction vector
-;  to use with transact!. Return an exception if no path was found"
-;  [path]
-;  (let [id      (:uuid path)
-;        garbage (remove #{id} (:route/remove path))]
-;    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-;            [(tool/with-ns :route (dissoc path :user/id))
-;             {:user/id (:user/id path)
-;              :user/directions [:route/uuid id]}])))
+(defn- local-time
+  "returns a compatible Java LocalDateTime string representation"
+  ([]
+   (local-time (new DateTime)))
+  ([^js/DateTime now]
+   (let [gtime (-> now (.toIsoString true))]
+     (str/replace gtime " " "T"))))
+
+;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
 (defn- reform-path
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
-  [path]
-  (cond
-    (not= (:code path) "Ok")
-    (ex-info (or (:msg path) "invalid response")
-             path ::invalid-response)
-
-    (not (contains? path :uuid))
-    (recur (assoc path :uuid (data/squuid)))
-
-    :ok (tool/with-ns :route path)))
+  [path user now]
+  (let [uid  (data/squuid)
+        path (->> (assoc path :uuid uid :departure now)
+                  (tool/with-ns :route))]
+    [path {:user/id user
+           :user/route [:route/uuid uid]}]))
 
 (defn get-path
   "takes a geocoded feature (target) and queries the path to get there
   from the current user position. Returns a transaction or error"
-  [goal]
-  (let [loc  (work/q queries/user-position)
-        tok  (work/q queries/mapbox-token)]
-    (if (nil? loc)
-      (async/to-chan [(ex-info "missing user location" goal ::user-position-unknown)])
-      (let [args {::directions/coordinates [(:coordinates (:geometry loc))
-                                            (:coordinates (:geometry goal))]
-                  ::directions/access_token tok}
-            url  (directions/request args)]
-        [url {} (comp (map tool/keywordize)
-                      (map reform-path)
-                      (map vector))]))))
+  [data goal]
+  (let [position  (:user/position data)
+        start     (:coordinates (:geometry position))
+        end       (:coordinates (:geometry goal))
+        now       (new DateTime)
+        user      (:user/id data)]
+    (if (nil? position)
+      (ex-info "missing user location" goal ::user-position-unknown)
+      (let [args {:coordinates [start end]
+                  :departure (local-time now)
+                  :steps true}
+            [url opts] (directions/request args)]
+        [url opts (map tool/keywordize)
+                  (halt-when #(not= "Ok" (:code %)))
+                  (map #(reform-path % user now))]))))
 
-(defn set-route
-  "takes a mapbox directions object and assocs the user/directions with
-  it. All other temporary paths are removed"
-  [epath user routes]
-  (let [path (into {:user/id user :route/remove routes} epath)
-        uuid (:route/uuid path)
-        garbage (remove #{uuid} (:route/remove path))]
-    (concat (map #(vector :db.fn/retractEntity [:route/uuid %]) garbage)
-            [{:user/id         (:user/id path)
-              :user/directions [:route/uuid uuid]}])))
+(def big-circle (symbols/circle 16))
+(def small-circle (symbols/circle 12))
 
-;(defn route-controllers
-;  "display previous, ok and next buttons to the user to choose which route
-;  too take"
-;  [props routes i]
-;  (let [user (work/q queries/user-id)
-;        goal (work/q! queries/user-goal)
-;        path (work/entity [:route/uuid (get @routes @i)])
-;        goBack (:goBack (:navigation props))]
-;    [:> react/View {:style {:flexDirection "row" :justifyContent "space-around"
-;                            :flex 1}}
-;     (when (> @i 0)
-;       [:> base/Button {:warning true :bordered false
-;                        :on-press #(swap! i dec)}
-;        [:> base/Icon {:name "ios-arrow-back"}]
-;        [:> base/Text "previous"]])
-;     [:> base/Button {:success true :bordered false
-;                      :on-press #(do (work/transact! (set-route path user routes))
-;                                     (goBack))}
-;      [:> base/Text "OK"]]
-;     [:> base/Button {:warning true :iconRight true :bordered false
-;                      :on-press #(do (swap! i inc)
-;                                     (when (nil? (get @routes @i))
-;                                       (work/transact!
-;                                         (http/json! (get-path @goal)))))}
-;      [:> base/Text "next"]
-;      [:> base/Icon {:name "ios-arrow-forward"}]]]))
+(defn- SectionDetails
+  [data]
+  [:> react/View {:style {:flex 9}}
+    [:> react/Text (some (comp not-empty :name) data)]])
 
-;(defn route-meta
-;  "displays route meta information like distance, time, uuid etc"
-;  [route path]
-;  [:> react/View
-;   [:> base/CardItem [:> base/Icon {:name "flag"}]
-;    [:> base/Text (str "distance: " (:distance route) " meters")]]
-;   [:> base/CardItem [:> base/Icon {:name "flag"}]
-;    [:> base/Text (str "UUID: " (:route/uuid path) " meters")]]
-;   [:> base/CardItem [:> base/Icon {:name "information-circle"}]
-;    [:> base/Text "duration: " (Math/round (/ (:duration route) 60)) " minutes"]]
-;   [:> base/CardItem [:> base/Icon {:name "time"}]
-;    [:> base/Text (str "time of arrival: " (js/Date. (+ (js/Date.now)
-;                                                        (* 1000 (:duration route))))
-;                       " minutes")]]])
+(defn- SectionLine
+  [data]
+  [:> react/View {:flex 2 :flexDirection "row"}
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/Text {:style {:color "gray" :fontSize 12}}
+                     "21:54"]]
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/View (merge {:backgroundColor "red"} big-circle)]
+      [:> react/View {:backgroundColor "red" :width "8%" :height "93%"}]
+      [:> react/View (merge {:backgroundColor "red" :elevation 10}
+                            big-circle)]]])
 
-;(defn route-details
-;  "display the complete route information to the user"
-;  [props i]
-;  (let [routes       (work/q! queries/routes-ids)
-;        path         (work/entity [:route/uuid (get @routes @i)])
-;        route        (first (:route/routes path))
-;        instructions (sequence (comp (mapcat :steps)
-;                                     (map :maneuver)
-;                                     (map :instruction)
-;                                     (map-indexed vector))
-;                               (:legs route))]
-;    (if (nil? path))
-;    [:> base/Spinner
-;      [:> react/View
-;       [:> base/Card
-;        [route-meta route path]
-;        [route-controllers props routes i]]
-;       [:> base/Card
-;        [:> base/CardItem [:> base/Icon {:name "home/map"}]
-;         [:> base/Text "Instructions: "]]
-;        (for [[id text] instructions]
-;          ^{:key id}
-;          [:> base/CardItem
-;           (if (= id (first (last instructions)))
-;             [:> base/Icon {:name "flag"}]
-;             [:> base/Icon {:name "ios-navigate-outline"}])
-;           [:> base/Text text]])]]]))
+(defn- SectionDots
+  [data]
+  [:> react/View {:flex 2 :flexDirection "row"}
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/Text {:style {:color "gray" :fontSize 12}}
+                     "21:54"]]
+    [:> react/View {:flex 1 :alignItems "center"
+                    :justifyContent "space-around"}
+      [:> react/View (merge {:backgroundColor "gray"} big-circle)]
+      (for [i (range 5)]
+        ^{:key i}
+        [:> react/View (merge {:backgroundColor "gray"} small-circle)])]])
+
+(defn- Route
+  [props data]
+  (let [route     (first (:route/routes (:user/route data)))
+        steps     (:steps (first (:legs route)))
+        sections  (partition-by :mode steps)]
+        ;departure (:route/departure route)]
+    [:> react/View props
+      (for [part sections]
+        ^{:key (:distance (first part))}
+         [:> react/View {:flex 9 :flexDirection "row"}
+           (if (= "walking" (some :mode part))
+             [SectionDots part]
+             [SectionLine part])
+           [SectionDetails part]])]))
+
+(defn- Transfers
+  []
+  (into [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
+                        :top "0.5%"}]
+        [[:> expo/Ionicons {:name "ios-walk" :size 32}]
+         [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
+         [:> expo/Ionicons {:name "ios-bus" :size 32}]
+         [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
+         [:> expo/Ionicons {:name "ios-train" :size 32}]]))
+
+(defn- Info
+  [props data]
+  (let [route   (first (:route/routes (:user/route data)))
+        poi     (:text (:user/goal data))]
+    [:> react/View props
+     [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
+      [Transfers]
+      [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
+                              :paddingLeft "10%"}}
+       (duration/format (* 1000 (:duration route)))]]
+     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
 
 (defn Instructions
   "basic navigation directions"
   [props]
-  (let [counter (r/atom 0)]
-    (fn []
-      [:> react/View {:style {:flex 1 :alignItems "center" :justifyContent "center"}}
-        [:> react/ActivityIndicator {:size "large" :color "#0000ff"}]])))
-        ;[route-details props counter]])))
+  (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
+        id      (work/q queries/user-id)
+        data   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+                             {:user/route [:route/routes :route/departure]}
+                             :user/goal]
+                            [:user/id id])
+        route   (first (:route/routes (:user/route data)))
+        path    (map geometry/latlng (:coordinates (:geometry route)))]
+    [:> react/ScrollView {:flex 1}
+      [:> react/View {:height (* 0.9 (:height window))}
+        [symbols/CityMap data
+          [:> expo/MapPolyline {:coordinates path
+                                :strokeColor "#3bb2d0"
+                                :strokeWidth 4}]]]
+      [:> react/View {:height (* 1.1 (:height window)) :backgroundColor "white"}
+        [Info {:flex 1 :paddingTop "1%"} data]
+        [Route {:flex 9} data]]
+      [:> react/View (merge (symbols/circle 52) symbols/shadow
+                            {:position "absolute" :right "10%"
+                             :top (* 0.88 (:height window))})
+        [:> expo/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
 
 (def Screen    (rn-nav/stack-screen Instructions
                                     {:title "directions"}))
 
 ;hive.rework.state/conn
+;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)

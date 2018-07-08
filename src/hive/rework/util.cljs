@@ -4,20 +4,21 @@
 
 (defn chan? [x] (satisfies? cljs.core.async.impl.protocols/Channel x))
 
-(defn channel
+(defn async
   "transforms a promise into a channel. Catches js/Errors and puts them in the
   channel as well. If the catch value is not an error, yields an ex-info with
   ::oops as message. Accepts a transducer that applies to the channel"
-  ([promise]
-   (channel promise (map identity)))
-  ([promise xform]
-   (let [result (async/chan 1 xform)]
-     (-> promise
-         (.then #(async/put! result %))
-         (.catch #(if (instance? js/Error %)
-                    (async/put! result %)
-                    (async/put! result (ex-info ::oops %)))))
-     result)))
+  [promise & xforms]
+  (let [result (if (empty? xforms)
+                 (async/promise-chan)
+                 (async/promise-chan (apply comp xforms)))]
+    (-> promise
+        (.then #(do (async/put! result %)
+                    (async/close! result)))
+        (.catch #(if (instance? js/Error %)
+                   (async/put! result %)
+                   (async/put! result (ex-info ::oops %)))))
+    result))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?

@@ -159,9 +159,9 @@
     (data/transact! state/conn data)
     ;; useful for debugging
     (tool/error? data)
-    (js/console.error (clj->js data))
-    :else (do (println "unknown transact! type argument" data)
-              data))) ;; js/Errors, side effects with no return value ...
+    (js/console.error (clj->js data))))
+    ;:else (do (println "unknown transact! type argument" data)
+    ;          data))) ;; js/Errors, side effects with no return value ...
 
 (defn inject
   "runs query with provided inputs and associates its result into m

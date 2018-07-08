@@ -13,24 +13,22 @@
             [oops.core :as oops]
             [hive.libs.geometry :as geometry]
             [hive.services.raw.http :as http]
-            [cljs.core.async :as async]))
-
-(defn- latlng
-  [coordinates]
-  {:latitude (second coordinates) :longitude (first coordinates)})
+            [cljs.core.async :as async]
+            [hive.components.symbols :as symbols]))
 
 (defn- choose-route
   "associates a target and a path to get there with the user"
   [target props]
   (let [navigate (:navigate (:navigation props))
-        places [{:user/id (:user/id props)
-                 :user/goal target}
-                [:db.fn/retractAttribute [:user/id (:user/id props)]
-                                         :user/places]]
+        places   [[:db.fn/retractAttribute [:user/id (:user/id props)]
+                   :user/places]
+                  {:user/id (:user/id props)
+                   :user/goal target}]
+        ;; remove all previously computed routes
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
                       (work/q queries/routes-ids))]
     [(concat places garbage)
-     [http/json! (route/get-path target)]
+     [http/json! (route/get-path props target)]
      (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
      [navigate "directions"]]))
 
@@ -39,7 +37,7 @@
   destination"
   [props]
   (let [height   (* 80 (count (:user/places props)))]
-    [:> react/View {:style {:height height :paddingTop 100 :paddingLeft 10}}
+    [:> react/View {:height height :paddingTop 100 :paddingLeft 10}
      (for [target (:user/places props)
            :let [distance (/ (geometry/haversine (:user/position props) target)
                              1000)]]
@@ -47,10 +45,10 @@
        [:> react/TouchableOpacity
          {:style {:flex 1 :flexDirection "row"}
           :on-press #(run! work/transact! (choose-route target props))}
-         [:> react/View {:style {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}}
+         [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
            [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
-         [:> react/View {:style {:flex 0.8 :justifyContent "flex-end"}}
+         [:> react/View {:flex 0.8 :justifyContent "flex-end"}
            [:> react/Text {:numberOfLines 1} (:text target)]
            [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
              (str/join ", " (map :text (:context target)))]]])]))
@@ -77,26 +75,25 @@
         [[navigate "location-error" validated]
          (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
         (let [args (geocoding/defaults validated)
-              url  (geocoding/autocomplete args)
-              xform (comp (map tool/keywordize)
-                          (map #(assoc % :user/id (:user/id props)))
-                          (map update-places))]
-          [[http/json! url {} xform]])))))
+              url  (geocoding/autocomplete args)]
+          [[http/json! url {} (map tool/keywordize)
+                              (map #(assoc % :user/id (:user/id props)))
+                              (map update-places)]])))))
 
 (defn- SearchBar
   [props places]
   (let [data     (work/inject props :ENV/MAPBOX queries/mapbox-token)
         ref      (volatile! nil)]
-    [:> react/View {:style {:flex 1 :flexDirection "row" :backgroundColor "white"
-                            :elevation 5 :borderRadius 5 :shadowColor "#000000"
-                            :shadowRadius 5 :shadowOffset {:width 0 :height 3}
-                            :shadowOpacity 1.0}}
-     [:> react/View {:style {:height 30 :width 30 :padding 8 :flex 0.1}}
+    [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
+                    :elevation 5 :borderRadius 5 :shadowColor "#000000"
+                    :shadowRadius 5 :shadowOffset {:width 0 :height 3}
+                    :shadowOpacity 1.0}
+     [:> react/View {:height 30 :width 30 :padding 8 :flex 0.1}
        (if (empty? places)
          [:> expo/Ionicons {:name "ios-search" :size 26}]
          [:> react/TouchableWithoutFeedback
-           {:on-press #(do (when (some? @ref) (.clear @ref))
-                           (work/transact! (update-places props)))}
+           {:onPress #(do (when (some? @ref) (.clear @ref)
+                           (work/transact! (update-places props))))}
            [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
@@ -104,41 +101,27 @@
                       :onChangeText #(run! work/transact! (autocomplete % data))}]]))
 
 
-(defn- CityMap
-  "a React Native MapView component which will only re-render on user-city change"
-  [user]
-  (let [coords (:coordinates (:city/geometry (:user/city user)))]
-    (if (nil? coords)
-      [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
-      [:> expo/MapView {:region (merge (latlng coords)
-                                       {:latitudeDelta 0.02 :longitudeDelta 0.02})
-                        :showsUserLocation true :style {:flex 1}
-                        :showsMyLocationButton true}])))
-
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [navigate (:navigate (:navigation props))
         id       (work/q queries/user-id)
-        info    @(work/pull! [:user/places :user/goal :user/position
-                              {:user/city [:city/geometry :city/bbox :city/name]}
-                              {:user/directions [:route/routes]}]
+        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+                              :user/places
+                              :user/position]
                              [:user/id id])]
-    [:> react/View {:style {:flex 1}}
+    [:> react/View {:flex 1}
       (if (empty? (:user/places info))
-        [CityMap info]
+        [symbols/CityMap info]
         [Places (merge props info {:user/id id})])
-      [:> react/View {:style {:position "absolute" :width "95%" :height 44 :top 35
-                              :left "2.5%" :right "2.5%"}}
+      [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
+                      :left "2.5%" :right "2.5%"}
         [SearchBar (merge info {:user/id id})
                    (:user/places info)]]
       (when (empty? (:user/places info))
-        [:> react/View {:style {:position "absolute" :bottom 20 :right 20
-                                :width 52 :height 52 :borderRadius 52/2
-                                :alignItems "center" :justifyContent "center"
-                                :backgroundColor "#FF5722" :elevation 3
-                                :shadowColor "#000000" :shadowRadius 5
-                                :shadowOffset {:width 0 :height 3} :shadowOpacity 1.0}}
+        [:> react/View (merge (symbols/circle 52) symbols/shadow
+                              {:position "absolute" :bottom 20 :right 20
+                               :backgroundColor "#FF5722"})
           [:> react/TouchableOpacity
             {:onPress #(navigate "settings" {:user/id id})}
             [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))

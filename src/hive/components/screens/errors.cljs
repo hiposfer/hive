@@ -12,9 +12,10 @@
   "attempt to start the Android location settings and start watching the position
   on success"
   [settings]
-  (tool/channel
+  (tool/async
     (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
-    (comp tool/bypass-error (map (fn [] [location/watch! position/defaults])))))
+    tool/bypass-error
+    (map (fn [] [location/watch! position/defaults]))))
 
 (defn- launch-location-settings
   "launch the android location settings hoping that the user enables the gps"
