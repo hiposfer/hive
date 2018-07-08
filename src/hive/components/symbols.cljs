@@ -18,14 +18,14 @@
 
 (defn CityMap
   "a React Native MapView component which will only re-render on user-city change"
-  [user & content]
+  [user]
   (let [coords (:coordinates (:city/geometry (:user/city user)))]
-    (into [:> expo/MapView
-             {:region (merge (geometry/latlng coords)
-                             {:latitudeDelta 0.02 :longitudeDelta 0.02})
-              :showsUserLocation     true :style {:flex 1}
-              :showsMyLocationButton true}]
-      content)))
+    (if (nil? coords)
+      [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
+      [:> expo/MapView {:region (merge (geometry/latlng coords)
+                                       {:latitudeDelta 0.02 :longitudeDelta 0.02})
+                        :showsUserLocation true :style {:flex 1}
+                        :showsMyLocationButton true}])))
 
 (def shadow
   {:elevation 3 :shadowColor "#000000" :shadowRadius 5
