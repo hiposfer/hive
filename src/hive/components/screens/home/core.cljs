@@ -108,10 +108,12 @@
   "a React Native MapView component which will only re-render on user-city change"
   [user]
   (let [coords (:coordinates (:city/geometry (:user/city user)))]
-    [:> expo/MapView {:region (merge (latlng coords)
-                                     {:latitudeDelta 0.02 :longitudeDelta 0.02})
-                      :showsUserLocation true :style {:flex 1}
-                      :showsMyLocationButton true}]))
+    (if (nil? coords)
+      [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
+      [:> expo/MapView {:region (merge (latlng coords)
+                                       {:latitudeDelta 0.02 :longitudeDelta 0.02})
+                        :showsUserLocation true :style {:flex 1}
+                        :showsMyLocationButton true}])))
 
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
