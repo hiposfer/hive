@@ -96,26 +96,11 @@
   (set! state/conn dsconn)
   (rtx/listen! state/conn))
 
-(defn pull
-  "same as datascript pull but uses the app state as connection"
-  [selector eid]
-  (data/pull @state/conn selector eid))
-
 (defn pull!
   "same as datascript/pull but returns a ratom which will be updated
   every time that the value of conn changes"
   [selector eid]
   (r/track rtx/pull* (::rtx/ratom @state/conn) selector eid))
-
-(defn entity
-  "same as datascript/entity but uses the app state as connection"
-  [eid]
-  (data/entity @state/conn eid))
-
-(defn q
-  "same as datascript/q but uses the app state as connection"
-  [query & inputs]
-  (apply data/q query @state/conn inputs))
 
 (defn q!
   "Returns a reagent/atom with the result of the query.
@@ -123,6 +108,15 @@
   a change is detected"
   [query & inputs]
   (r/track rtx/q* query (::rtx/ratom @state/conn) inputs))
+
+(defn db
+  "return the Datascript Database instance that rework currently uses.
+  The returned version is immutable, therefore you cannot use
+  datascript/transact!.
+
+  This is meant to keep querying separate from mutations"
+  []
+  @state/conn)
 
 (defn transact!
   "'Updates' the DataScript state with data.
@@ -162,15 +156,6 @@
     (js/console.error (clj->js data))))
     ;:else (do (println "unknown transact! type argument" data)
     ;          data))) ;; js/Errors, side effects with no return value ...
-
-(defn inject
-  "runs query with provided inputs and associates its result into m
-  under key"
-  ([m key query & inputs]
-   (let [result (apply q query inputs)]
-     (assoc m key result)))
-  ([key query] ;; not possible to have & inputs due to conflict with upper args
-   (fn inject* [m] (inject m key query))))
 
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 

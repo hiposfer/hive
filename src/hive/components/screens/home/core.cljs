@@ -14,19 +14,21 @@
             [hive.libs.geometry :as geometry]
             [hive.services.raw.http :as http]
             [cljs.core.async :as async]
-            [hive.components.symbols :as symbols]))
+            [hive.components.symbols :as symbols]
+            [datascript.core :as data]))
 
 (defn- choose-route
   "associates a target and a path to get there with the user"
   [target props]
-  (let [navigate (:navigate (:navigation props))
+  (let [db       (work/db)
+        navigate (:navigate (:navigation props))
         places   [[:db.fn/retractAttribute [:user/id (:user/id props)]
                    :user/places]
                   {:user/id (:user/id props)
                    :user/goal target}]
         ;; remove all previously computed routes
         garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
-                      (work/q queries/routes-ids))]
+                     (data/q queries/routes-ids db))]
     [(concat places garbage)
      [http/json! (route/get-path props target)]
      (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
@@ -82,7 +84,8 @@
 
 (defn- SearchBar
   [props places]
-  (let [data     (work/inject props :ENV/MAPBOX queries/mapbox-token)
+  (let [token    (data/q queries/mapbox-token (work/db))
+        data     (assoc props :ENV/MAPBOX token)
         ref      (volatile! nil)]
     [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
                     :elevation 5 :borderRadius 5 :shadowColor "#000000"
@@ -105,7 +108,7 @@
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [navigate (:navigate (:navigation props))
-        id       (work/q queries/user-id)
+        id       (data/q queries/user-id (work/db))
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
                               :user/places
                               :user/position]

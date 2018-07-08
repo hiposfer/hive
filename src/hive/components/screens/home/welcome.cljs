@@ -10,7 +10,8 @@
             [clojure.string :as str]
             [cljs.pprint :as pprint]
             [cljs.spec.alpha :as s]
-            [hive.libs.geometry :as geometry]))
+            [hive.libs.geometry :as geometry]
+            [datascript.core :as data]))
 
 (s/def ::type     #{"success"})
 (s/def ::errorCode nil?)
@@ -40,10 +41,11 @@
   [props]
   (let [navigate (:navigate (:navigation props))
         redirectUrl  (oops/ocall fl/Expo "AuthSession.getRedirectUrl")
-        [domain cid] (work/q '[:find [?domain ?id]
+        [domain cid] (data/q '[:find [?domain ?id]
                                :where [_ :ENV/AUTH0_DOMAIN ?domain]
-                                      [_ :ENV/CLIENT_ID ?id]])
-        id       (work/q queries/user-id)
+                                      [_ :ENV/CLIENT_ID ?id]]
+                             (work/db))
+        id       (data/q queries/user-id (work/db))
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
                              [:user/id id])
         coords   (:coordinates (:city/geometry (:user/city info)))

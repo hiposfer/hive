@@ -127,7 +127,7 @@
   "basic navigation directions"
   [props]
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
-        id      (work/q queries/user-id)
+        id      (data/q queries/user-id (work/db))
         data   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
                              {:user/route [:route/routes :route/departure]}
                              :user/goal]

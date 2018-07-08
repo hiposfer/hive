@@ -2,7 +2,8 @@
   (:require [hive.rework.core :as work]
             [hive.services.raw.location :as location]
             [hive.rework.util :as tool]
-            [hive.queries :as queries]))
+            [hive.queries :as queries]
+            [datascript.core :as data]))
 
 (defn tx-position
   [data]
@@ -10,7 +11,7 @@
     :user/position (dissoc data :user/id)}])
 
 (def update-position (comp tx-position
-                           (work/inject :user/id queries/user-id)
+                           #(assoc % :user/id (data/q queries/user-id (work/db)))
                            location/point
                            tool/keywordize))
 

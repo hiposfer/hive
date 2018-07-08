@@ -47,9 +47,10 @@
   Returns a channel with a transaction or Error"
   [ks]
   (let [data (store/load! ks)
+        id   (data/q queries/user-id (work/db))
         c    (async/chan 1 (comp (map (tool/validate not-empty ::missing-data))
                                  tool/bypass-error
-                                 (map (work/inject :user/id queries/user-id))))]
+                                 (map #(assoc % :user/id id))))]
     (async/pipe data c)))
 
 (defn- back-listener
@@ -60,7 +61,7 @@
   this listener and subscribe your own for the lifecycle of the UI component.
   See `with-let` https://reagent-project.github.io/news/news060-alpha.html"
   []
-  (let [r  (work/q router/data-query)
+  (let [r  (data/q router/data-query (work/db))
         tx (delay (router/goBack r))]
     (cond
       (nil? (second r))
@@ -88,7 +89,8 @@
     (oops/ocall fl/ReactNative "BackHandler.addEventListener"
                 "hardwareBackPress"
                 back-listener)
-    (let [default (work/inject state/defaults :user/id queries/user-id)
+    (let [id      (data/q queries/user-id (work/db))
+          default (assoc state/defaults :user/id id)
           tx      (async/into [default] config)]
       (work/transact! tx))))
 
