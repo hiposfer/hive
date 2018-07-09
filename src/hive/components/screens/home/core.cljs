@@ -15,22 +15,28 @@
             [hive.services.raw.http :as http]
             [cljs.core.async :as async]
             [hive.components.symbols :as symbols]
-            [datascript.core :as data]))
+            [datascript.core :as data])
+  (:import (goog.date DateTime)))
 
 (defn- choose-route
   "associates a target and a path to get there with the user"
   [target props]
-  (let [db       (work/db)
+  (let [user     (:user/id props)
         navigate (:navigate (:navigation props))
         places   [[:db.fn/retractAttribute [:user/id (:user/id props)]
-                   :user/places]
-                  {:user/id (:user/id props)
+                   :user/places] ;; remove places from db
+                  {:user/id   (:user/id props)
                    :user/goal target}]
         ;; remove all previously computed routes
-        garbage (map #(vector :db.fn/retractEntity [:route/uuid %])
-                     (data/q queries/routes-ids db))]
+        garbage  (for [r (data/q queries/routes-ids (work/db))]
+                   [:db.fn/retractEntity [:route/uuid r]])
+        now      (new DateTime)
+        args     (route/get-path props target now)]
     [(concat places garbage)
-     [http/json! (route/get-path props target)]
+     (if (tool/error? args)
+       (delay (js/console.warn args))
+       (delay (.. (js/fetch (first args) (second args))
+                  (then #(route/on-path-received % user now)))))
      (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
      [navigate "directions"]]))
 

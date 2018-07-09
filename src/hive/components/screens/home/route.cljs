@@ -24,34 +24,33 @@
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
-(defn- reform-path
+(defn on-path-received
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
   [path user now]
-  (let [uid  (data/squuid)
-        path (->> (assoc path :uuid uid :departure now)
-                  (tool/with-ns :route))]
-    [path {:user/id user
-           :user/route [:route/uuid uid]}]))
+  (if (not= (goog.object/get path "code"))
+    (throw (ex-info (goog.object/get "msg") path))
+    (let [path (js->clj path :keywordize-keys true)
+          uid  (data/squuid)
+          path (->> (assoc path :uuid uid :departure now)
+                    (tool/with-ns :route))]
+      [path {:user/id user
+             :user/route [:route/uuid uid]}])))
 
 (defn get-path
   "takes a geocoded feature (target) and queries the path to get there
   from the current user position. Returns a transaction or error"
-  [data goal]
+  [data goal now]
   (let [position  (:user/position data)
         start     (:coordinates (:geometry position))
-        end       (:coordinates (:geometry goal))
-        now       (new DateTime)
-        user      (:user/id data)]
+        end       (:coordinates (:geometry goal))]
     (if (nil? position)
       (ex-info "missing user location" goal ::user-position-unknown)
       (let [args {:coordinates [start end]
                   :departure (local-time now)
                   :steps true}
             [url opts] (directions/request args)]
-        [url opts (map tool/keywordize)
-                  (halt-when #(not= "Ok" (:code %)))
-                  (map #(reform-path % user now))]))))
+        [url opts]))))
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))
