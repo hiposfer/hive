@@ -34,6 +34,7 @@
         [url opts] (kamal/directions [start end] now)]
     [[{:user/id user :user/goal target}]
      (delay (.. (js/fetch url (clj->js opts))
+                (then #(.json %))
                 (then #(route/process-directions % user now))))
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
@@ -139,7 +140,7 @@
 (def LocationError (rn-nav/stack-screen errors/UserLocation
                                         {:title "location-error"}))
 
-;(work/q queries/routes-ids)
+;(data/q queries/routes-ids (work/db))
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
 
-;(work/pull '[*] [:route/uuid "cjd5rx3pn00qj47p6lc1z7n1v"])
+;(data/pull (work/db) '[*] [:route/uuid "5b44d414-79a7-40bf-bf65-d6b417497baa"])

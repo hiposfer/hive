@@ -12,7 +12,7 @@
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
-(def template "http://192.168.0.45:3000/area/frankfurt/directions?coordinates={coordinates}&departure={}")
+(def template "http://192.168.0.45:3000/area/frankfurt/directions?coordinates={coordinates}&departure={departure}")
 
 (defn directions
   "takes a map with the items required by ::request and replaces their values into
