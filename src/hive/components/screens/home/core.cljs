@@ -78,12 +78,11 @@
       (if (tool/error? validated)
         [[navigate "location-error" validated]
          (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
-        (let [url (mapbox/geocoding args)]
-          [(delay (.. (js/fetch url)
-                      (then #(.json %))
-                      (then tool/keywordize)
-                      (then #(assoc % :user/id (:user/id props)))
-                      (then update-places)))])))))
+        [(delay (.. (js/fetch (mapbox/geocoding args))
+                    (then #(.json %))
+                    (then tool/keywordize)
+                    (then #(assoc % :user/id (:user/id props)))
+                    (then update-places)))]))))
 
 (defn- SearchBar
   [props]
