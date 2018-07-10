@@ -12,9 +12,7 @@
             [hive.foreigns :as fl]
             [oops.core :as oops]
             [hive.libs.geometry :as geometry]
-            [hive.services.raw.http :as http]
             [hive.services.kamal :as kamal]
-            [cljs.core.async :as async]
             [hive.components.symbols :as symbols]
             [datascript.core :as data])
   (:import (goog.date DateTime)))

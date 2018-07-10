@@ -1,7 +1,6 @@
 (ns hive.services.raw.location
   (:require [hive.rework.core :as work]
             [hive.foreigns :as fl]
-            [cljs.core.async :as async]
             [hive.rework.util :as tool]
             [hive.queries :as queries]
             [cljs.spec.alpha :as s]
@@ -40,8 +39,8 @@
   [opts]
   (if (and (= "android" (oops/oget fl/ReactNative "Platform.OS"))
            (not (oops/oget fl/Expo "Constants.isDevice")))
-    (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
-      (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
+    (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
+             (assoc opts ::reason ::emulator-denial))
     (let [js-opts (clj->js opts)
           session (data/q queries/session (work/db))
           request (fn [response]
@@ -64,8 +63,3 @@
         f   (:remove sub)]
     (when f ;;todo: is it necessary to remove it from the state?
       (f))))
-
-(s/fdef watch! :args (s/cat :options ::opts))
-
-;(async/take! (watch! {:enableHighAccuracy true :timeInterval 3000})
-;             tool/log]])
