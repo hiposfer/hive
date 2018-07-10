@@ -5,7 +5,8 @@
             [hive.rework.util :as tool]
             [hive.queries :as queries]
             [cljs.spec.alpha :as s]
-            [oops.core :as oops]))
+            [oops.core :as oops]
+            [datascript.core :as data]))
 
 (s/def ::enableHighAccuracy boolean?)
 (s/def ::timeInterval (s/and number? pos?))
@@ -42,6 +43,7 @@
     (let [msg "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"]
       (async/to-chan [(ex-info msg (assoc opts ::reason ::emulator-denial))]))
     (let [js-opts (clj->js opts)
+          session (data/q queries/session (work/db))
           request (fn [response]
                     (if (not= (:status response) "granted")
                       (ex-info "permission denied" (assoc response ::reason ::permission-denied))
@@ -52,13 +54,13 @@
                   (map tool/keywordize)
                   (map request)
                   tool/bypass-error
-                  (map (work/inject :session/uuid queries/session))
+                  (map #(assoc % :session/uuid session))
                   (map set-watcher)))))
 
 (defn stop!
   "stop watching the user location if a watcher was set before"
   [query]
-  (let [sub (work/q query)
+  (let [sub (data/q query (work/db)) ;; HACK: but it gets the job done
         f   (:remove sub)]
     (when f ;;todo: is it necessary to remove it from the state?
       (f))))

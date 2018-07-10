@@ -51,9 +51,3 @@
    Useful to use with reagent/track"
   [ratom selector eid]
   (data/pull @ratom selector eid))
-
-(defn entity*
-  "same as datascript/entity but takes a reagent/atom as connection.
-   Useful to use with reagent/track"
-  [ratom eid]
-  (data/entity @ratom eid))
