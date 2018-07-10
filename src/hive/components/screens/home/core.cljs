@@ -7,7 +7,7 @@
             [hive.rework.util :as tool]
             [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
-            [hive.services.geocoding :as geocoding]
+            [hive.services.mapbox :as mapbox]
             [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
             [oops.core :as oops]
@@ -70,22 +70,22 @@
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
   [text props]
-  (if (empty? text)
-    (update-places nil)
-    (let [args {::geocoding/query text
-                ::geocoding/proximity (:user/position props)
-                ::geocoding/access_token (:ENV/MAPBOX props)
-                ::geocoding/bbox (:city/bbox (:user/city props))}
-          validated (tool/validate ::geocoding/request args ::invalid-input)
-          navigate (:navigate (:navigation props))]
+  (when (not (empty? text))
+    (let [navigate (:navigate (:navigation props))
+          args {:query        text
+                :proximity    (:user/position props)
+                :access_token (:ENV/MAPBOX props)
+                :bbox         (:city/bbox (:user/city props))}
+          validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
          (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
-        (let [args (geocoding/defaults validated)
-              url  (geocoding/autocomplete args)]
-          [[http/json! url {} (map tool/keywordize)
-                              (map #(assoc % :user/id (:user/id props)))
-                              (map update-places)]])))))
+        (let [url (mapbox/geocoding args)]
+          [(delay (.. (js/fetch url)
+                      (then #(.json %))
+                      (then tool/keywordize)
+                      (then #(assoc % :user/id (:user/id props)))
+                      (then update-places)))])))))
 
 (defn- SearchBar
   [props]
@@ -101,8 +101,9 @@
        (if (empty? places)
          [:> expo/Ionicons {:name "ios-search" :size 26}]
          [:> react/TouchableWithoutFeedback
-           {:onPress #(do (when (some? @ref) (.clear @ref)
-                           (work/transact! (update-places props))))}
+           {:onPress #(when (some? @ref)
+                        (.clear @ref)
+                        (work/transact! (update-places props)))}
            [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
