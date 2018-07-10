@@ -1,7 +1,6 @@
 (ns hive.components.screens.home.route
   (:require [hive.queries :as queries]
             [hive.components.foreigns.react :as react]
-            [hive.services.directions :as directions]
             [hive.rework.util :as tool]
             [datascript.core :as data]
             [hive.rework.core :as work]
@@ -10,47 +9,20 @@
             [hive.foreigns :as fl]
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
-            [goog.date.duration :as duration]
-            [clojure.string :as str])
-  (:import (goog.date DateTime)))
-
-(defn- local-time
-  "returns a compatible Java LocalDateTime string representation"
-  ([]
-   (local-time (new DateTime)))
-  ([^js/DateTime now]
-   (let [gtime (-> now (.toIsoString true))]
-     (str/replace gtime " " "T"))))
+            [goog.date.duration :as duration]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
-(defn on-path-received
+(defn process-directions
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
   [path user now]
   (if (not= (goog.object/get path "code"))
-    (throw (ex-info (goog.object/get "msg") path))
-    (let [path (js->clj path :keywordize-keys true)
-          uid  (data/squuid)
-          path (->> (assoc path :uuid uid :departure now)
-                    (tool/with-ns :route))]
-      [path {:user/id user
-             :user/route [:route/uuid uid]}])))
-
-(defn get-path
-  "takes a geocoded feature (target) and queries the path to get there
-  from the current user position. Returns a transaction or error"
-  [data goal now]
-  (let [position  (:user/position data)
-        start     (:coordinates (:geometry position))
-        end       (:coordinates (:geometry goal))]
-    (if (nil? position)
-      (ex-info "missing user location" goal ::user-position-unknown)
-      (let [args {:coordinates [start end]
-                  :departure (local-time now)
-                  :steps true}
-            [url opts] (directions/request args)]
-        [url opts]))))
+    (ex-info (goog.object/get "msg") path)
+    (let [path (js->clj path :keywordize-keys true)]
+      [(tool/with-ns :route (assoc path :departure now))
+       {:user/id user
+        :user/route [:route/uuid (:uuid path)]}])))
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))

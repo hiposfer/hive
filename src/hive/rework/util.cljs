@@ -69,3 +69,8 @@
   "transducer for stopping the execution of a channel transducer if
   an error is encountered"
   (halt-when error?))
+
+(defn reject
+  "same as bypass error but targeted to promises"
+  [v]
+  (if (error? v) (throw v) v))

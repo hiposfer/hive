@@ -13,31 +13,29 @@
             [oops.core :as oops]
             [hive.libs.geometry :as geometry]
             [hive.services.raw.http :as http]
+            [hive.services.kamal :as kamal]
             [cljs.core.async :as async]
             [hive.components.symbols :as symbols]
             [datascript.core :as data])
   (:import (goog.date DateTime)))
 
-(defn- choose-route
+; NOTE: this is the way to remove all routes ... not sure where to do this
+;(for [r (data/q queries/routes-ids (work/db))]
+;  [:db.fn/retractEntity [:route/uuid r]])
+
+(defn- set-target
   "associates a target and a path to get there with the user"
   [target props]
   (let [user     (:user/id props)
         navigate (:navigate (:navigation props))
-        places   [[:db.fn/retractAttribute [:user/id (:user/id props)]
-                   :user/places] ;; remove places from db
-                  {:user/id   (:user/id props)
-                   :user/goal target}]
-        ;; remove all previously computed routes
-        garbage  (for [r (data/q queries/routes-ids (work/db))]
-                   [:db.fn/retractEntity [:route/uuid r]])
+        start    (:coordinates (:geometry (:user/position props)))
+        end      (:coordinates (:geometry target))
         now      (new DateTime)
-        args     (route/get-path props target now)]
-    [(concat places garbage)
-     (if (tool/error? args)
-       (delay (js/console.warn args))
-       (delay (.. (js/fetch (first args) (second args))
-                  (then #(route/on-path-received % user now)))))
-     (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))
+        [url opts] (kamal/directions [start end] now)]
+    [[{:user/id user :user/goal target}]
+     (delay (.. (js/fetch url (clj->js opts))
+                (then #(route/process-directions % user now))))
+     (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 
 (defn- Places
@@ -52,7 +50,7 @@
        ^{:key (:id target)}
        [:> react/TouchableOpacity
          {:style {:flex 1 :flexDirection "row"}
-          :on-press #(run! work/transact! (choose-route target props))}
+          :on-press #(run! work/transact! (set-target target props))}
          [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
            [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
@@ -89,8 +87,9 @@
                               (map update-places)]])))))
 
 (defn- SearchBar
-  [props places]
-  (let [token    (data/q queries/mapbox-token (work/db))
+  [props]
+  (let [places   (:user/places props)
+        token    (data/q queries/mapbox-token (work/db))
         data     (assoc props :ENV/MAPBOX token)
         ref      (volatile! nil)]
     [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
@@ -117,16 +116,16 @@
         id       (data/q queries/user-id (work/db))
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
                               :user/places
-                              :user/position]
+                              :user/position
+                              :user/id]
                              [:user/id id])]
     [:> react/View {:flex 1}
       (if (empty? (:user/places info))
         [symbols/CityMap info]
-        [Places (merge props info {:user/id id})])
+        [Places (merge props info)])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
-        [SearchBar (merge info {:user/id id})
-                   (:user/places info)]]
+        [SearchBar info]]
       (when (empty? (:user/places info))
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
