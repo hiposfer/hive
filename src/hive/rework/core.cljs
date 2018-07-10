@@ -128,8 +128,10 @@
    - a vector whose first element is a function and the rest are its argument.
      The function will be executed and its return value is passed to transact!
      again. Useful for keeping functions side-effect free
-   - a delay-effect whose content will be executed and passed to transact!
-     again. Useful for keeping function side-effect free when doing Js interop
+   - a delay whose content will be forced and passed to transact! again.
+     Useful for keeping function side-effect free when doing Js interop
+   - a Js Promise, whose return value will be transact. Useful for doing
+     asynchronous Js calls without having to convert it to a core async channel
 
    Returns Datascript transact! return value or a channel
    with the content of each transact! result.
@@ -137,9 +139,13 @@
    Not supported data types are ignored"
   [data]
   (cond
-    (tool/chan? data) ;; async transaction
+    ;; async transaction - transact each element
+    (tool/chan? data)
     (let [c (async/chan 1 (map transact!))]
       (async/pipe data c))
+    ;; JS promise - wait for its value then transact it
+    (tool/promise? data)
+    (.. data (then transact!))
     ;; functional side effect declaration
     ;; Execute it and try to transact it
     (and (vector? data) (fn? (first data)))

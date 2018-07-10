@@ -23,7 +23,7 @@
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?
   [value]
-  (exists? (.-then value)))
+  (and (some? value) (exists? (.-then value))))
 
 (defn- print-warning!
   [e pipe request]
