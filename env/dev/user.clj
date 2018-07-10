@@ -12,10 +12,11 @@
 (defn enable-source-maps
   "patch the metro packager to use Clojurescript source maps"
   []
-  (println "Source maps enabled.")
-  (let [path "node_modules/metro/src/Server/index.js"]
-    (spit path
-          (str/replace (slurp path) "/\\.map$/" "/main.map$/"))))
+  (let [path "node_modules/metro/src/Server/index.js"
+        content (slurp path)]
+    (spit path (str/replace content #"match\(\/\\.map\$\/\)"
+                                    "match(/main\\.*\\\\.map\\$/)"))
+    (println "Source maps enabled.")))
 
 (defn write-main-js
   "create a fake main.js file to make the metro packager happy"
