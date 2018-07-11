@@ -107,7 +107,7 @@
         path    (map geometry/latlng (:coordinates (:geometry route)))]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
-        [symbols/CityMap data
+        [symbols/CityMap id
           [:> expo/MapPolyline {:coordinates path
                                 :strokeColor "#3bb2d0"
                                 :strokeWidth 4}]]]
