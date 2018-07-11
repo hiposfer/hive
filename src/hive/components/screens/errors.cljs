@@ -3,19 +3,19 @@
             [hive.foreigns :as fl]
             [oops.core :as oops]
             [hive.rework.util :as tool]
-            [hive.services.location :as position]
-            [hive.services.raw.location :as location]
+            ;[hive.services.location :as location]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.components.foreigns.expo :as expo]))
 
-(defn- start-location-intent
-  "attempt to start the Android location settings and start watching the position
-  on success"
-  [settings]
-  (tool/async
-    (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
-    tool/bypass-error
-    (map (fn [] [location/watch! position/defaults]))))
+;; TODO
+;(defn- start-location-intent
+;  "attempt to start the Android location settings and start watching the position
+;  on success"
+;  [settings]
+;  (tool/async
+;    (oops/ocall fl/Expo "IntentLauncherAndroid.startActivityAsync" settings)
+;    tool/bypass-error
+;    (map (fn [] [location/watch! position/defaults]))))
 
 (defn- launch-location-settings
   "launch the android location settings hoping that the user enables the gps"
@@ -23,7 +23,7 @@
   (if (= "android" (oops/oget fl/ReactNative "Platform.OS"))
     (let [settings (oops/oget fl/Expo "IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS")
           goBack   (:goBack (:navigation props) settings)]
-      [[start-location-intent settings]
+      [;[start-location-intent settings]
        [goBack]])))
 
 (defn UserLocation

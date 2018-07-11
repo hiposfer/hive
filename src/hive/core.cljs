@@ -3,8 +3,6 @@
             [oops.core :as oops]
             [hive.foreigns :as fl]
             [hive.state :as state]
-            [hive.services.location :as position]
-            [hive.services.raw.location :as location]
             [hive.rework.core :as work]
             [hive.components.screens.home.welcome :as welcome]
             [datascript.core :as data]
@@ -82,7 +80,6 @@
                      state/init-data)]
     (work/init! conn)
     (work/transact! data)
-    (location/watch! position/defaults)
     (oops/ocall fl/Expo "registerRootComponent" (r/reactify-component RootUi))
     ;; handles Android BackButton
     (oops/ocall fl/ReactNative "BackHandler.addEventListener"

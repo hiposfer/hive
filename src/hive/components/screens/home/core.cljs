@@ -1,5 +1,6 @@
 (ns hive.components.screens.home.core
-  (:require [hive.components.foreigns.expo :as expo]
+  (:require [reagent.core :as r]
+            [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
             [hive.queries :as queries]
@@ -8,6 +9,7 @@
             [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
             [hive.services.mapbox :as mapbox]
+            [hive.services.location :as location]
             [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
             [oops.core :as oops]
@@ -111,13 +113,16 @@
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [navigate (:navigate (:navigation props))
-        id       (data/q queries/user-id (work/db))
-        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
-                              :user/places
-                              :user/position
-                              :user/id]
-                             [:user/id id])]
+  (r/with-let [opts     (assoc location/defaults :callback
+                               #(location/set-position! % (work/db)))
+               tracker  (location/watch! opts)
+               navigate (:navigate (:navigation props))
+               id       (data/q queries/user-id (work/db))
+               info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
+                                     :user/places
+                                     :user/position
+                                     :user/id]
+                                    [:user/id id])]
     [:> react/View {:flex 1}
       (if (empty? (:user/places info))
         [symbols/CityMap info]
@@ -131,7 +136,9 @@
                                :backgroundColor "#FF5722"})
           [:> react/TouchableOpacity
             {:onPress #(navigate "settings" {:user/id id})}
-            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))
+            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]
+    ;; remove tracker on component will unmount
+    (finally (. tracker (then #(. % remove))))))
 
 (def Screen        (rn-nav/stack-screen Home
                      {:title "map"}))
@@ -141,4 +148,4 @@
 ;(data/q queries/routes-ids (work/db))
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
 
-;(data/pull (work/db) '[*] [:route/uuid "5b44d414-79a7-40bf-bf65-d6b417497baa"])
+;(data/pull (work/db) '[*] [:route/uuid "5b44dbb7-ac02-40a0-b50f-6c855c5bff14"])

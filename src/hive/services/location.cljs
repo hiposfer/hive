@@ -1,25 +1,57 @@
 (ns hive.services.location
   (:require [hive.rework.core :as work]
-            [hive.services.raw.location :as location]
             [hive.rework.util :as tool]
             [hive.queries :as queries]
-            [datascript.core :as data]))
+            [datascript.core :as data]
+            [hive.rework.core :as work]
+            [hive.foreigns :as fl]
+            [hive.queries :as queries]
+            [oops.core :as oops]))
+
+;; todo: should altitude be inside the point coordinates?
+(defn point
+  "transform an Expo location format into a GeoJson Feature Point"
+  [expo-loc]
+  (let [point {:type "Point"
+               :coordinates [(:longitude (:coords expo-loc))
+                             (:latitude  (:coords expo-loc))]}
+        ncords (dissoc (:coords expo-loc) :latitude :longitude)]
+    {:type "Feature"
+     :geometry point
+     :properties (merge ncords (dissoc expo-loc :coords))}))
 
 (defn tx-position
   [data]
   [{:user/id (:user/id data)
     :user/position (dissoc data :user/id)}])
 
-(def update-position (comp tx-position
-                           #(assoc % :user/id (data/q queries/user-id (work/db)))
-                           location/point
-                           tool/keywordize))
+(defn set-location!
+  [data db]
+  (let [p    (point (tool/keywordize data))
+        puid (assoc p :user/id (data/q queries/user-id db))]
+    (work/transact! (tx-position puid))))
 
-(def set-location! (comp work/transact! update-position))
+(def defaults {:enableHighAccuracy true
+               :timeInterval       3000})
 
-(def defaults {::location/enableHighAccuracy true
-               ::location/timeInterval       3000
-               ::location/callback           set-location!})
+(defn- request
+  [opts response]
+  (if (not= (:status response) "granted")
+    (ex-info "permission denied" (assoc response ::reason ::permission-denied))
+    (.. fl/Expo (Location.watchPositionAsync (clj->js opts) (::callback opts)))))
 
-;; TODO: write a function that will retry every now and then to set up a location
-;; listener if the previous set didnt succeed
+(defn watch!
+  "watch the user location. Receives an options object according to
+  Expo's API: https://docs.expo.io/versions/latest/sdk/location.html
+
+  Returns a promise that will resolve to the watchPositionAsync return value"
+  [opts]
+  (if (and (= "android" (oops/oget fl/ReactNative "Platform.OS"))
+           (not (oops/oget fl/Expo "Constants.isDevice")))
+    (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
+             (assoc opts ::reason ::emulator-denial))
+    (.. fl/Expo
+        (Permissions.askAsync "location")
+        (then tool/keywordize)
+        (then request)
+        (then tool/reject-on-error))))
