@@ -114,7 +114,7 @@
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
   (r/with-let [opts     (assoc location/defaults :callback
-                               #(location/set-position! % (work/db)))
+                               #(location/set-location! % (work/db)))
                tracker  (location/watch! opts)
                navigate (:navigate (:navigation props))
                id       (data/q queries/user-id (work/db))
