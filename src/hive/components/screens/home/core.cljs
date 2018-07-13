@@ -12,7 +12,6 @@
             [hive.services.location :as location]
             [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
-            [oops.core :as oops]
             [hive.libs.geometry :as geometry]
             [hive.services.kamal :as kamal]
             [hive.components.symbols :as symbols]
@@ -86,7 +85,7 @@
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
-         (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
+         (delay (.. fl/ReactNative (Keyboard.dismiss)))]
         [(delay (.. (js/fetch (mapbox/geocoding args))
                     (then #(. ^js/Response % json))
                     (then tool/keywordize)

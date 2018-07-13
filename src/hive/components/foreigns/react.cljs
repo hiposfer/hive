@@ -1,21 +1,20 @@
 (ns hive.components.foreigns.react
-  (:require [hive.foreigns :as fl]
-            [oops.core :as oops]))
+  (:require [hive.foreigns :as fl]))
 
-(def View   (oops/oget fl/ReactNative "View"))
-(def Image  (oops/oget fl/ReactNative "Image"))
-(def Modal  (oops/oget fl/ReactNative "Modal"))
-(def Text   (oops/oget fl/ReactNative "Text"))
-(def Button (oops/oget fl/ReactNative "Button"))
+(def View   (. fl/ReactNative -View))
+(def Image  (. fl/ReactNative -Image))
+(def Modal  (. fl/ReactNative -Modal))
+(def Text   (. fl/ReactNative -Text))
+(def Button (. fl/ReactNative -Button))
 
-(def TouchableOpacity (oops/oget fl/ReactNative "TouchableOpacity"))
-(def TouchableHighlight (oops/oget fl/ReactNative "TouchableHighlight"))
-(def TouchableWithoutFeedback (oops/oget fl/ReactNative "TouchableWithoutFeedback"))
+(def TouchableOpacity (. fl/ReactNative -TouchableOpacity))
+(def TouchableHighlight (. fl/ReactNative -TouchableHighlight))
+(def TouchableWithoutFeedback (. fl/ReactNative -TouchableWithoutFeedback))
 
-(def ScrollView (oops/oget fl/ReactNative "ScrollView"))
+(def ScrollView (. fl/ReactNative -ScrollView))
 
-(def Input (oops/oget fl/ReactNative "TextInput"))
+(def Input (. fl/ReactNative -TextInput))
 
-(def FlatList (oops/oget fl/ReactNative "FlatList"))
+(def FlatList (. fl/ReactNative -FlatList))
 
-(def ActivityIndicator (oops/oget fl/ReactNative "ActivityIndicator"))
+(def ActivityIndicator (. fl/ReactNative -ActivityIndicator))
