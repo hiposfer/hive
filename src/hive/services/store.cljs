@@ -16,7 +16,7 @@
   ::options can be any of the options defined by Expo. See
   https://docs.expo.io/versions/latest/sdk/securestore.html"
   ^js/Promise
-  [options request]
+  [request options]
   (let [opts    (clj->js (or options {}))
         proms   (for [[k v] request]
                   (.. fl/Expo
