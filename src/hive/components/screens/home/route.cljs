@@ -38,32 +38,24 @@
 
 (defn- TransitLine
   [data]
-  [:> react/View {:flex 2 :flexDirection "row"}
-    [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/Text {:style {:color "gray" :fontSize 12}}
-                     "21:54"]]
-    [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/View (merge {:backgroundColor "red"}
-                            big-circle)]
-      [:> react/View {:backgroundColor "red" :width "8%" :height "80%"}]
-      [:> react/View (merge {:backgroundColor "red" :elevation 10}
-                            big-circle)]]])
+  [:> react/View {:flex 1 :alignItems "center"}
+    [:> react/View (merge {:backgroundColor "red"}
+                          big-circle)]
+    [:> react/View {:backgroundColor "red" :width "8%" :height "80%"}]
+    [:> react/View (merge {:backgroundColor "red" :elevation 10}
+                          big-circle)]])
 
 (defn- WalkingSymbols
   [data]
-  [:> react/View {:flex 2 :flexDirection "row"}
-    [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/Text {:style {:color "gray" :fontSize 12}}
-                     "21:54"]]
-    [:> react/View {:flex 1 :alignItems "center"
-                    :justifyContent "space-around"}
-      (for [i (range 5)]
-        ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
-                                        small-circle)])]])
+  [:> react/View {:flex 1 :alignItems "center"
+                  :justifyContent "space-around"}
+    (for [i (range 5)]
+      ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
+                                      small-circle)])])
 
 (defn- Route
   [props user]
-  (let [data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
+  (let [data   @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}]
                             [:user/id user])
         route     (:route/route (:user/route data))
         sections  (partition-by :mode (:steps route))]
@@ -71,10 +63,13 @@
       (for [part sections]
         ^{:key (:distance (first part))}
          [:> react/View {:flex 9 :flexDirection "row"}
-           (if (= "walking" (some :mode part))
-             [WalkingSymbols part]
-             [TransitLine part])
-           [SectionDetails part]])]))
+          [:> react/View {:flex 1 :alignItems "center"}
+           [:> react/Text {:style {:color "gray" :fontSize 12}}
+                 "21:54"]]
+          (if (= "walking" (some :mode part))
+            [WalkingSymbols part]
+            [TransitLine part])
+          [SectionDetails part]])]))
 
 (defn- Transfers
   []
