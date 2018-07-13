@@ -20,7 +20,7 @@
   could not be stored"
   [key value options]
   (let [c (async/chan 1)]
-    (doto ((:setItemAsync fl/Store) (munge key) (pr-str value) (clj->js options))
+    (doto (. fl/Store (setItemAsync (munge key) (pr-str value) (clj->js options)))
       (.then #(doto c (async/put! [key value])
                       (async/close!)))
       (.catch #(doto c (async/put! %)
@@ -32,7 +32,7 @@
   [key options]
   (let [c     (async/chan 1)
         error (ex-info "key doesnt exists" key ::undefined-value)]
-    (doto ((:getItemAsync fl/Store) (munge key) (clj->js options))
+    (doto (. fl/Store (getItemAsync (munge key) (clj->js options)))
       (.then #(doto c (async/put! (if % [key (read-string %)] error))
                       (async/close!)))
       (.catch #(doto c (async/put! %)
@@ -45,7 +45,7 @@
 (defn delete!
   [key options]
   (let [c (async/chan 1)]
-    (doto ((:deleteItemAsync fl/Store) (munge key) (clj->js options))
+    (doto (. fl/Store (deleteItemAsync (munge key) (clj->js options)))
       (.then #(doto c (async/put! key)
                       (async/close!)))
       (.catch #(doto c (async/put! %)

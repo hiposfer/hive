@@ -36,22 +36,21 @@
 
 (defn- request
   [opts response]
-  (if (not= (:status response) "granted")
-    (ex-info "permission denied" (assoc response ::reason ::permission-denied))
-    (.. fl/Expo (Location.watchPositionAsync (clj->js opts) (::callback opts)))))
+  (if (= (:status response) "granted")
+    (.. fl/Expo (Location.watchPositionAsync (clj->js opts) (::callback opts)))
+    (ex-info "permission denied" (assoc response ::reason ::permission-denied))))
 
 (defn watch!
   "watch the user location. Receives an options object according to
   Expo's API: https://docs.expo.io/versions/latest/sdk/location.html
 
   Returns a promise that will resolve to the watchPositionAsync return value"
-  [opts]
+  ^js/Promise [opts]
   (if (and (= "android" (oops/oget fl/ReactNative "Platform.OS"))
            (not (oops/oget fl/Expo "Constants.isDevice")))
     (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
              (assoc opts ::reason ::emulator-denial))
-    (.. fl/Expo
-        (Permissions.askAsync "location")
-        (then tool/keywordize)
-        (then request)
-        (then tool/reject-on-error))))
+    (.. fl/Expo  (Permissions.askAsync "location")
+                 (then tool/keywordize)
+                 (then request)
+                 (then tool/reject-on-error))))

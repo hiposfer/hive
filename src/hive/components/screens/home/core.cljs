@@ -88,7 +88,7 @@
         [[navigate "location-error" validated]
          (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
         [(delay (.. (js/fetch (mapbox/geocoding args))
-                    (then #(.json %))
+                    (then #(. ^js/Response % json))
                     (then tool/keywordize)
                     (then #(assoc % :user/id (:user/id props)))
                     (then update-places)))]))))
@@ -107,7 +107,7 @@
          [:> expo/Ionicons {:name "ios-search" :size 26}]
          [:> react/TouchableWithoutFeedback
            {:onPress #(when (some? @ref)
-                        (.clear @ref)
+                        (. @ref clear)
                         (work/transact! (update-places data)))}
            [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"

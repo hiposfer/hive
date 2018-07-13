@@ -1,6 +1,5 @@
 (ns hive.services.kamal
-  (:require [cljs.spec.alpha :as s]
-            [clojure.string :as str])
+  (:require [clojure.string :as str])
   (:import (goog.date DateTime)))
 
 (defn- local-time
