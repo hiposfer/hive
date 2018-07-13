@@ -55,21 +55,27 @@
 
 (defn- Route
   [props user]
-  (let [data   @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}]
+  (let [data   @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}
+                             :user/goal]
                             [:user/id user])
         route     (:route/route (:user/route data))
         sections  (partition-by :mode (:steps route))]
     [:> react/View props
-      (for [part sections]
-        ^{:key (:distance (first part))}
-         [:> react/View {:flex 9 :flexDirection "row"}
-          [:> react/View {:flex 1 :alignItems "center"}
-           [:> react/Text {:style {:color "gray" :fontSize 12}}
-                 "21:54"]]
-          (if (= "walking" (some :mode part))
-            [WalkingSymbols part]
-            [TransitLine part])
-          [SectionDetails part]])]))
+      (concat
+        (for [part sections]
+          ^{:key (:distance (first part))}
+           [:> react/View {:flex 9 :flexDirection "row"}
+             [:> react/View {:flex 1 :alignItems "center"}
+               [:> react/Text {:style {:color "gray" :fontSize 12}}
+                     "21:54"]]
+             (if (= "walking" (some :mode part))
+               [WalkingSymbols part]
+               [TransitLine part])
+             [SectionDetails part]])
+        [^{:key -1}
+         [:> react/View {:flex 3 :alignItems "center"}
+           [:> react/Text "You have arrived at"]
+           [:> react/Text (:text (:user/goal data))]]])]))
 
 (defn- Transfers
   []
