@@ -5,7 +5,7 @@
             :url  "https://choosealicense.com/licenses/gpl-3.0/"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
-                 [react-native-externs "0.1.0"]
+                 [react-native-externs "0.2.0"]
                  [org.clojure/core.async "0.3.465"]
                  [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.2"]
@@ -29,6 +29,7 @@
                                              :figwheel     true
                                              :compiler     {:output-to     "target/expo/not-used.js"
                                                             :main          "env.expo.main"
+                                                            :infer-externs  true
                                                             :output-dir    "target/expo"
                                                             :optimizations :none}}]}
                     :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}

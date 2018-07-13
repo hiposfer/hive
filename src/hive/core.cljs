@@ -1,6 +1,5 @@
 (ns hive.core
   (:require [reagent.core :as r]
-            [oops.core :as oops]
             [hive.foreigns :as fl]
             [hive.state :as state]
             [hive.rework.core :as work]
@@ -80,11 +79,11 @@
                      state/init-data)]
     (work/init! conn)
     (work/transact! data)
-    (oops/ocall fl/Expo "registerRootComponent" (r/reactify-component RootUi))
+    (.. fl/Expo registerRootComponent (r/reactify-component RootUi))
     ;; handles Android BackButton
-    (oops/ocall fl/ReactNative "BackHandler.addEventListener"
-                "hardwareBackPress"
-                back-listener)
+    (.. fl/ReactNative (BackHandler.addEventListener
+                         "hardwareBackPress"
+                         back-listener))
     (let [config (reload-config! [:user/city])
           id      (data/q queries/user-id (work/db))
           default (assoc state/defaults :user/id id)

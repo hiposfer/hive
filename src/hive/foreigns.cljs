@@ -1,18 +1,16 @@
-(ns hive.foreigns
-  (:require [oops.core :as oops]))
+(ns hive.foreigns)
 
-(def React       (js/require "react"))
-(def Expo        (js/require "expo"))
-(def ReactNative (js/require "react-native"))
+(def React       ^js/React (js/require "react"))
+(def Expo        ^js/Expo (js/require "expo"))
+(def ReactNative ^js/ReactNative (js/require "react-native"))
 (def JwtDecode   (js/require "jwt-decode"))
 (def ReactNavigation (js/require "react-navigation"))
 
-(def AuthSession (oops/oget Expo "AuthSession"))
+(def AuthSession (. Expo -AuthSession))
 
-(def Store (js->clj (.-SecureStore Expo)
-                    :keywordize-keys true))
+(def Store (. Expo -SecureStore))
 
-(defn alert [title] (.alert (.-Alert ReactNative) title))
+;(defn alert [title] (.. ReactNative -Alert (alert title))
 
 ;; ------ images -----
 (def thumb-sign (js/require "./assets/images/tb_sign2.png"))
