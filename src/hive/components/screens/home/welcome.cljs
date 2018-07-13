@@ -1,7 +1,6 @@
 (ns hive.components.screens.home.welcome
   (:require [hive.queries :as queries]
             [hive.rework.core :as work]
-            [oops.core :as oops]
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
