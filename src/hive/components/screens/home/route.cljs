@@ -32,44 +32,46 @@
   [:> react/View {:style {:flex 9}}
     [:> react/Text (some (comp not-empty :name) data)]])
 
-(defn- SectionLine
+(defn- TransitSection
   [data]
   [:> react/View {:flex 2 :flexDirection "row"}
     [:> react/View {:flex 1 :alignItems "center"}
       [:> react/Text {:style {:color "gray" :fontSize 12}}
                      "21:54"]]
     [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/View (merge {:backgroundColor "red"} big-circle)]
+      [:> react/View (merge {:backgroundColor "red"} small-circle)]
       [:> react/View {:backgroundColor "red" :width "8%" :height "93%"}]
       [:> react/View (merge {:backgroundColor "red" :elevation 10}
-                            big-circle)]]])
+                            small-circle)]]])
 
-(defn- SectionDots
-  [data]
+(defn- WalkingSection
+  [data transfer?]
   [:> react/View {:flex 2 :flexDirection "row"}
     [:> react/View {:flex 1 :alignItems "center"}
       [:> react/Text {:style {:color "gray" :fontSize 12}}
                      "21:54"]]
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
-      [:> react/View (merge {:backgroundColor "gray"} big-circle)]
       (for [i (range 5)]
-        ^{:key i}
-        [:> react/View (merge {:backgroundColor "gray"} small-circle)])]])
+        (if (and transfer? (= 0 i))
+          ^{:key i} [:> react/View (merge {:backgroundColor "transparent"}
+                                          small-circle)]
+          ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
+                                          small-circle)]))]])
 
 (defn- Route
-  [props data]
-  (let [route     (first (:route/routes (:user/route data)))
-        steps     (:steps (first (:legs route)))
-        sections  (partition-by :mode steps)]
-        ;departure (:route/departure route)]
+  [props user]
+  (let [data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
+                            [:user/id user])
+        route     (:route/route (:user/route data))
+        sections  (partition-by :mode (:steps route))]
     [:> react/View props
       (for [part sections]
         ^{:key (:distance (first part))}
          [:> react/View {:flex 9 :flexDirection "row"}
            (if (= "walking" (some :mode part))
-             [SectionDots part]
-             [SectionLine part])
+             [WalkingSection part (not= part (first sections))]
+             [TransitSection part])
            [SectionDetails part]])]))
 
 (defn- Transfers
@@ -83,8 +85,11 @@
          [:> expo/Ionicons {:name "ios-train" :size 32}]]))
 
 (defn- Info
-  [props data]
-  (let [route   (first (:route/routes (:user/route data)))
+  [props user]
+  (let [data   @(work/pull! [{:user/route [:route/route]}
+                             :user/goal]
+                            [:user/id user])
+        route   (:route/route (:user/route data))
         poi     (:text (:user/goal data))]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
@@ -99,12 +104,13 @@
   [props]
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
         id      (data/q queries/user-id (work/db))
-        data   @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
-                             {:user/route [:route/routes :route/departure]}
-                             :user/goal]
+        data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
                             [:user/id id])
-        route   (first (:route/routes (:user/route data)))
-        path    (map geometry/latlng (:coordinates (:geometry route)))]
+        path    (sequence (comp (map :geometry)
+                                (map :coordinates)
+                                (mapcat #(drop-last %))
+                                (map geometry/latlng))
+                          (:steps (:route/route (:user/route data))))]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap id
@@ -112,8 +118,8 @@
                                 :strokeColor "#3bb2d0"
                                 :strokeWidth 4}]]]
       [:> react/View {:height (* 1.1 (:height window)) :backgroundColor "white"}
-        [Info {:flex 1 :paddingTop "1%"} data]
-        [Route {:flex 9} data]]
+        [Info {:flex 1 :paddingTop "1%"} id]
+        [Route {:flex 9} id]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
@@ -125,3 +131,11 @@
 ;hive.rework.state/conn
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)
+
+;(let [id      (data/q queries/user-id (work/db))
+;      data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
+;                          [:user/id id])]
+;  ;(sequence (comp (map :geometry)
+;  ;                (mapcat :coordinates)
+;  ;                (map geometry/latlng))
+;  (:steps (:route/route (:user/route data))))
