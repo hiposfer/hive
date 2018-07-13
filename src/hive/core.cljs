@@ -84,11 +84,12 @@
     (. fl/ReactNative (BackHandler.addEventListener
                         "hardwareBackPress"
                         back-listener))
-    (let [config (reload-config! [:user/city])
+    (let [config  (store/load! {} :user/city)
           id      (data/q queries/user-id (work/db))
-          default (assoc state/defaults :user/id id)
-          tx      (async/into [default] config)]
-      (work/transact! tx))))
+          default (assoc state/defaults :user/id id)]
+      (work/transact!
+        (.. config
+            (then (fn [m] (if (empty? m) [default] [(assoc m :user/id id)]))))))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 
