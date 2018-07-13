@@ -25,18 +25,22 @@
     :user/position (dissoc data :user/id)}])
 
 (defn set-location!
-  [data db]
+  [db data]
   (let [p    (point (tool/keywordize data))
         puid (assoc p :user/id (data/q queries/user-id db))]
     (work/transact! (tx-position puid))))
 
-(def defaults {:enableHighAccuracy true
-               :timeInterval       3000})
+(defn with-defaults
+  "sensitive defaults for location tracking"
+  [db]
+  {:enableHighAccuracy true
+   :timeInterval       3000
+   :callback          #(set-location! db %)})
 
 (defn- request
   [opts response]
   (if (= (:status response) "granted")
-    (.. fl/Expo (Location.watchPositionAsync (clj->js opts) (::callback opts)))
+    (.. fl/Expo (Location.watchPositionAsync (clj->js opts) (:callback opts)))
     (ex-info "permission denied" (assoc response ::reason ::permission-denied))))
 
 (defn watch!
