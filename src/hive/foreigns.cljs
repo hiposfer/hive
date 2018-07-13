@@ -8,8 +8,6 @@
 
 (def AuthSession (. Expo -AuthSession))
 
-(def Store (. Expo -SecureStore))
-
 ;(defn alert [title] (.. ReactNative -Alert (alert title))
 
 ;; ------ images -----
