@@ -89,13 +89,13 @@
         [(delay (.. (js/fetch (mapbox/geocoding args))
                     (then #(. ^js/Response % json))
                     (then tool/keywordize)
-                    (then #(assoc % :user/id (:user/id props)))
+                    (then #(assoc % :user/id user))
                     (then update-places)))]))))
 
 (defn- SearchBar
   [user props]
-  (let [data    @(work/pull! [:user/places] [:user/id user])
-        db       (work/db)
+  (let [data    @(work/pull! [:user/places :user/id]
+                             [:user/id user])
         ref      (volatile! nil)]
     [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
                     :elevation 5 :borderRadius 5 :shadowColor "#000000"
@@ -112,7 +112,7 @@
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
                       :underlineColorAndroid "transparent"
-                      :onChangeText #(run! work/transact! (autocomplete % db props))}]]))
+                      :onChangeText #(run! work/transact! (autocomplete % (work/db) props))}]]))
 
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
@@ -120,16 +120,16 @@
   (r/with-let [db       (work/db)
                tracker  (location/watch! (location/with-defaults db))
                navigate (:navigate (:navigation props))
-               id       (data/q queries/user-id (work/db))
-               info    @(work/pull! [:user/places] [:user/id id])]
+               id       (data/q queries/user-id db)
+               info     (work/pull! [:user/places] [:user/id id])]
     [:> react/View {:flex 1}
-      (if (empty? (:user/places info))
+      (if (empty? (:user/places @info))
         [symbols/CityMap id]
         [Places id props])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
         [SearchBar id props]]
-      (when (empty? (:user/places info))
+      (when (empty? (:user/places @info))
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
                                :backgroundColor "#FF5722"})

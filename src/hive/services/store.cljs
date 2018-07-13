@@ -27,7 +27,7 @@
     (.. (js/Promise.all (clj->js proms))
         (then #(into {} (remove tool/error? %))))))
 
-;(.. (save! {} {:foo/bar 2})
+;(.. (save! {:foo/bar 3} nil)
 ;    (then println))
 
 ;Expo.SecureStore.getItemAsync(key, options)
