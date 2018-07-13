@@ -29,23 +29,29 @@
 
 (defn- SectionDetails
   [data]
-  [:> react/View {:style {:flex 9}}
-    [:> react/Text (some (comp not-empty :name) data)]])
+  [:> react/View {:flex 9 :justifyContent "space-between"}
+    [:> react/Text (some (comp not-empty :name) data)]
+    [:> react/View {:flex 1 :justifyContent "center"}
+      (if (= "transit" (:mode (first data)))
+         [:> react/Text {:style {:color "gray"}}
+                        (:instruction (:maneuver (first data)))])]
+    [:> react/Text (:name (last data))]])
 
-(defn- TransitSection
+(defn- TransitLine
   [data]
   [:> react/View {:flex 2 :flexDirection "row"}
     [:> react/View {:flex 1 :alignItems "center"}
       [:> react/Text {:style {:color "gray" :fontSize 12}}
                      "21:54"]]
     [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/View (merge {:backgroundColor "red"} small-circle)]
-      [:> react/View {:backgroundColor "red" :width "8%" :height "93%"}]
+      [:> react/View (merge {:backgroundColor "red"}
+                            big-circle)]
+      [:> react/View {:backgroundColor "red" :width "8%" :height "80%"}]
       [:> react/View (merge {:backgroundColor "red" :elevation 10}
-                            small-circle)]]])
+                            big-circle)]]])
 
-(defn- WalkingSection
-  [data transfer?]
+(defn- WalkingSymbols
+  [data]
   [:> react/View {:flex 2 :flexDirection "row"}
     [:> react/View {:flex 1 :alignItems "center"}
       [:> react/Text {:style {:color "gray" :fontSize 12}}
@@ -53,11 +59,8 @@
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range 5)]
-        (if (and transfer? (= 0 i))
-          ^{:key i} [:> react/View (merge {:backgroundColor "transparent"}
-                                          small-circle)]
-          ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
-                                          small-circle)]))]])
+        ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
+                                        small-circle)])]])
 
 (defn- Route
   [props user]
@@ -70,8 +73,8 @@
         ^{:key (:distance (first part))}
          [:> react/View {:flex 9 :flexDirection "row"}
            (if (= "walking" (some :mode part))
-             [WalkingSection part (not= part (first sections))]
-             [TransitSection part])
+             [WalkingSymbols part]
+             [TransitLine part])
            [SectionDetails part]])]))
 
 (defn- Transfers
