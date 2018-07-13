@@ -51,5 +51,5 @@
              (assoc opts ::reason ::emulator-denial))
     (.. fl/Expo  (Permissions.askAsync "location")
                  (then tool/keywordize)
-                 (then request)
+                 (then #(request opts %))
                  (then tool/reject-on-error))))

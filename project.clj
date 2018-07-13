@@ -4,6 +4,7 @@
   :license {:name "LGPL v3"
             :url  "https://choosealicense.com/licenses/gpl-3.0/"}
   :dependencies [[org.clojure/clojure "1.9.0"]
+                 ;; TODO: update to next release for better inference
                  [org.clojure/clojurescript "1.10.339"]
                  [react-native-externs "0.2.0"]
                  [org.clojure/core.async "0.3.465"]
