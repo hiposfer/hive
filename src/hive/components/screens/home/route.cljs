@@ -30,11 +30,10 @@
 (defn- SectionDetails
   [data]
   [:> react/View {:flex 9 :justifyContent "space-between"}
-    [:> react/Text (some (comp not-empty :name) data)]
+    [:> react/Text (some (comp not-empty :name) (butlast data))]
     [:> react/View {:flex 1 :justifyContent "center"}
-      (if (= "transit" (:mode (first data)))
-         [:> react/Text {:style {:color "gray"}}
-                        (:instruction (:maneuver (first data)))])]
+      [:> react/Text {:style {:color "gray"}}
+                     (:instruction (:maneuver (first data)))]]
     [:> react/Text (:name (last data))]])
 
 (defn- TransitLine
