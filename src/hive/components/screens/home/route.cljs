@@ -9,7 +9,8 @@
             [hive.foreigns :as fl]
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
-            [goog.date.duration :as duration]))
+            [goog.date.duration :as duration])
+  (:import [goog.date Interval]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
@@ -55,11 +56,13 @@
 
 (defn- Route
   [props user]
-  (let [data   @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}
-                             :user/goal]
-                            [:user/id user])
-        route     (:route/route (:user/route data))
-        sections  (partition-by :mode (:steps route))]
+  (let [data     @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}
+                               :user/goal]
+                              [:user/id user])
+        route    (:route/route (:user/route data))
+        sections (partition-by :mode (:steps route))
+        date     (when (:route/departure (:user/route data))
+                   (. (:route/departure (:user/route data)) (clone)))]
     [:> react/View props
       (concat
         (for [part sections]
@@ -67,13 +70,17 @@
            [:> react/View {:flex 9 :flexDirection "row"}
              [:> react/View {:flex 1 :alignItems "center"}
                [:> react/Text {:style {:color "gray" :fontSize 12}}
-                     "21:54"]]
+                 (when (some? date)
+                   (let [i    (Interval. 0 0 0 0 0 (apply + (map :duration part)))
+                         text (subs (. date (toIsoTimeString)) 0 5)]
+                     (. date (add i)) ;; add for next iteration
+                     (do text)))]]
              (if (= "walking" (some :mode part))
                [WalkingSymbols part]
                [TransitLine part])
              [SectionDetails part]])
         [^{:key -1}
-         [:> react/View {:flex 3 :alignItems "center"}
+         [:> react/View {:flex 4 :alignItems "center"}
            [:> react/Text "You have arrived at"]
            [:> react/Text (:text (:user/goal data))]]])]))
 
