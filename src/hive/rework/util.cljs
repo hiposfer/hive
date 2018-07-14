@@ -69,3 +69,8 @@
   "transducer for stopping the execution of a channel transducer if
   an error is encountered"
   (halt-when error?))
+
+(defn reject-on-error
+  "reject a promise if its value is an error"
+  [v]
+  (if (error? v) (throw v) v))

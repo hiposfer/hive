@@ -1,7 +1,6 @@
 (ns hive.components.screens.home.welcome
   (:require [hive.queries :as queries]
             [hive.rework.core :as work]
-            [oops.core :as oops]
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
@@ -29,7 +28,7 @@
                (str (js/encodeURIComponent (name k)) "=" (js/encodeURIComponent v)))
         opts #js {:authUrl (str "https://" domain "/authorize?" (str/join "&" lp))}
         cb   (fn [result] (fl/JwtDecode (:id_token (:params result))))]
-    (tool/async (oops/ocall fl/Expo "AuthSession.startAsync" opts)
+    (tool/async (.. fl/Expo (AuthSession.startAsync opts))
                 (map tool/keywordize)
                 (map (tool/validate ::response))
                 tool/bypass-error
@@ -40,7 +39,7 @@
   "the main screen of the app. Contains a search bar and a mapview"
   [props]
   (let [navigate (:navigate (:navigation props))
-        redirectUrl  (oops/ocall fl/Expo "AuthSession.getRedirectUrl")
+        redirectUrl  (.. fl/Expo (AuthSession.getRedirectUrl))
         [domain cid] (data/q '[:find [?domain ?id]
                                :where [_ :ENV/AUTH0_DOMAIN ?domain]
                                       [_ :ENV/CLIENT_ID ?id]]
@@ -49,7 +48,7 @@
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
                              [:user/id id])
         coords   (:coordinates (:city/geometry (:user/city info)))
-        dims     (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
+        dims     (tool/keywordize (.. fl/ReactNative (Dimensions.get "window")))]
     [:> react/View {:style {:flex 1 :backgroundColor "#FFFFFF50"}}
       [:> react/View {:style {:flex 1} :pointerEvents "none"}
         [:> expo/MapView {:style  {:flex 1} :showsUserLocation true

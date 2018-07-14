@@ -9,7 +9,7 @@
 (enable-console-print!)
 ;; Setting *explain-out* does not work correctly in ClojureScript versions prior
 ;; to 1.9.562 due to differences in explain-data
-(set! s/*explain-out* (expound/custom-printer {:print-specs? false :theme :figwheel-theme}))
+(set! s/*explain-out* (expound/custom-printer {:show-valid-values? true :print-specs? false}))
 
 ;; initialization required by fighwheel bridge to play well with
 ;; react native. Please omit the ugliness of this

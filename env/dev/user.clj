@@ -12,10 +12,11 @@
 (defn enable-source-maps
   "patch the metro packager to use Clojurescript source maps"
   []
-  (println "Source maps enabled.")
-  (let [path "node_modules/metro/src/Server/index.js"]
-    (spit path
-          (str/replace (slurp path) "/\\.map$/" "/main.map$/"))))
+  (let [path "node_modules/metro/src/Server/index.js"
+        content (slurp path)]
+    (spit path (str/replace content #"match\(\/\\.map\$\/\)"
+                                    "match(/main\\.*\\\\.map\\$/)"))
+    (println "Source maps enabled.")))
 
 (defn write-main-js
   "create a fake main.js file to make the metro packager happy"
@@ -101,7 +102,11 @@
   []
   (let [hostname (.getHostName (InetAddress/getLocalHost))
         ip (get-expo-ip)]
-    (-> "(ns env.dev)\n(def hostname \"%s\")\n(def ip \"%s\")"
+    (-> "
+    (ns env.dev)
+
+    (def hostname \"%s\")
+    (def ip \"%s\")"
         (format
           hostname
           ip)
@@ -137,7 +142,16 @@
                                              (str/replace "@2x" "")
                                              (str/replace "@3x" ""))))))]
     (try
-      (-> "(ns env.index\n  (:require [env.dev :as dev]))\n\n;; undo main.js goog preamble hack\n(set! js/window.goog js/undefined)\n\n(-> (js/require \"figwheel-bridge\")\n    (.withModules %s)\n    (.start \"main\" \"expo\" \"%s\"))\n"
+      (-> "
+      (ns env.index
+        (:require [env.dev :as dev]))
+
+      ;; undo main.js goog preamble hack
+      (set! js/window.goog js/undefined)
+
+      (-> (js/require \"figwheel-bridge\")
+          (.withModules %s)
+          (.start \"main\" \"expo\" \"%s\"))"
           (format
             (str "#js " (with-out-str (println modules-map)))
             devHost)
