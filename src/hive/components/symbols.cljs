@@ -1,7 +1,8 @@
 (ns hive.components.symbols
   (:require [hive.components.foreigns.react :as react]
             [hive.libs.geometry :as geometry]
-            [hive.components.foreigns.expo :as expo]))
+            [hive.components.foreigns.expo :as expo]
+            [hive.rework.core :as work]))
 
 (defn PointOfInterest
   "Components for displaying location related items. Usually used inside a List"
@@ -18,14 +19,17 @@
 
 (defn CityMap
   "a React Native MapView component which will only re-render on user-city change"
-  [user]
-  (let [coords (:coordinates (:city/geometry (:user/city user)))]
+  [user & content]
+  (let [data  @(work/pull! [{:user/city [:city/geometry]}]
+                           [:user/id user])
+        coords (:coordinates (:city/geometry (:user/city data)))]
     (if (nil? coords)
       [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
-      [:> expo/MapView {:region (merge (geometry/latlng coords)
-                                       {:latitudeDelta 0.02 :longitudeDelta 0.02})
-                        :showsUserLocation true :style {:flex 1}
-                        :showsMyLocationButton true}])))
+      (into [:> expo/MapView {:region (merge (geometry/latlng coords)
+                                             {:latitudeDelta 0.02 :longitudeDelta 0.02})
+                              :showsUserLocation true :style {:flex 1}
+                              :showsMyLocationButton true}]
+            content))))
 
 (def shadow
   {:elevation 3 :shadowColor "#000000" :shadowRadius 5

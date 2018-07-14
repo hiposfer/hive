@@ -70,7 +70,7 @@
   an error is encountered"
   (halt-when error?))
 
-(defn reject
-  "same as bypass error but targeted to promises"
+(defn reject-on-error
+  "reject a promise if its value is an error"
   [v]
   (if (error? v) (throw v) v))

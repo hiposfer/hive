@@ -1,5 +1,6 @@
 (ns hive.components.screens.home.core
-  (:require [hive.components.foreigns.expo :as expo]
+  (:require [reagent.core :as r]
+            [hive.components.foreigns.expo :as expo]
             [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
             [hive.queries :as queries]
@@ -8,9 +9,9 @@
             [hive.components.screens.home.route :as route]
             [hive.components.screens.errors :as errors]
             [hive.services.mapbox :as mapbox]
+            [hive.services.location :as location]
             [hive.components.foreigns.react :as react]
             [hive.foreigns :as fl]
-            [oops.core :as oops]
             [hive.libs.geometry :as geometry]
             [hive.services.kamal :as kamal]
             [hive.components.symbols :as symbols]
@@ -23,10 +24,10 @@
 
 (defn- set-target
   "associates a target and a path to get there with the user"
-  [target props]
-  (let [user     (:user/id props)
-        navigate (:navigate (:navigation props))
-        start    (:coordinates (:geometry (:user/position props)))
+  [db navigate target]
+  (let [user     (data/q queries/user-id db)
+        position (data/pull db [:user/position] [:user/id user])
+        start    (:coordinates (:geometry (:user/position position)))
         end      (:coordinates (:geometry target))
         now      (new DateTime)
         [url opts] (kamal/directions [start end] now)]
@@ -40,23 +41,26 @@
 (defn- Places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
-  [props]
-  (let [height   (* 80 (count (:user/places props)))]
+  [user props]
+  (let [navigate (:navigate (:navigation props))
+        data    @(work/pull! [:user/places :user/position]
+                             [:user/id user])
+        height   (* 80 (count (:user/places data)))]
     [:> react/View {:height height :paddingTop 100 :paddingLeft 10}
-     (for [target (:user/places props)
-           :let [distance (/ (geometry/haversine (:user/position props) target)
+     (for [target (:user/places data)
+           :let [distance (/ (geometry/haversine (:user/position data) target)
                              1000)]]
        ^{:key (:id target)}
        [:> react/TouchableOpacity
-         {:style {:flex 1 :flexDirection "row"}
-          :on-press #(run! work/transact! (set-target target props))}
+         {:style    {:flex 1 :flexDirection "row"}
+          :on-press #(run! work/transact! (set-target (work/db) navigate target))}
          [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-           [:> react/Text {:note true} (str (-> distance (.toPrecision 2)) " km")]]
+           [:> react/Text {:note true} (str (. distance (toPrecision 2)) " km")]]
          [:> react/View {:flex 0.8 :justifyContent "flex-end"}
            [:> react/Text {:numberOfLines 1} (:text target)]
            [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
-             (str/join ", " (map :text (:context target)))]]])]))
+            (str/join ", " (map :text (:context target)))]]])]))
 
 (defn- update-places
   "transact the geocoding result under the user id"
@@ -67,71 +71,73 @@
 (defn- autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  [text props]
+  [text db props]
   (when (not (empty? text))
     (let [navigate (:navigate (:navigation props))
+          user     (data/q queries/user-id db)
+          data     (data/pull db [:user/position {:user/city [:city/bbox]}]
+                                 [:user/id user])
+          token    (data/q queries/mapbox-token db)
           args {:query        text
-                :proximity    (:user/position props)
-                :access_token (:ENV/MAPBOX props)
-                :bbox         (:city/bbox (:user/city props))}
+                :proximity    (:user/position data)
+                :access_token token
+                :bbox         (:city/bbox (:user/city data))}
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
-         (delay (oops/ocall fl/ReactNative "Keyboard.dismiss"))]
+         (delay (.. fl/ReactNative (Keyboard.dismiss)))]
         [(delay (.. (js/fetch (mapbox/geocoding args))
-                    (then #(.json %))
+                    (then #(. ^js/Response % json))
                     (then tool/keywordize)
-                    (then #(assoc % :user/id (:user/id props)))
+                    (then #(assoc % :user/id user))
                     (then update-places)))]))))
 
 (defn- SearchBar
-  [props]
-  (let [places   (:user/places props)
-        token    (data/q queries/mapbox-token (work/db))
-        data     (assoc props :ENV/MAPBOX token)
+  [user props]
+  (let [data    @(work/pull! [:user/places :user/id]
+                             [:user/id user])
         ref      (volatile! nil)]
     [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
                     :elevation 5 :borderRadius 5 :shadowColor "#000000"
                     :shadowRadius 5 :shadowOffset {:width 0 :height 3}
                     :shadowOpacity 1.0}
      [:> react/View {:height 30 :width 30 :padding 8 :flex 0.1}
-       (if (empty? places)
+       (if (empty? (:user/places data))
          [:> expo/Ionicons {:name "ios-search" :size 26}]
          [:> react/TouchableWithoutFeedback
            {:onPress #(when (some? @ref)
-                        (.clear @ref)
-                        (work/transact! (update-places props)))}
+                        (. @ref clear)
+                        (work/transact! (update-places data)))}
            [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
                       :underlineColorAndroid "transparent"
-                      :onChangeText #(run! work/transact! (autocomplete % data))}]]))
-
+                      :onChangeText #(run! work/transact! (autocomplete % (work/db) props))}]]))
 
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (let [navigate (:navigate (:navigation props))
-        id       (data/q queries/user-id (work/db))
-        info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}
-                              :user/places
-                              :user/position
-                              :user/id]
-                             [:user/id id])]
+  (r/with-let [db       (work/db)
+               tracker  (location/watch! (location/with-defaults db))
+               navigate (:navigate (:navigation props))
+               id       (data/q queries/user-id db)
+               info     (work/pull! [:user/places] [:user/id id])]
     [:> react/View {:flex 1}
-      (if (empty? (:user/places info))
-        [symbols/CityMap info]
-        [Places (merge props info)])
+      (if (empty? (:user/places @info))
+        [symbols/CityMap id]
+        [Places id props])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
-        [SearchBar info]]
-      (when (empty? (:user/places info))
+        [SearchBar id props]]
+      (when (empty? (:user/places @info))
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
                                :backgroundColor "#FF5722"})
           [:> react/TouchableOpacity
             {:onPress #(navigate "settings" {:user/id id})}
-            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]))
+            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]
+    ;; remove tracker on component will unmount
+    (finally (. tracker (then #(. % remove))))))
 
 (def Screen        (rn-nav/stack-screen Home
                      {:title "map"}))
@@ -141,4 +147,4 @@
 ;(data/q queries/routes-ids (work/db))
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
 
-;(data/pull (work/db) '[*] [:route/uuid "5b44d414-79a7-40bf-bf65-d6b417497baa"])
+;(data/pull (work/db) '[*] [:route/uuid "5b44dbb7-ac02-40a0-b50f-6c855c5bff14"])

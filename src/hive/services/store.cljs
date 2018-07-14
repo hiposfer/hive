@@ -1,80 +1,70 @@
 (ns hive.services.store
-  (:require [hive.services.raw.store :as store]
-            [cljs.core.async :as async]
-            [cljs.spec.alpha :as s]
-            [hive.rework.util :as tool]))
+  (:require [cljs.reader :refer [read-string]]
+            [hive.rework.util :as tool]
+            [hive.foreigns :as fl]))
 
 ;https://docs.expo.io/versions/latest/sdk/securestore.html
 
 ;Expo.SecureStore.setItemAsync(key, value, options)
 (defn save!
-  "Takes a map of namespaced keywords and stores it. Returns a channel containing
-  a map of the stored values
+  "Takes a map of namespaced keywords and stores it. Returns a promise
+   containing a map of the stored values
 
   Example:
-  (save! {:hive/foo 1 :hive/bar 2 ::options {}})
+  (save! {:hive/foo 1 :hive/bar 2} options})
 
   ::options can be any of the options defined by Expo. See
   https://docs.expo.io/versions/latest/sdk/securestore.html"
-  [request]
-  (let [opts    (or (::options request) {})
-        request (dissoc request ::options)
-        chans   (map (fn [[k v]] (store/save! k v opts)) request)
-        res     (async/merge chans (count request))]
-    (async/into {} res)))
+  ^js/Promise
+  [request options]
+  (let [opts    (clj->js (or options {}))
+        proms   (for [[k v] request]
+                  (.. fl/Expo
+                      -SecureStore
+                      (setItemAsync (munge k) (pr-str v) opts)
+                      (then #(vector k v))
+                      (catch identity)))] ;; return error
+    (.. (js/Promise.all (clj->js proms))
+        (then #(into {} (remove tool/error? %))))))
 
-;(async/take! (save! {:foo "bar" :baz "rofl"})
-;             cljs.pprint/pprint
-;             cljs.pprint/pprint)
+;(.. (save! {:foo/bar 3} nil)
+;    (then println))
 
 ;Expo.SecureStore.getItemAsync(key, options)
 (defn load!
-  "takes a sequence of namespaced keywords and returns a channel containing a
+  "takes a sequence of namespaced keywords and returns a promise containing a
   map of keys to values"
-  [keys]
-  (let [keys  (distinct keys)
-        chans (map #(store/load! % {}) keys)
-        res   (async/merge chans (count keys))
-        to    (async/chan (count keys) (remove tool/error?))
-        clean (async/pipe res to)]
-    (async/into {} clean)))
+  ^js/Promise
+  [options & ks]
+  (let [opts  (clj->js options)
+        proms (for [k (distinct ks)]
+                (.. fl/Expo
+                    -SecureStore
+                    (getItemAsync (munge k) opts)
+                    (then #(if (some? %) [k (read-string %)] nil))
+                    (catch identity)))] ;; return error
+    (.. (js/Promise.all (clj->js proms))
+        (then #(into {} (remove nil? (remove tool/error? %)))))))
 
-;(async/take! (load! [:foo :baz])
-;             cljs.pprint/pprint
-;             cljs.pprint/pprint)
+;(.. (load! {} :foo/bar)
+;    (then println))
 
 ;Expo.SecureStore.deleteItemAsync(key, options)
 ;; todo: should this function return the value previously stored there?
 ;; that would imply a load! before :(
 (defn delete!
-  "takes a sequence of namespaced keywords and returns a channel with the
+  "takes a sequence of namespaced keywords and returns a promise with the
   keys of the elements that were deleted"
-  [keys]
-  (let [keys  (distinct keys)
-        chans (map #(store/delete! % {}) keys)
-        res   (async/merge chans (count keys))
-        to    (async/chan (count keys) (remove tool/error?))
-        clean (async/pipe res to)]
-    (async/into [] clean)))
+  [options & ks]
+  (let [opts  (clj->js options)
+        proms (for [k (distinct ks)]
+                (.. fl/Expo
+                    -SecureStore
+                    (deleteItemAsync (munge k) opts)
+                    (then #(println k))
+                    (catch identity)))] ;; return error
+    (.. (js/Promise.all proms)
+        (then #(into [] (remove tool/error? %))))))
 
-;(async/take! (delete! "foo" {})
-;             cljs.pprint/pprint))))
-
-(s/fdef save!
-        :args (s/cat :request (s/map-of ::store/key ::store/value))
-        :ret tool/chan?)
-
-(s/fdef load!
-        :args (s/cat :ks (s/coll-of ::store/key))
-        :ret tool/chan?)
-
-(s/fdef delete!
-        :args (s/cat :ks (s/coll-of ::store/key))
-        :ret tool/chan?)
-
-;(require '[clojure.spec.test.alpha :as stest])
-
-;(stest/instrument `save!)
-
-;(save! {:foo/bar 1})
-;(load!)
+;(delete! {} :foo/bar)
+;(then println))
