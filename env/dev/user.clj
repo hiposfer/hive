@@ -29,6 +29,10 @@
            (take-while #(not= ::eof %))
            (doall)))))
 
+(defn- cljs-file?
+  [^File file]
+  (and (. file (isFile)) (str/ends-with? (. file (getPath)) ".cljs")))
+
 (defn enable-source-maps
   "patch the metro packager to use Clojurescript source maps"
   []
@@ -134,14 +138,15 @@
 
 (defn rebuild-env-index
   "prebuild the set of files that the metro packager requires in advance"
-  [js-modules]
-  (let [devHost (get-expo-ip)
+  [m]
+  (let [mods    (flatten (vals m))
+        devHost (get-expo-ip)
         modules (->> (file-seq (io/file "assets"))
                      (filter #(and (not (re-find #"DS_Store" (str %)))
                                    (.isFile %)))
                      (map (fn [file] (when-let [unix-path (->> file .toPath .iterator iterator-seq (str/join "/"))]
                                        (str "../../" unix-path))))
-                     (concat js-modules ["react" "react-native" "expo" "create-react-class"])
+                     (concat mods ["react" "react-native" "expo" "create-react-class"])
                      (distinct))
         modules-map (zipmap
                       (->> modules
@@ -216,22 +221,20 @@
         new-modules (on-file-change old-modules kind file)]
     (when (not= old-modules new-modules)
       (spit modules-file new-modules)
-      (rebuild-env-index (flatten (vals new-modules))))
+      (rebuild-env-index new-modules))
     ctx))
 
 (defn rebuild-modules
   []
    ;; traverse src dir and fetch all modules
   (let [mapping (for [fs (file-seq (File. "src"))
-                      :when (.isFile fs)
+                      :when (cljs-file? fs)
                       :let [filename (relative-path fs)]
-                      :when (str/ends-with? filename ".cljs")
                       :let [js-modules (required-modules filename)]
                       :when (not-empty js-modules)]
                   [filename (vec js-modules)])
         modules (into {} mapping)]
-    (spit modules-file modules)
-    (rebuild-env-index (flatten (vals modules)))))
+    (spit modules-file modules)))
 
   ;; Lein
 (defn start-figwheel
@@ -241,12 +244,14 @@
   (when (.exists (File. ^String modules-file))
     (io/delete-file modules-file))
   (rebuild-modules)
+  (rebuild-env-index (edn/read-string (slurp modules-file)))
   (enable-source-maps)
   (write-main-js)
   (write-env-dev)
   ;; Each file maybe corresponds to multiple modules.
   (hawk/watch! [{:paths   ["src"]
-                 :filter  hawk/file?
+                 :filter  (fn cljs-file?? [_ {:keys [file]}]
+                            (cljs-file? file))
                  :handler hawk-handler}])
   (ra/start-figwheel! "main")
   (ra/cljs-repl))
