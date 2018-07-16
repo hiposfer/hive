@@ -15,9 +15,10 @@
   "read a clojure file into a sequence of edn objects.
 
   WARNING:
-   EDN is a subset of Clojure code representations so it is not guarantee
-   to be able to read a Clojure file. We apply some string replacements to
-   avoid crashing on those and ignore them since we are not looking for them"
+   This is using the clojure.tools.reader/read api which might execute
+   your code. Although it should NOT do that there is afaik no guarantee
+   of it. Only your own code will be read though so nothing should happen
+   here that was not meant to happen in your original code base"
   [filename]
   (binding [reader/*alias-map* identity
             reader/*default-data-reader-fn* (fn [tag v] v)

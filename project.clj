@@ -16,7 +16,6 @@
             [lein-figwheel "0.5.14"]]
   :clean-targets ["target/" "main.js"]
   :aliases {"figwheel"        ["run" "-m" "user" "--figwheel"]
-            "rebuild-modules" ["run" "-m" "user" "--rebuild-modules"]
             "prod-build"      ["do" ["clean"]
                                     ["with-profile" "prod" "cljsbuild" "once" "main"]]}
   :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.14"]
@@ -39,6 +38,7 @@
                                                          :main               "env.expo.main"
                                                          :output-dir         "target/expo"
                                                          :static-fns         true
+                                                         :fn-invoke-direct   true
                                                          :externs            ["js/externs.js"]
                                                          :infer-externs      true
                                                          :parallel-build     true
