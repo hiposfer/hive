@@ -4,10 +4,34 @@
             [clojure.data.json :as json]
             [clojure.string :as str]
             [hawk.core :as hawk]
-            [clojure.tools.reader.edn :as edn])
+            [clojure.tools.reader.edn :as edn]
+            [clojure.tools.reader :as reader]
+            [clojure.tools.reader.reader-types :refer [string-push-back-reader]])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
-           (java.io File)))
+           (java.io File PushbackReader)))
 ;; This namespace is loaded automatically by nREPL
+
+(defn- read-clj
+  "read a clojure file into a sequence of edn objects.
+
+  WARNING:
+   This is using the clojure.tools.reader/read api which might execute
+   your code. Although it should NOT do that there is afaik no guarantee
+   of it. Only your own code will be read though so nothing should happen
+   here that was not meant to happen in your original code base"
+  [filename]
+  (binding [reader/*alias-map* identity
+            reader/*default-data-reader-fn* (fn [tag v] v)
+            reader/*read-eval* false]
+    (with-open [infile (PushbackReader. (io/reader filename))]
+      (->> (repeatedly #(reader/read {:read-cond :allow :features #{:cljs} :eof ::eof}
+                                     infile))
+           (take-while #(not= ::eof %))
+           (doall)))))
+
+(defn- cljs-file?
+  [^File file]
+  (and (. file (isFile)) (str/ends-with? (. file (getPath)) ".cljs")))
 
 (defn enable-source-maps
   "patch the metro packager to use Clojurescript source maps"
@@ -114,14 +138,15 @@
 
 (defn rebuild-env-index
   "prebuild the set of files that the metro packager requires in advance"
-  [js-modules]
-  (let [devHost (get-expo-ip)
+  [m]
+  (let [mods    (flatten (vals m))
+        devHost (get-expo-ip)
         modules (->> (file-seq (io/file "assets"))
                      (filter #(and (not (re-find #"DS_Store" (str %)))
                                    (.isFile %)))
                      (map (fn [file] (when-let [unix-path (->> file .toPath .iterator iterator-seq (str/join "/"))]
                                        (str "../../" unix-path))))
-                     (concat js-modules ["react" "react-native" "expo" "create-react-class"])
+                     (concat mods ["react" "react-native" "expo" "create-react-class"])
                      (distinct))
         modules-map (zipmap
                       (->> modules
@@ -160,73 +185,74 @@
       (catch Exception e
         (println "Error: " e)))))
 
+(def user-dir (System/getProperty "user.dir"))
+
+(def modules-file ".js-modules.edn")
+
+(defn relative-path
+  "transforms an absolute filename to a relative one. Relative to the current user.dir"
+  [^File file]
+  (str/replace (. file (getPath)) (str user-dir "/") ""))
+
 (defn- required-modules
   "returns a vector of string with the names of the imported modules. Ignoring those
   that are commented out"
-  [file-content]
-  (some->> file-content
-           (re-seq #"(?m)^[^;\n]+?\(js/require \"([^\"]+)\"\)")
-           (map last)
-           (vec)))
+  [filename]
+  (->> (read-clj filename)
+       (tree-seq seq? seq) ;; read all function calls
+       (filter seq?) ;; filter only function calls
+       (filter #(= 'js/require (first %))) ;; only js/require
+       (map second))) ;; only the required string
 
-;; Each file maybe corresponds to multiple modules.
-(defn watch-for-external-modules
-  []
-  (let [path ".js-modules.edn"]
-    (hawk/watch! [{:paths   ["src"]
-                   :filter  hawk/file?
-                   :handler (fn [ctx {:keys [kind file] :as event}]
-                              (let [m (edn/read-string (slurp path))
-                                    file-name (-> (.getPath file)
-                                                  (str/replace (str (System/getProperty "user.dir") "/") ""))]
+(defn- on-file-change
+  [modules kind file]
+  (let [filename (relative-path file)]
+    (if (= :delete kind) ;; file is deleted
+      (dissoc modules filename)
+      ;; file created or modified
+      (let [requires (required-modules filename)]
+        (if (not-empty requires)
+          (assoc modules filename requires)
+          (dissoc modules filename))))))
 
-                                  ;; file is deleted
-                                (when (= :delete kind)
-                                  (let [new-m (dissoc m file-name)]
-                                    (spit path new-m)
-                                    (rebuild-env-index (flatten (vals new-m)))))
-
-                                (when (.exists file)
-                                  (let [content (slurp file)
-                                        js-modules (required-modules content)]
-                                    (let [old-js-modules (get m file-name)]
-                                      (when (not= old-js-modules js-modules)
-                                        (let [new-m (if (seq js-modules)
-                                                      (assoc m file-name js-modules)
-                                                      (dissoc m file-name))]
-                                          (spit path new-m)
-
-                                          (rebuild-env-index (flatten (vals new-m)))))))))
-                              ctx)}])))
+(defn- hawk-handler
+  [ctx {:keys [kind file] :as event}]
+  (let [old-modules (edn/read-string (slurp modules-file))
+        new-modules (on-file-change old-modules kind file)]
+    (when (not= old-modules new-modules)
+      (spit modules-file new-modules)
+      (rebuild-env-index new-modules))
+    ctx))
 
 (defn rebuild-modules
   []
-  (let [path ".js-modules.edn"
-        m (atom {})]
-      ;; delete path
-    (when (.exists (File. path))
-      (clojure.java.io/delete-file path))
-
-    (doseq [file (file-seq (File. "src"))]
-      (when (.isFile file)
-        (let [file-name (-> (.getPath file)
-                            (str/replace (str (System/getProperty "user.dir") "/") ""))
-              content (slurp file)
-              js-modules (required-modules content)]
-          (if js-modules
-            (swap! m assoc file-name (vec js-modules))))))
-    (spit path @m)
-    (rebuild-env-index (flatten (vals @m)))))
+   ;; traverse src dir and fetch all modules
+  (let [mapping (for [fs (file-seq (File. "src"))
+                      :when (cljs-file? fs)
+                      :let [filename (relative-path fs)]
+                      :let [js-modules (required-modules filename)]
+                      :when (not-empty js-modules)]
+                  [filename (vec js-modules)])
+        modules (into {} mapping)]
+    (spit modules-file modules)))
 
   ;; Lein
 (defn start-figwheel
   "Start figwheel for one or more builds"
   [];& build-ids]
+  ;; delete previous file
+  (when (.exists (File. ^String modules-file))
+    (io/delete-file modules-file))
   (rebuild-modules)
+  (rebuild-env-index (edn/read-string (slurp modules-file)))
   (enable-source-maps)
   (write-main-js)
   (write-env-dev)
-  (watch-for-external-modules)
+  ;; Each file maybe corresponds to multiple modules.
+  (hawk/watch! [{:paths   ["src"]
+                 :filter  (fn cljs-file?? [_ {:keys [file]}]
+                            (cljs-file? file))
+                 :handler hawk-handler}])
   (ra/start-figwheel! "main")
   (ra/cljs-repl))
 
