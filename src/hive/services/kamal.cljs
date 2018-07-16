@@ -36,6 +36,6 @@
     (.. (js/fetch url (clj->js opts))
         (then (fn [^js/Response response] (. response (json))))
         (then (fn [result]
-                (if (= (goog.object/get result "code") "Ok")
+                (if (= (. result -code) "Ok")
                   (js->clj result :keywordize-keys true)
                   (js/Promise.reject (ex-info (goog.object/get "msg") result))))))))
