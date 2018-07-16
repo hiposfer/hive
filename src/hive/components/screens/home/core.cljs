@@ -29,11 +29,9 @@
         position (data/pull db [:user/position] [:user/id user])
         start    (:coordinates (:geometry (:user/position position)))
         end      (:coordinates (:geometry target))
-        now      (new DateTime)
-        [url opts] (kamal/directions [start end] now)]
+        now      (new DateTime)]
     [[{:user/id user :user/goal target}]
-     (delay (.. (js/fetch url (clj->js opts))
-                (then #(.json %))
+     (delay (.. (kamal/directions! [start end] now)
                 (then #(route/process-directions % user now))))
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
@@ -86,9 +84,7 @@
       (if (tool/error? validated)
         [[navigate "location-error" validated]
          (delay (.. fl/ReactNative (Keyboard.dismiss)))]
-        [(delay (.. (js/fetch (mapbox/geocoding args))
-                    (then #(. ^js/Response % json))
-                    (then tool/keywordize)
+        [(delay (.. (mapbox/geocoding! args)
                     (then #(assoc % :user/id user))
                     (then update-places)))]))))
 

@@ -18,12 +18,9 @@
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
   [path user now]
-  (if (not= (goog.object/get path "code"))
-    (ex-info (goog.object/get "msg") path)
-    (let [path (js->clj path :keywordize-keys true)]
-      [(tool/with-ns :route (assoc path :departure now))
-       {:user/id user
-        :user/route [:route/uuid (:uuid path)]}])))
+  [(tool/with-ns :route (assoc path :departure now))
+   {:user/id user
+    :user/route [:route/uuid (:uuid path)]}])
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))

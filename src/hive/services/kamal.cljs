@@ -23,3 +23,19 @@
                 (str/replace "{departure}" (local-time departure)))]
     [url {:method "GET"
           :headers {:Accept "application/json"}}]))
+
+(defn directions!
+  "executes the result of directions with js/fetch.
+
+  Returns a Promise with a Clojure data structure.
+
+  Rejects when status not= Ok"
+  ^js/Promise
+  [coordinates departure]
+  (let [[url opts] (directions coordinates departure)]
+    (.. (js/fetch url (clj->js opts))
+        (then (fn [^js/Response response] (. response (json))))
+        (then (fn [result]
+                (if (= (goog.object/get result "code") "Ok")
+                  (js->clj result :keywordize-keys true)
+                  (js/Promise.reject (ex-info (goog.object/get "msg") result))))))))
