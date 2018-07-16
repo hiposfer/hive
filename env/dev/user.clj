@@ -5,9 +5,10 @@
             [clojure.string :as str]
             [hawk.core :as hawk]
             [clojure.tools.reader.edn :as edn]
+            [clojure.tools.reader :as reader]
             [clojure.tools.reader.reader-types :refer [string-push-back-reader]])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
-           (java.io File)))
+           (java.io File PushbackReader)))
 ;; This namespace is loaded automatically by nREPL
 
 (defn- read-clj
@@ -18,14 +19,12 @@
    to be able to read a Clojure file. We apply some string replacements to
    avoid crashing on those and ignore them since we are not looking for them"
   [filename]
-  (let [content   (slurp filename)
-        sanitized (-> (str/replace content "::" ":")
-                      (str/replace "#(" "(")
-                      (str/replace #"(?<!\")@" ""))]
-    (with-open [infile (string-push-back-reader sanitized)]
-      (->> (repeatedly #(edn/read {:eof ::eof
-                                   :default (fn [tag v] v)}
-                                  infile))
+  (binding [reader/*alias-map* identity
+            reader/*default-data-reader-fn* (fn [tag v] v)
+            reader/*read-eval* false]
+    (with-open [infile (PushbackReader. (io/reader filename))]
+      (->> (repeatedly #(reader/read {:read-cond :allow :features #{:cljs} :eof ::eof}
+                                     infile))
            (take-while #(not= ::eof %))
            (doall)))))
 
