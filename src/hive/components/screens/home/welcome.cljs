@@ -3,7 +3,6 @@
             [hive.rework.core :as work]
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]
-            [cljs-react-navigation.reagent :as rn-nav]
             [hive.rework.util :as tool]
             [hive.foreigns :as fl]
             [clojure.string :as str]
@@ -65,7 +64,5 @@
                                    :onPress #(work/transact! [log-in! domain cid redirectUrl])}
          [:> react/Text {:style {:color "white" :fontWeight "bold" :fontSize 15}}
                         "Login"]]]]))
-
-(def Screen    (rn-nav/stack-screen Login {:title "welcome"}))
 
 ;hive.rework.state/conn

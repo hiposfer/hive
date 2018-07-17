@@ -1,13 +1,11 @@
 (ns hive.components.screens.home.core
   (:require [reagent.core :as r]
             [hive.components.foreigns.expo :as expo]
-            [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
             [hive.queries :as queries]
             [hive.rework.core :as work]
             [hive.rework.util :as tool]
             [hive.components.screens.home.route :as route]
-            [hive.components.screens.errors :as errors]
             [hive.services.mapbox :as mapbox]
             [hive.services.location :as location]
             [hive.components.foreigns.react :as react]
@@ -138,11 +136,6 @@
             [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]
     ;; remove tracker on component will unmount
     (finally (. tracker (then #(. % remove))))))
-
-(def Screen        (rn-nav/stack-screen Home
-                     {:title "map"}))
-(def LocationError (rn-nav/stack-screen errors/UserLocation
-                                        {:title "location-error"}))
 
 ;(data/q queries/routes-ids (work/db))
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])

@@ -1,6 +1,5 @@
 (ns hive.components.screens.settings.core
   (:require [hive.rework.core :as work :refer-macros [go-try <?]]
-            [cljs-react-navigation.reagent :as rn-nav]
             [clojure.string :as str]
             [hive.components.foreigns.react :as react]
             [hive.components.symbols :as symbols]
@@ -50,7 +49,3 @@
            (str (:city/region (:user/city city)) ", "
                 (:city/country (:user/city city)))]
          [:> expo/Ionicons {:name "ios-checkmark" :size 26}]]]]]))
-
-
-(def Screen (rn-nav/stack-screen Settings
-              {:title "settings"}))
