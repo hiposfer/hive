@@ -19,19 +19,19 @@
             [hive.components.foreigns.react :as react]))
 
 (defn- screenify
-  [component title]
+  [component props]
   (let [id      (data/q queries/user-id (work/db))
         data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
                             [:user/id id])]
     (rn-nav/stack-screen 
       (fn [props]
         [:> react/View {:flex 1 :alignItems "stretch"}
-          (component props)
+          [component props]
           [:> react/Text 
             {:flex 0 :bottom 0
              :style {:backgroundColor "red" :color "white" :height "5%" :display "none"}}
             "Does this work?"]])
-      {:title title})))
+      props)))
 
 (defn RootUi []
   "Each Screen will receive two props:
@@ -44,12 +44,12 @@
       :setParams - used to change the params for the current screen}"
   (let [Navigator
     (rn-nav/stack-navigator
-      {:home           {:screen (screenify home/Home "map")}
-       :welcome        {:screen (screenify welcome/Login "welcome")}
-       :directions     {:screen (screenify route/Instructions "directions")}
-       :settings       {:screen (screenify settings/Settings "settings")}
-       :select-city    {:screen (screenify city-picker/Selector "Select City")}
-       :location-error {:screen (screenify errors/UserLocation "location-error")}}
+      {:home           {:screen (screenify home/Home {:title "map"})}
+       :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
+       :directions     {:screen (screenify route/Instructions {:title "directions"})}
+       :settings       {:screen (screenify settings/Settings {:title "settings"})}
+       :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
+       :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
       {:headerMode "none"})]
     ;id       @(work/q! queries/user-id)]
     ;(if (= -1 id) ;; default
