@@ -1,7 +1,8 @@
 (ns hive.services.mapbox
   (:require [clojure.string :as str]
             [cljs.spec.alpha :as s]
-            [hiposfer.geojson.specs :as geojson]))
+            [hiposfer.geojson.specs :as geojson]
+            [hive.rework.util :as tool]))
 
 (s/def ::input (s/and string? not-empty))
 (s/def ::query (s/or :location ::input
@@ -43,3 +44,13 @@
                 (str/replace "{query}" (js/encodeURIComponent (:query request)))
                 (str/replace "{params}" (str/join "&" params)))]
       URL))
+
+(defn geocoding!
+  "executes the result of geocoding with js/fetch.
+
+  Returns a promise with a Clojure datastructure"
+  ^js/Promise
+  [request]
+  (.. (js/fetch (geocoding request))
+      (then (fn [^js/Response res] (. res (json))))
+      (then tool/keywordize)))

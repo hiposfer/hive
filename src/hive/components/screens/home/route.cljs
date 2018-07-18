@@ -18,12 +18,9 @@
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
   [path user now]
-  (if (not= (goog.object/get path "code"))
-    (ex-info (goog.object/get "msg") path)
-    (let [path (js->clj path :keywordize-keys true)]
-      [(tool/with-ns :route (assoc path :departure now))
-       {:user/id user
-        :user/route [:route/uuid (:uuid path)]}])))
+  [(tool/with-ns :route (assoc path :departure now))
+   {:user/id user
+    :user/route [:route/uuid (:uuid path)]}])
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))
@@ -109,6 +106,8 @@
        (duration/format (* 1000 (:duration route)))]]
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
 
+(def section-height 140)
+
 (defn Instructions
   "basic navigation directions"
   [props]
@@ -116,6 +115,9 @@
         id      (data/q queries/user-id (work/db))
         data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
                             [:user/id id])
+        sections (partition-by :mode (:steps (:route/route (:user/route data))))
+        overview-height (* section-height (count sections))
+        info-height     (* 0.1 (:height window))
         path    (sequence (comp (map :geometry)
                                 (map :coordinates)
                                 (mapcat #(drop-last %))
@@ -127,8 +129,9 @@
           [:> expo/MapPolyline {:coordinates path
                                 :strokeColor "#3bb2d0"
                                 :strokeWidth 4}]]]
-      [:> react/View {:height (* 1.1 (:height window)) :backgroundColor "white"}
-        [Info {:flex 1 :paddingTop "1%"} id]
+      [:> react/View {:height (+ info-height overview-height)
+                      :backgroundColor "white"}
+        [Info {:height info-height :paddingTop "1%"} id]
         [Route {:flex 9} id]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
