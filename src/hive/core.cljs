@@ -9,31 +9,48 @@
             [hive.queries :as queries]
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
+            [hive.components.screens.errors :as errors]
             [hive.components.router :as router]
             [hive.components.screens.settings.core :as settings]
             [hive.components.screens.settings.city-picker :as city-picker]
             [cljs.core.async :as async]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.components.screens.home.route :as route]))
+            [hive.components.screens.home.route :as route]
+            [hive.components.foreigns.react :as react]))
 
-"Each Screen will receive two props:
- - screenProps - Extra props passed down from the router (rarely used)
- - navigation  - The main navigation functions in a map as follows:
-   {:state     - routing state for this screen
-    :dispatch  - generic dispatch fn
-    :goBack    - pop's the current screen off the stack
-    :navigate  - most common way to navigate to the next screen
-    :setParams - used to change the params for the current screen}"
+(defn- screenify
+  [component props]
+  (let [id      (data/q queries/user-id (work/db))
+        data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
+                            [:user/id id])]
+    (rn-nav/stack-screen 
+      (fn [props]
+        [:> react/View {:flex 1 :alignItems "stretch"}
+          [component props]
+          [:> react/Text 
+            {:flex 0 :bottom 0
+             :style {:backgroundColor "red" :color "white" :height "5%" :display "none"}}
+            "Does this work?"]])
+      props)))
 
 (defn RootUi []
-  (let [Navigator     (rn-nav/stack-navigator
-                        {:home           {:screen home/Screen}
-                         :welcome        {:screen welcome/Screen}
-                         :directions     {:screen route/Screen}
-                         :settings       {:screen settings/Screen}
-                         :select-city    {:screen city-picker/Screen}
-                         :location-error {:screen home/LocationError}}
-                        {:headerMode "none"})]
+  "Each Screen will receive two props:
+   - screenProps - Extra props passed down from the router (rarely used)
+   - navigation  - The main navigation functions in a map as follows:
+     {:state     - routing state for this screen
+      :dispatch  - generic dispatch fn
+      :goBack    - pop's the current screen off the stack
+      :navigate  - most common way to navigate to the next screen
+      :setParams - used to change the params for the current screen}"
+  (let [Navigator
+    (rn-nav/stack-navigator
+      {:home           {:screen (screenify home/Home {:title "map"})}
+       :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
+       :directions     {:screen (screenify route/Instructions {:title "directions"})}
+       :settings       {:screen (screenify settings/Settings {:title "settings"})}
+       :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
+       :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
+      {:headerMode "none"})]
     ;id       @(work/q! queries/user-id)]
     ;(if (= -1 id) ;; default
     ; [router/router {:root Navigator :init "welcome"}]

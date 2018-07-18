@@ -4,7 +4,6 @@
             [hive.rework.util :as tool]
             [datascript.core :as data]
             [hive.rework.core :as work]
-            [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.symbols :as symbols]
             [hive.foreigns :as fl]
             [hive.components.foreigns.expo :as expo]
@@ -137,9 +136,6 @@
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
         [:> expo/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
-
-(def Screen    (rn-nav/stack-screen Instructions
-                                    {:title "directions"}))
 
 ;hive.rework.state/conn
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))

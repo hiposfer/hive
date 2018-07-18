@@ -4,8 +4,7 @@
             [hive.queries :as queries]
             [hive.components.symbols :as symbols]
             [hive.components.foreigns.react :as react]
-            [hive.components.foreigns.expo :as expo]
-            [cljs-react-navigation.reagent :as rn-nav]))
+            [hive.components.foreigns.expo :as expo]))
 
 (defn change-city
   "returns a Datascript transaction to change the user city, an effect
@@ -49,6 +48,3 @@
         (for [city cities]
           ^{:key (:city/name city)}
           [city-entry (assoc props :city city :user/id id)])]]))
-
-(def Screen (rn-nav/stack-screen Selector
-                                 {:title "Select City"}))
