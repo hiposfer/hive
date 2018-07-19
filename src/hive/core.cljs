@@ -96,6 +96,13 @@
 
       :else (do (work/transact! @tx) true))))
 
+(defn- conn-listener
+  "Listens to connection changes mainly for internet access."
+  [connected]
+  (let [sid      (data/q queries/session (work/db))]
+    (if-not connected
+        (work/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
+
 (defn init!
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
@@ -110,6 +117,9 @@
     (. fl/ReactNative (BackHandler.addEventListener
                         "hardwareBackPress"
                         back-listener))
+    (. fl/ReactNative (NetInfo.isConnected.addEventListener
+                        "connectionChange"
+                        conn-listener))
     (let [config  (store/load! {} :user/city)
           id      (data/q queries/user-id (work/db))
           default (assoc state/defaults :user/id id)]
