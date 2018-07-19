@@ -18,20 +18,29 @@
             [hive.components.screens.home.route :as route]
             [hive.components.foreigns.react :as react]))
 
+(defn- MessageTray
+  [props]
+  (let [id      (data/q queries/session (work/db))
+        alert   @(work/pull! [:session/alert]
+                             [:session/uuid id])
+        display (if (empty? (:session/alert alert)) "none" "flex")]
+    [:> react/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
+                    :bottom 0 :width "100%" :height "5%"
+                    :display display :position "absolute"}
+      [:> react/Text
+        {:style {:width "100%" :height "100%" :textAlign "center"
+                 :backgroundColor "grey" :color "white"}
+         :onPress #(work/transact! [{:session/uuid id :session/alert {}}])}
+        (:session/alert alert)]]))
+
 (defn- screenify
   [component props]
-  (let [id      (data/q queries/user-id (work/db))
-        data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
-                            [:user/id id])]
-    (rn-nav/stack-screen 
-      (fn [props]
-        [:> react/View {:flex 1 :alignItems "stretch"}
-          [component props]
-          [:> react/Text 
-            {:flex 0 :bottom 0
-             :style {:backgroundColor "red" :color "white" :height "5%" :display "none"}}
-            "Does this work?"]])
-      props)))
+  (rn-nav/stack-screen
+    (fn [props]
+      [:> react/View {:flex 1 :alignItems "stretch"}
+        [component props]
+        [MessageTray props]])
+    props))
 
 (defn RootUi []
   "Each Screen will receive two props:
@@ -87,6 +96,13 @@
 
       :else (do (work/transact! @tx) true))))
 
+(defn- conn-listener
+  "Listens to connection changes mainly for internet access."
+  [connected]
+  (let [sid      (data/q queries/session (work/db))]
+    (if-not connected
+        (work/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
+
 (defn init!
   "register the main UI component in React Native"
   [] ;; todo: add https://github.com/reagent-project/historian
@@ -101,6 +117,9 @@
     (. fl/ReactNative (BackHandler.addEventListener
                         "hardwareBackPress"
                         back-listener))
+    (. fl/ReactNative (NetInfo.isConnected.addEventListener
+                        "connectionChange"
+                        conn-listener))
     (let [config  (store/load! {} :user/city)
           id      (data/q queries/user-id (work/db))
           default (assoc state/defaults :user/id id)]
