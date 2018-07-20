@@ -9,7 +9,7 @@
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration])
-  (:import [goog.date Interval]))
+  (:import [goog.date Interval DateTime]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
@@ -141,10 +141,6 @@
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)
 
-;(let [id      (data/q queries/user-id (work/db))
-;      data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
-;                          [:user/id id])]
-;  ;(sequence (comp (map :geometry)
-;  ;                (mapcat :coordinates)
-;  ;                (map geometry/latlng))
-;  (:steps (:route/route (:user/route data))))
+;(let [id      (data/q queries/user-id (work/db))]
+;  (:steps (:route/route (:user/route @(work/pull! [{:user/route [:route/route]}]
+;                                                  [:user/id id])))))

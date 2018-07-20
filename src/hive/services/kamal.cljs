@@ -1,13 +1,23 @@
 (ns hive.services.kamal
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [cljs.tools.reader.edn :as edn])
   (:import (goog.date DateTime)))
+
+(defn read-object
+  [[tag _ text]]
+  (case tag
+    java.time.Duration (Interval.fromIsoString text)
+    java.time.LocalDateTime (DateTime.fromRfc822String text)))
+
+(def readers {'uuid   uuid
+              'object read-object})
 
 (defn- local-time
   "returns a compatible Java LocalDateTime string representation"
   ([]
    (local-time (new DateTime)))
   ([^js/DateTime now]
-   (let [gtime (.. now (toIsoString true))]
+   (let [gtime (. now (toIsoString true))]
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
@@ -34,8 +44,5 @@
   [coordinates departure]
   (let [[url opts] (directions coordinates departure)]
     (.. (js/fetch url (clj->js opts))
-        (then (fn [^js/Response response] (. response (json))))
-        (then (fn [result]
-                (if (= (. result -code) "Ok")
-                  (js->clj result :keywordize-keys true)
-                  (js/Promise.reject (ex-info (goog.object/get "msg") result))))))))
+        (then (fn [^js/Response response] (. response (text))))
+        (then #(edn/read-string {:readers readers} %)))))
