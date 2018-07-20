@@ -9,7 +9,8 @@
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [reagent.core :as r])
   (:import [goog.date Interval DateTime]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
@@ -24,16 +25,6 @@
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))
-
-(defn- SectionDetails
-  [data]
-  [:> react/View {:flex 9 :justifyContent "space-between"}
-    [:> react/Text (some :step/name (butlast data))]
-    [:> react/View {:flex 1 :justifyContent "center"}
-      [:> react/Text {:style {:color "gray"}}
-                     (str/replace (:maneuver/instruction (first data))
-                                  "[Dummy]" "")]]
-    [:> react/Text (:step/name (last data))]])
 
 (defn- TransitLine
   [data]
@@ -53,27 +44,47 @@
                                       small-circle)])])
 
 (def section-height 140)
+(def subsection-height 20)
+
+(defn- SectionDetails
+  [section human-time]
+  (r/with-let [expanded? (r/atom false)]
+    (let [height (+ section-height (* subsection-height
+                                      (if @expanded? 1 0)
+                                      (count section)))]
+      [:> react/View {:height height :flexDirection "row"}
+        [:> react/View {:flex 1 :alignItems "center"}
+          [:> react/Text {:style {:color "gray" :fontSize 12}}
+                         human-time]]
+        (if (= "walking" (some :step/mode section))
+          [WalkingSymbols section]
+          [TransitLine section])
+        [:> react/View {:flex 9 :justifyContent "space-between"}
+          [:> react/Text (some :step/name (butlast section))]
+          [:> react/TouchableOpacity
+            {:flex 1 :onPress #(reset! expanded? (not @expanded?))}
+            (if (not @expanded?)
+             [:> react/Text {:style {:color "gray"}}
+                            (:maneuver/instruction (first section))]
+             (for [step section]
+               ^{:key (:step/distance step)}
+               [:> react/Text {:style {:color "gray"}}
+                              (:maneuver/instruction step)]))]
+         [:> react/Text (:step/name (last section))]]])))
 
 (defn- Route
   [uid]
-  (let [route   @(work/pull! [{:route/steps [:step/departure :step/mode :step/name
-                                             :maneuver/instruction]}]
-                             [:route/uuid uid])
-        sections (partition-by :step/mode (:route/steps route))]
-    [:> react/View {:height (* section-height (count sections))}
-      (for [part sections
+  (let [route   @(work/pull! [{:route/steps [:step/departure :step/mode
+                                             :step/name :maneuver/instruction
+                                             :step/distance]}]
+                             [:route/uuid uid])]
+    [:> react/View {:flex 1}
+      (for [part (partition-by :step/mode (:route/steps route))
             :let [departs ^DateTime (:step/departure (first part))
                   human-time (subs (. departs (toIsoTimeString))
                                    0 5)]]
         ^{:key human-time}
-         [:> react/View {:height section-height :flexDirection "row"}
-           [:> react/View {:flex 1 :alignItems "center"}
-             [:> react/Text {:style {:color "gray" :fontSize 12}}
-                            human-time]]
-           (if (= "walking" (some :step/mode part))
-             [WalkingSymbols part]
-             [TransitLine part])
-           [SectionDetails part]])]))
+         [SectionDetails part human-time])]))
 
 (defn- Transfers
   []
