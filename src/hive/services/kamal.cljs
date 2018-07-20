@@ -1,7 +1,7 @@
 (ns hive.services.kamal
   (:require [clojure.string :as str]
             [cljs.tools.reader.edn :as edn])
-  (:import (goog.date DateTime)))
+  (:import (goog.date DateTime Interval)))
 
 (defn read-object
   [[tag _ text]]

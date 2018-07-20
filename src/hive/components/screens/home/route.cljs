@@ -8,7 +8,8 @@
             [hive.foreigns :as fl]
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
-            [goog.date.duration :as duration])
+            [goog.date.duration :as duration]
+            [clojure.string :as str])
   (:import [goog.date Interval DateTime]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
@@ -16,10 +17,10 @@
 (defn process-directions
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
-  [path user now]
-  [(tool/with-ns :route (assoc path :departure now))
+  [path user]
+  [path
    {:user/id user
-    :user/route [:route/uuid (:uuid path)]}])
+    :user/route [:route/uuid (:route/uuid path)]}])
 
 (def big-circle (symbols/circle 16))
 (def small-circle (symbols/circle 12))
@@ -27,11 +28,12 @@
 (defn- SectionDetails
   [data]
   [:> react/View {:flex 9 :justifyContent "space-between"}
-    [:> react/Text (some (comp not-empty :name) (butlast data))]
+    [:> react/Text (some :step/name (butlast data))]
     [:> react/View {:flex 1 :justifyContent "center"}
       [:> react/Text {:style {:color "gray"}}
-                     (:instruction (:maneuver (first data)))]]
-    [:> react/Text (:name (last data))]])
+                     (str/replace (:maneuver/instruction (first data))
+                                  "[Dummy]" "")]]
+    [:> react/Text (:step/name (last data))]])
 
 (defn- TransitLine
   [data]
@@ -50,35 +52,28 @@
       ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
                                       small-circle)])])
 
+(def section-height 140)
+
 (defn- Route
-  [props user]
-  (let [data     @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}
-                               :user/goal]
-                              [:user/id user])
-        route    (:route/route (:user/route data))
-        sections (partition-by :mode (:steps route))
-        date     (when (:route/departure (:user/route data))
-                   (. (:route/departure (:user/route data)) (clone)))]
-    [:> react/View props
-      (concat
-        (for [part sections]
-          ^{:key (:distance (first part))}
-           [:> react/View {:flex 9 :flexDirection "row"}
-             [:> react/View {:flex 1 :alignItems "center"}
-               [:> react/Text {:style {:color "gray" :fontSize 12}}
-                 (when (some? date)
-                   (let [i    (Interval. 0 0 0 0 0 (apply + (map :duration part)))
-                         text (subs (. date (toIsoTimeString)) 0 5)]
-                     (. date (add i)) ;; add for next iteration
-                     (do text)))]]
-             (if (= "walking" (some :mode part))
-               [WalkingSymbols part]
-               [TransitLine part])
-             [SectionDetails part]])
-        [^{:key -1}
-         [:> react/View {:flex 4 :alignItems "center"}
-           [:> react/Text "You have arrived at"]
-           [:> react/Text (:text (:user/goal data))]]])]))
+  [uid]
+  (let [route   @(work/pull! [{:route/steps [:step/departure :step/mode :step/name
+                                             :maneuver/instruction]}]
+                             [:route/uuid uid])
+        sections (partition-by :step/mode (:route/steps route))]
+    [:> react/View {:height (* section-height (count sections))}
+      (for [part sections
+            :let [departs ^DateTime (:step/departure (first part))
+                  human-time (subs (. departs (toIsoTimeString))
+                                   0 5)]]
+        ^{:key human-time}
+         [:> react/View {:height section-height :flexDirection "row"}
+           [:> react/View {:flex 1 :alignItems "center"}
+             [:> react/Text {:style {:color "gray" :fontSize 12}}
+                            human-time]]
+           (if (= "walking" (some :step/mode part))
+             [WalkingSymbols part]
+             [TransitLine part])
+           [SectionDetails part]])]))
 
 (defn- Transfers
   []
@@ -92,46 +87,44 @@
 
 (defn- Info
   [props user]
-  (let [data   @(work/pull! [{:user/route [:route/route]}
+  (let [data   @(work/pull! [{:user/route [:route/duration]}
                              :user/goal]
-                            [:user/id user])
-        route   (:route/route (:user/route data))
-        poi     (:text (:user/goal data))]
+                            [:user/id user])]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers]
       [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
-       (duration/format (* 1000 (:duration route)))]]
-     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
+       (duration/format (* 1000 (. ^Interval (:route/duration (:user/route data))
+                                   (getTotalSeconds))))]]
+     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
+                    (:text (:text data))]]))
 
-(def section-height 140)
+(defn- path
+  [steps]
+  (sequence (comp (map :step/geometry)
+                  (map :coordinates)
+                  (mapcat #(drop-last %)) ;; last = first of next
+                  (map geometry/latlng))
+            steps))
 
 (defn Instructions
   "basic navigation directions"
   [props]
   (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
         id      (data/q queries/user-id (work/db))
-        data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
-                            [:user/id id])
-        sections (partition-by :mode (:steps (:route/route (:user/route data))))
-        overview-height (* section-height (count sections))
-        info-height     (* 0.1 (:height window))
-        path    (sequence (comp (map :geometry)
-                                (map :coordinates)
-                                (mapcat #(drop-last %))
-                                (map geometry/latlng))
-                          (:steps (:route/route (:user/route data))))]
+        uid    @(work/q! '[:find ?route . :where [_ :user/route ?route]])
+        route  @(work/pull! [{:route/steps [:step/geometry]}]
+                            [:route/uuid uid])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
-        [symbols/CityMap id
-          [:> expo/MapPolyline {:coordinates path
+        [symbols/CityMap
+          [:> expo/MapPolyline {:coordinates (path (:route/steps route))
                                 :strokeColor "#3bb2d0"
                                 :strokeWidth 4}]]]
-      [:> react/View {:height (+ info-height overview-height)
-                      :backgroundColor "white"}
-        [Info {:height info-height :paddingTop "1%"} id]
-        [Route {:flex 9} id]]
+      [:> react/View {:flex 1 :backgroundColor "white"}
+        [Info {:flex 1 :paddingTop "1%"} id]
+        [Route uid]]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})

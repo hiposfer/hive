@@ -26,11 +26,10 @@
   (let [user     (data/q queries/user-id db)
         position (data/pull db [:user/position] [:user/id user])
         start    (:coordinates (:geometry (:user/position position)))
-        end      (:coordinates (:geometry target))
-        now      (new DateTime)]
+        end      (:coordinates (:geometry target))]
     [[{:user/id user :user/goal target}]
-     (delay (.. (kamal/directions! [start end] now)
-                (then #(route/process-directions % user now))))
+     (delay (.. (kamal/directions! [start end] (new DateTime))
+                (then #(route/process-directions % user))))
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 
@@ -118,7 +117,7 @@
                info     (work/pull! [:user/places] [:user/id id])]
     [:> react/View {:flex 1}
       (if (empty? (:user/places @info))
-        [symbols/CityMap id]
+        [symbols/CityMap]
         [Places id props])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
