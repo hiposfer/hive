@@ -32,7 +32,7 @@
   (let [url (-> (str/replace template "{coordinates}" coordinates)
                 (str/replace "{departure}" (local-time departure)))]
     [url {:method "GET"
-          :headers {:Accept "application/json"}}]))
+          :headers {:Accept "application/edn"}}]))
 
 (defn directions!
   "executes the result of directions with js/fetch.
