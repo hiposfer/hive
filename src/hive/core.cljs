@@ -22,16 +22,15 @@
   [props]
   (let [id      (data/q queries/session (work/db))
         alert   @(work/pull! [:session/alert]
-                             [:session/uuid id])
-        height (if (empty? (:session/alert alert)) 0 "5%")]
-    [:> react/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
-                    :bottom 0 :width "100%"
-                    :height height :position "absolute"}
-      [:> react/Text
-        {:style {:width "100%" :height "100%" :textAlign "center"
-                 :backgroundColor "grey" :color "white"}
-         :onPress #(work/transact! [{:session/uuid id :session/alert {}}])}
-        (:session/alert alert)]]))
+                             [:session/uuid id])]
+    (when-not (empty? (:session/alert alert))
+      [:> react/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
+                      :bottom 0 :width "100%" :height "5%" :position "absolute"}
+        [:> react/Text
+          {:style {:width "100%" :height "100%" :textAlign "center"
+                   :backgroundColor "grey" :color "white"}
+           :onPress #(work/transact! [{:session/uuid id :session/alert {}}])}
+          (:session/alert alert)]])))
 
 (defn- screenify
   [component props]
