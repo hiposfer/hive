@@ -23,54 +23,54 @@
    {:user/id user
     :user/route [:route/uuid (:route/uuid path)]}])
 
-(def big-circle (symbols/circle 16))
-(def small-circle (symbols/circle 12))
+(def big-circle 16)
+(def small-circle 10)
+(def section-height 140)
+(def subsection-height 20)
 
 (defn- TransitLine
   [data]
   [:> react/View {:flex 1 :alignItems "center"}
     [:> react/View (merge {:backgroundColor "red"}
-                          big-circle)]
+                          (symbols/circle big-circle))]
     [:> react/View {:backgroundColor "red" :width "8%" :height "80%"}]
     [:> react/View (merge {:backgroundColor "red" :elevation 10}
-                          big-circle)]])
+                          (symbols/circle big-circle))]])
 
 (defn- WalkingSymbols
-  [data]
-  [:> react/View {:flex 1 :alignItems "center"
-                  :justifyContent "space-around"}
-    (for [i (range 5)]
-      ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
-                                      small-circle)])])
-
-(def section-height 140)
-(def subsection-height 20)
+  [steps expanded?]
+  (let [amount (if (not expanded?) 5 (/ section-height (count steps)))]
+    [:> react/View {:flex 1 :alignItems "center"
+                    :justifyContent "space-around"}
+      (for [i (range amount)]
+        ^{:key i}
+        [:> react/View (merge {:backgroundColor "gray"}
+                              (symbols/circle small-circle))])]))
 
 (defn- SectionDetails
-  [section human-time]
+  [steps human-time]
   (r/with-let [expanded? (r/atom false)]
-    (let [height (+ section-height (* subsection-height
-                                      (if @expanded? 1 0)
-                                      (count section)))]
+    (let [subsize (* subsection-height (count steps))
+          height  (+ section-height (if @expanded? subsize 0))]
       [:> react/View {:height height :flexDirection "row"}
         [:> react/View {:flex 1 :alignItems "center"}
           [:> react/Text {:style {:color "gray" :fontSize 12}}
                          human-time]]
-        (if (= "walking" (some :step/mode section))
-          [WalkingSymbols section]
-          [TransitLine section])
+        (if (= "walking" (some :step/mode steps))
+          [WalkingSymbols steps @expanded?]
+          [TransitLine steps])
         [:> react/View {:flex 9 :justifyContent "space-between"}
-          [:> react/Text (some :step/name (butlast section))]
+          [:> react/Text (some :step/name (butlast steps))]
           [:> react/TouchableOpacity
             {:flex 1 :onPress #(reset! expanded? (not @expanded?))}
             (if (not @expanded?)
-             [:> react/Text {:style {:color "gray"}}
-                            (:maneuver/instruction (first section))]
-             (for [step section]
-               ^{:key (:step/distance step)}
-               [:> react/Text {:style {:color "gray"}}
-                              (:maneuver/instruction step)]))]
-         [:> react/Text (:step/name (last section))]]])))
+              [:> react/Text {:style {:color "gray"}}
+                             (:maneuver/instruction (first steps))]
+              (for [step steps]
+                ^{:key (:step/distance step)}
+                [:> react/Text {:style {:color "gray"}}
+                               (:maneuver/instruction step)]))]
+          [:> react/Text (:step/name (last steps))]]])))
 
 (defn- Route
   [uid]
@@ -79,12 +79,12 @@
                                              :step/distance]}]
                              [:route/uuid uid])]
     [:> react/View {:flex 1}
-      (for [part (partition-by :step/mode (:route/steps route))
-            :let [departs ^DateTime (:step/departure (first part))
-                  human-time (subs (. departs (toIsoTimeString))
-                                   0 5)]]
+      (for [steps (partition-by :step/mode (:route/steps route))
+            :let [departs  (:step/departure (first steps))
+                  iso-time (. ^DateTime departs (toIsoTimeString))
+                  human-time (subs iso-time 0 5)]]
         ^{:key human-time}
-         [SectionDetails part human-time])]))
+        [SectionDetails steps human-time])]))
 
 (defn- Transfers
   []
