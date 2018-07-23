@@ -97,45 +97,49 @@
          [:> expo/Ionicons {:name "ios-train" :size 32}]]))
 
 (defn- Info
-  [props user]
-  (let [data   @(work/pull! [{:user/route [:route/duration]}
-                             :user/goal]
-                            [:user/id user])]
+  [props]
+  (let [[duration goal] @(work/q! '[:find [?duration ?goal]
+                                    :where [_      :user/route ?route]
+                                           [?route :route/duration ?duration]
+                                           [_      :user/goal ?goal]])]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers]
       [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
-       (duration/format (* 1000 (. ^Interval (:route/duration (:user/route data))
-                                   (getTotalSeconds))))]]
+       (when (some? duration)
+         (duration/format (* 1000 (. ^Interval duration (getTotalSeconds)))))]]
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
-                    (:text (:text data))]]))
+                    (:text goal)]]))
 
 (defn- path
-  [steps]
-  (sequence (comp (map :step/geometry)
-                  (map :coordinates)
-                  (mapcat #(drop-last %)) ;; last = first of next
-                  (map geometry/latlng))
-            steps))
+  [db uid]
+  (let [route (data/pull db [{:route/steps [:step/geometry]}]
+                            [:route/uuid uid])]
+    (sequence (comp (map :step/geometry)
+                    (map :coordinates)
+                    (mapcat #(drop-last %)) ;; last = first of next
+                    (map geometry/latlng))
+              (:route/steps route))))
 
 (defn Instructions
-  "basic navigation directions"
+  "basic navigation directions.
+
+   Async, some data might be missing when rendered !!"
   [props]
-  (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
-        id      (data/q queries/user-id (work/db))
-        uid    @(work/q! '[:find ?route . :where [_ :user/route ?route]])
-        route  @(work/pull! [{:route/steps [:step/geometry]}]
-                            [:route/uuid uid])]
+  (let [window (tool/keywordize (. fl/ReactNative (Dimensions.get "window")))
+        uid   @(work/q! '[:find ?route . :where [_ :user/route ?route]])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
-          [:> expo/MapPolyline {:coordinates (path (:route/steps route))
-                                :strokeColor "#3bb2d0"
-                                :strokeWidth 4}]]]
+          (when (some? uid)
+            [:> expo/MapPolyline {:coordinates (path (work/db) uid)
+                                  :strokeColor "#3bb2d0"
+                                  :strokeWidth 4}])]]
       [:> react/View {:flex 1 :backgroundColor "white"}
-        [Info {:flex 1 :paddingTop "1%"} id]
-        [Route uid]]
+        [Info {:flex 1 :paddingTop "1%"}]
+        (when (some? uid)
+          [Route uid])]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
@@ -148,3 +152,4 @@
 ;(let [id      (data/q queries/user-id (work/db))]
 ;  (:steps (:route/route (:user/route @(work/pull! [{:user/route [:route/route]}]
 ;                                                  [:user/id id])))))
+
