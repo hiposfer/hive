@@ -30,6 +30,7 @@
     [[{:user/id user :user/goal target}]
      (delay (.. (kamal/directions! [start end] (new DateTime))
                 (then #(route/process-directions % user))))
+                ;; TODO: error handling
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 

@@ -39,7 +39,7 @@
 
 (defn- WalkingSymbols
   [steps expanded?]
-  (let [amount (if (not expanded?) 5 (/ section-height (count steps)))]
+  (let [amount (if (not expanded?) 5 (/ section-height (count steps) 2))]
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range amount)]
