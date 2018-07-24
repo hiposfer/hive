@@ -37,7 +37,7 @@
           :on-press #(goBack)}
          [:> expo/Ionicons {:name "ios-close-circle" :size 30}]]
        [:> react/TouchableOpacity
-         {:on-press #(run! work/transact! (launch-location-settings goBack))
+         {:on-press #(work/transact! (launch-location-settings goBack))
           :style {:borderRadius 5 :backgroundColor "lawngreen"
                   :height 40 :width 60 :flexDirection "row"
                   :alignItems "center" :justifyContent "space-around"}}

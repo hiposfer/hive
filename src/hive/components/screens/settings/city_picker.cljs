@@ -14,7 +14,7 @@
         goBack (:goBack (:navigation props))
         tx     {:user/id user
                 :user/city [:city/name (:city/name city)]}]
-    [[tx]
+    [tx
      [store/save! (select-keys tx [:user/city])]
      [goBack]]))
 
@@ -22,7 +22,7 @@
   [props]
   (let [params   (:params (:state (:navigation props)))
         city     (:city props)]
-    [:> react/TouchableOpacity {:onPress #(run! work/transact! (change-city city props))}
+    [:> react/TouchableOpacity {:onPress #(work/transact! (change-city city props))}
      [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
                              :borderBottomWidth 1 :paddingTop 5}}
       [symbols/PointOfInterest

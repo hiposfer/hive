@@ -61,7 +61,7 @@
                              :shadowColor "#000000" :shadowRadius 20
                              :shadowOffset {:width 0 :height 10} :shadowOpacity 1.0}}
        [:> react/TouchableOpacity {:style {:flex 1 :alignItems "center" :justifyContent "center"}
-                                   :onPress #(work/transact! [log-in! domain cid redirectUrl])}
+                                   :onPress #(work/transact! [[log-in! domain cid redirectUrl]])}
          [:> react/Text {:style {:color "white" :fontWeight "bold" :fontSize 15}}
                         "Login"]]]]))
 

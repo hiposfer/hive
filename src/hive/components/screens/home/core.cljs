@@ -27,7 +27,7 @@
         position (data/pull db [:user/position] [:user/id user])
         start    (:coordinates (:geometry (:user/position position)))
         end      (:coordinates (:geometry target))]
-    [[{:user/id user :user/goal target}]
+    [{:user/id user :user/goal target}
      (delay (.. (kamal/directions! [start end] (new DateTime))
                 (then #(route/process-directions % user))))
                 ;; TODO: error handling
@@ -49,7 +49,7 @@
        ^{:key (:id target)}
        [:> react/TouchableOpacity
          {:style    {:flex 1 :flexDirection "row"}
-          :on-press #(run! work/transact! (set-target (work/db) navigate target))}
+          :onPress #(work/transact! (set-target (work/db) navigate target))}
          [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
            [:> react/Text {:note true} (str (. distance (toPrecision 2)) " km")]]
@@ -106,7 +106,7 @@
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
                       :underlineColorAndroid "transparent"
-                      :onChangeText #(run! work/transact! (autocomplete % (work/db) props))}]]))
+                      :onChangeText #(work/transact! (autocomplete % (work/db) props))}]]))
 
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"

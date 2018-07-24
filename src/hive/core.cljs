@@ -64,17 +64,6 @@
     ; [router/router {:root Navigator :init "welcome"}]
     [router/Router {:root Navigator :init "home"}]))
 
-(defn- reload-config!
-  "takes a sequence of keys and attempts to read them from LocalStorage.
-  Returns a channel with a transaction or Error"
-  [ks]
-  (let [data (store/load! ks)
-        id   (data/q queries/user-id (work/db))
-        c    (async/chan 1 (comp (map (tool/validate not-empty ::missing-data))
-                                 tool/bypass-error
-                                 (map #(assoc % :user/id id))))]
-    (async/pipe data c)))
-
 (defn- back-listener
   "a generic Android back button listener which pops the last element from the
   navigation stack or exists otherwise.
@@ -120,12 +109,13 @@
     (. fl/ReactNative (NetInfo.isConnected.addEventListener
                         "connectionChange"
                         conn-listener))
-    (let [config  (store/load! {} :user/city)
-          id      (data/q queries/user-id (work/db))
-          default (assoc state/defaults :user/id id)]
-      (work/transact!
-        (.. config
-            (then (fn [m] (if (empty? m) [default] [(assoc m :user/id id)]))))))))
+    (let [id        (data/q queries/user-id (work/db))
+          default   (assoc state/defaults :user/id id)
+          user-city (. (store/load! {} :user/city)
+                       (then (fn [m]
+                               (if (empty? m) [default]
+                                 [(assoc m :user/id id)]))))]
+      (work/transact! [user-city]))))
 
 ;(async/take! (store/delete! [:user/city]) println)
 
