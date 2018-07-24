@@ -39,38 +39,42 @@
 
 (defn- WalkingSymbols
   [steps expanded?]
-  (let [amount (if (not expanded?) 5 (/ section-height (count steps) 3))]
+  (let [divisor (if expanded? 4 2)
+        amount (if (not expanded?) 5 (/ section-height (count steps) divisor))]
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range amount)]
         ^{:key i}
-        [:> react/View (merge {:backgroundColor "gray"}
-                              (symbols/circle small-circle))])]))
+        [:> react/View {:backgroundColor "slategray" :height big-circle
+                        :width (/ small-circle 3) :borderRadius 4}])]))
+
 
 (defn- StepDetails
   [steps expanded?]
-  (if (not @expanded?)
-    [:> react/View {:flex 1 :justifyContent "space-around"}
-      [:> react/Text (some :step/name (butlast steps))]
-      [:> react/TouchableOpacity
-        {:style {:flex 1 :justifyContent "space-around"}
-         :onPress #(reset! expanded? (not @expanded?))}
-        [:> react/Text {:style {:color "gray"}}
-          (str/replace (:maneuver/instruction (first steps))
-                       "[Dummy]" "")]]
-      [:> react/Text (:step/name (last steps))]]
-    [:> react/TouchableOpacity
-      {:style {:flex 1 :justifyContent "space-around"}
-       :onPress #(reset! expanded? (not @expanded?))}
-      (for [step steps]
-        ^{:key (:step/distance step)}
-        [:> react/Text {:style {:color "gray"}}
-          (if (= "transit" (:step/mode step))
-            (:step/name step)
-            (str/replace (:maneuver/instruction step)
-                         "[Dummy]" ""))])]))
+  [:> react/TouchableOpacity
+    {:style {:flex 9 :justifyContent "space-around"}
+     :onPress #(reset! expanded? (not @expanded?))}
+    (for [step steps]
+      ^{:key (:step/distance step)}
+      [:> react/Text {:style {:color "gray"}}
+        (if (= "transit" (:step/mode step))
+          (:step/name step)
+          (str/replace (:maneuver/instruction step)
+                       "[Dummy]" ""))])])
 
-(defn- StepsOverview
+(defn- StepOverview
+  [steps expanded?]
+  [:> react/View {:flex 9 :justifyContent "space-around"}
+   [:> react/Text (some :step/name (butlast steps))]
+   [:> react/TouchableOpacity
+    {:style {:flex 1 :justifyContent "space-around"}
+     :onPress #(reset! expanded? (not @expanded?))}
+    [:> react/Text {:style {:color "gray"}}
+     (str/replace (:maneuver/instruction (first steps))
+                  "[Dummy]" "")]]
+   [:> react/Text (:step/name (last steps))]])
+
+(defn- RouteSection
   [steps human-time]
   (r/with-let [expanded? (r/atom false)]
     (let [subsize (* subsection-height (count steps))
@@ -82,8 +86,9 @@
         (if (= "walking" (:step/mode (first steps)))
           [WalkingSymbols steps @expanded?]
           [TransitLine steps @expanded?])
-        [:> react/View {:flex 9 :justifyContent "space-between"}
-          [StepDetails steps expanded?]]])))
+        (if (not @expanded?)
+           [StepOverview steps expanded?]
+           [StepDetails steps expanded?])])))
 
 (defn- Route
   [uid]
@@ -97,7 +102,7 @@
                   iso-time (. ^DateTime departs (toIsoTimeString))
                   human-time (subs iso-time 0 5)]]
         ^{:key human-time}
-        [StepsOverview steps human-time])]))
+        [RouteSection steps human-time])]))
 
 (defn- Transfers
   []
