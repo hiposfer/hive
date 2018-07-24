@@ -28,17 +28,18 @@
 (def subsection-height 20)
 
 (defn- TransitLine
-  [data]
-  [:> react/View {:flex 1 :alignItems "center"}
-    [:> react/View (merge {:backgroundColor "red"}
-                          (symbols/circle big-circle))]
-    [:> react/View {:backgroundColor "red" :width "8%" :height "80%"}]
-    [:> react/View (merge {:backgroundColor "red" :elevation 10}
-                          (symbols/circle big-circle))]])
+  [data expanded?]
+  (let [line-height (if expanded? "90%" "80%")]
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/View (merge {:backgroundColor "red"}
+                            (symbols/circle big-circle))]
+      [:> react/View {:backgroundColor "red" :width "8%" :height line-height}]
+      [:> react/View (merge {:style {:backgroundColor "red" :borderColor "transparent"}}
+                            (symbols/circle big-circle))]]))
 
 (defn- WalkingSymbols
   [steps expanded?]
-  (let [amount (if (not expanded?) 5 (/ section-height (count steps) 2))]
+  (let [amount (if (not expanded?) 5 (/ section-height (count steps) 3))]
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range amount)]
@@ -46,32 +47,43 @@
         [:> react/View (merge {:backgroundColor "gray"}
                               (symbols/circle small-circle))])]))
 
-(defn- SectionDetails
+(defn- StepDetails
+  [steps expanded?]
+  (if (not @expanded?)
+    [:> react/View {:flex 1 :justifyContent "space-around"}
+      [:> react/Text (some :step/name (butlast steps))]
+      [:> react/TouchableOpacity
+        {:style {:flex 1 :justifyContent "space-around"}
+         :onPress #(reset! expanded? (not @expanded?))}
+        [:> react/Text {:style {:color "gray"}}
+          (str/replace (:maneuver/instruction (first steps))
+                       "[Dummy]" "")]]
+      [:> react/Text (:step/name (last steps))]]
+    [:> react/TouchableOpacity
+      {:style {:flex 1 :justifyContent "space-around"}
+       :onPress #(reset! expanded? (not @expanded?))}
+      (for [step steps]
+        ^{:key (:step/distance step)}
+        [:> react/Text {:style {:color "gray"}}
+          (if (= "transit" (:step/mode step))
+            (:step/name step)
+            (str/replace (:maneuver/instruction step)
+                         "[Dummy]" ""))])]))
+
+(defn- StepsOverview
   [steps human-time]
   (r/with-let [expanded? (r/atom false)]
     (let [subsize (* subsection-height (count steps))
           height  (+ section-height (if @expanded? subsize 0))]
       [:> react/View {:height height :flexDirection "row"}
-        [:> react/View {:flex 1 :alignItems "center"}
-          [:> react/Text {:style {:color "gray" :fontSize 12}}
-                         human-time]]
-        (if (= "walking" (some :step/mode steps))
+        [:> react/Text {:style {:flex 1 :textAlign "right"
+                                :color "gray" :fontSize 12}}
+                      human-time]
+        (if (= "walking" (:step/mode (first steps)))
           [WalkingSymbols steps @expanded?]
-          [TransitLine steps])
+          [TransitLine steps @expanded?])
         [:> react/View {:flex 9 :justifyContent "space-between"}
-          [:> react/Text (some :step/name (butlast steps))]
-          [:> react/TouchableOpacity
-            {:flex 1 :onPress #(reset! expanded? (not @expanded?))}
-            (if (not @expanded?)
-              [:> react/Text {:style {:color "gray"}}
-                (str/replace (:maneuver/instruction (first steps))
-                             "[Dummy]" "")]
-              (for [step steps]
-                ^{:key (:step/distance step)}
-                [:> react/Text {:style {:color "gray"}}
-                  (str/replace (:maneuver/instruction step)
-                               "[Dummy]" "")]))]
-          [:> react/Text (:step/name (last steps))]]])))
+          [StepDetails steps expanded?]]])))
 
 (defn- Route
   [uid]
@@ -85,7 +97,7 @@
                   iso-time (. ^DateTime departs (toIsoTimeString))
                   human-time (subs iso-time 0 5)]]
         ^{:key human-time}
-        [SectionDetails steps human-time])]))
+        [StepsOverview steps human-time])]))
 
 (defn- Transfers
   []
