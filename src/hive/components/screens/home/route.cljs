@@ -1,6 +1,5 @@
 (ns hive.components.screens.home.route
-  (:require [hive.queries :as queries]
-            [hive.components.foreigns.react :as react]
+  (:require [hive.components.foreigns.react :as react]
             [hive.rework.util :as tool]
             [datascript.core :as data]
             [hive.rework.core :as work]
@@ -9,8 +8,8 @@
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
-            [clojure.string :as str]
-            [reagent.core :as r])
+            [reagent.core :as r]
+            [clojure.string :as str])
   (:import [goog.date Interval DateTime]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
@@ -65,11 +64,13 @@
             {:flex 1 :onPress #(reset! expanded? (not @expanded?))}
             (if (not @expanded?)
               [:> react/Text {:style {:color "gray"}}
-                             (:maneuver/instruction (first steps))]
+                (str/replace (:maneuver/instruction (first steps))
+                             "[Dummy]" "")]
               (for [step steps]
                 ^{:key (:step/distance step)}
                 [:> react/Text {:style {:color "gray"}}
-                               (:maneuver/instruction step)]))]
+                  (str/replace (:maneuver/instruction step)
+                               "[Dummy]" "")]))]
           [:> react/Text (:step/name (last steps))]]])))
 
 (defn- Route
