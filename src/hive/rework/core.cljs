@@ -140,7 +140,7 @@
     ;; side effect declaration wrapped with delay to allow testing
     ;; Force it and try to execute its result
     (delay? value)
-    (do (execute! result (deref value))
+    (do (execute! [] (deref value))
         (identity result))
 
     ;; simple datascript transaction
