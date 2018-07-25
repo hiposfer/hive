@@ -1,6 +1,5 @@
 (ns hive.components.screens.home.route
-  (:require [hive.queries :as queries]
-            [hive.components.foreigns.react :as react]
+  (:require [hive.components.foreigns.react :as react]
             [hive.rework.util :as tool]
             [datascript.core :as data]
             [hive.rework.core :as work]
@@ -8,77 +7,102 @@
             [hive.foreigns :as fl]
             [hive.components.foreigns.expo :as expo]
             [hive.libs.geometry :as geometry]
-            [goog.date.duration :as duration])
-  (:import [goog.date Interval]))
+            [goog.date.duration :as duration]
+            [reagent.core :as r]
+            [clojure.string :as str])
+  (:import [goog.date Interval DateTime]))
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
 (defn process-directions
   "takes a mapbox directions response and returns it.
    Return an exception if no path was found"
-  [path user now]
-  [(tool/with-ns :route (assoc path :departure now))
+  [path user]
+  [path
    {:user/id user
-    :user/route [:route/uuid (:uuid path)]}])
+    :user/route [:route/uuid (:route/uuid path)]}])
 
-(def big-circle (symbols/circle 16))
-(def small-circle (symbols/circle 12))
-
-(defn- SectionDetails
-  [data]
-  [:> react/View {:flex 9 :justifyContent "space-between"}
-    [:> react/Text (some (comp not-empty :name) (butlast data))]
-    [:> react/View {:flex 1 :justifyContent "center"}
-      [:> react/Text {:style {:color "gray"}}
-                     (:instruction (:maneuver (first data)))]]
-    [:> react/Text (:name (last data))]])
+(def big-circle 16)
+(def small-circle 10)
+(def section-height 140)
+(def subsection-height 20)
 
 (defn- TransitLine
-  [data]
-  [:> react/View {:flex 1 :alignItems "center"}
-    [:> react/View (merge {:backgroundColor "red"}
-                          big-circle)]
-    [:> react/View {:backgroundColor "red" :width "8%" :height "80%"}]
-    [:> react/View (merge {:backgroundColor "red" :elevation 10}
-                          big-circle)]])
+  [data expanded?]
+  (let [line-height (if expanded? "90%" "80%")]
+    [:> react/View {:flex 1 :alignItems "center"}
+      [:> react/View (merge {:backgroundColor "red"}
+                            (symbols/circle big-circle))]
+      [:> react/View {:backgroundColor "red" :width "8%" :height line-height}]
+      [:> react/View (merge {:style {:backgroundColor "red" :borderColor "transparent"}}
+                            (symbols/circle big-circle))]]))
 
 (defn- WalkingSymbols
-  [data]
-  [:> react/View {:flex 1 :alignItems "center"
-                  :justifyContent "space-around"}
-    (for [i (range 5)]
-      ^{:key i} [:> react/View (merge {:backgroundColor "gray"}
-                                      small-circle)])])
+  [steps expanded?]
+  (let [divisor (if expanded? 4 2)
+        amount (if (not expanded?) 5 (/ section-height (count steps) divisor))]
+    [:> react/View {:flex 1 :alignItems "center"
+                    :justifyContent "space-around"}
+      (for [i (range amount)]
+        ^{:key i}
+        [:> react/View {:backgroundColor "slategray" :height big-circle
+                        :width (/ small-circle 3) :borderRadius 4}])]))
+
+
+(defn- StepDetails
+  [steps expanded?]
+  [:> react/TouchableOpacity
+    {:style {:flex 9 :justifyContent "space-around"}
+     :onPress #(reset! expanded? (not @expanded?))}
+    (for [step steps]
+      ^{:key (:step/distance step)}
+      [:> react/Text {:style {:color "gray"}}
+        (if (= "transit" (:step/mode step))
+          (:step/name step)
+          (str/replace (:maneuver/instruction step)
+                       "[Dummy]" ""))])])
+
+(defn- StepOverview
+  [steps expanded?]
+  [:> react/View {:flex 9 :justifyContent "space-around"}
+   [:> react/Text (some :step/name (butlast steps))]
+   [:> react/TouchableOpacity
+    {:style {:flex 1 :justifyContent "space-around"}
+     :onPress #(reset! expanded? (not @expanded?))}
+    [:> react/Text {:style {:color "gray"}}
+     (str/replace (:maneuver/instruction (first steps))
+                  "[Dummy]" "")]]
+   [:> react/Text (:step/name (last steps))]])
+
+(defn- RouteSection
+  [steps human-time]
+  (r/with-let [expanded? (r/atom false)]
+    (let [subsize (* subsection-height (count steps))
+          height  (+ section-height (if @expanded? subsize 0))]
+      [:> react/View {:height height :flexDirection "row"}
+        [:> react/Text {:style {:flex 1 :textAlign "right"
+                                :color "gray" :fontSize 12}}
+                      human-time]
+        (if (= "walking" (:step/mode (first steps)))
+          [WalkingSymbols steps @expanded?]
+          [TransitLine steps @expanded?])
+        (if (not @expanded?)
+           [StepOverview steps expanded?]
+           [StepDetails steps expanded?])])))
 
 (defn- Route
-  [props user]
-  (let [data     @(work/pull! [{:user/route [:route/route :route/uuid :route/departure]}
-                               :user/goal]
-                              [:user/id user])
-        route    (:route/route (:user/route data))
-        sections (partition-by :mode (:steps route))
-        date     (when (:route/departure (:user/route data))
-                   (. (:route/departure (:user/route data)) (clone)))]
-    [:> react/View props
-      (concat
-        (for [part sections]
-          ^{:key (:distance (first part))}
-           [:> react/View {:flex 9 :flexDirection "row"}
-             [:> react/View {:flex 1 :alignItems "center"}
-               [:> react/Text {:style {:color "gray" :fontSize 12}}
-                 (when (some? date)
-                   (let [i    (Interval. 0 0 0 0 0 (apply + (map :duration part)))
-                         text (subs (. date (toIsoTimeString)) 0 5)]
-                     (. date (add i)) ;; add for next iteration
-                     (do text)))]]
-             (if (= "walking" (some :mode part))
-               [WalkingSymbols part]
-               [TransitLine part])
-             [SectionDetails part]])
-        [^{:key -1}
-         [:> react/View {:flex 4 :alignItems "center"}
-           [:> react/Text "You have arrived at"]
-           [:> react/Text (:text (:user/goal data))]]])]))
+  [uid]
+  (let [route   @(work/pull! [{:route/steps [:step/departure :step/mode
+                                             :step/name :maneuver/instruction
+                                             :step/distance]}]
+                             [:route/uuid uid])]
+    [:> react/View {:flex 1}
+      (for [steps (partition-by :step/mode (:route/steps route))
+            :let [departs  (:step/departure (first steps))
+                  iso-time (. ^DateTime departs (toIsoTimeString))
+                  human-time (subs iso-time 0 5)]]
+        ^{:key human-time}
+        [RouteSection steps human-time])]))
 
 (defn- Transfers
   []
@@ -91,47 +115,49 @@
          [:> expo/Ionicons {:name "ios-train" :size 32}]]))
 
 (defn- Info
-  [props user]
-  (let [data   @(work/pull! [{:user/route [:route/route]}
-                             :user/goal]
-                            [:user/id user])
-        route   (:route/route (:user/route data))
-        poi     (:text (:user/goal data))]
+  [props]
+  (let [[duration goal] @(work/q! '[:find [?duration ?goal]
+                                    :where [_      :user/route ?route]
+                                           [?route :route/duration ?duration]
+                                           [_      :user/goal ?goal]])]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers]
       [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
-       (duration/format (* 1000 (:duration route)))]]
-     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}} poi]]))
+       (when (some? duration)
+         (duration/format (* 1000 (. ^Interval duration (getTotalSeconds)))))]]
+     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
+                    (:text goal)]]))
 
-(def section-height 140)
+(defn- path
+  [db uid]
+  (let [route (data/pull db [{:route/steps [:step/geometry]}]
+                            [:route/uuid uid])]
+    (sequence (comp (map :step/geometry)
+                    (map :coordinates)
+                    (mapcat #(drop-last %)) ;; last = first of next
+                    (map geometry/latlng))
+              (:route/steps route))))
 
 (defn Instructions
-  "basic navigation directions"
+  "basic navigation directions.
+
+   Async, some data might be missing when rendered !!"
   [props]
-  (let [window  (tool/keywordize (.. fl/ReactNative (Dimensions/get "window")))
-        id      (data/q queries/user-id (work/db))
-        data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
-                            [:user/id id])
-        sections (partition-by :mode (:steps (:route/route (:user/route data))))
-        overview-height (* section-height (count sections))
-        info-height     (* 0.1 (:height window))
-        path    (sequence (comp (map :geometry)
-                                (map :coordinates)
-                                (mapcat #(drop-last %))
-                                (map geometry/latlng))
-                          (:steps (:route/route (:user/route data))))]
+  (let [window (tool/keywordize (. fl/ReactNative (Dimensions.get "window")))
+        uid   @(work/q! '[:find ?route . :where [_ :user/route ?route]])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
-        [symbols/CityMap id
-          [:> expo/MapPolyline {:coordinates path
-                                :strokeColor "#3bb2d0"
-                                :strokeWidth 4}]]]
-      [:> react/View {:height (+ info-height overview-height)
-                      :backgroundColor "white"}
-        [Info {:height info-height :paddingTop "1%"} id]
-        [Route {:flex 9} id]]
+        [symbols/CityMap
+          (when (some? uid)
+            [:> expo/MapPolyline {:coordinates (path (work/db) uid)
+                                  :strokeColor "#3bb2d0"
+                                  :strokeWidth 4}])]]
+      [:> react/View {:flex 1 :backgroundColor "white"}
+        [Info {:flex 1 :paddingTop "1%"}]
+        (when (some? uid)
+          [Route uid])]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
@@ -141,10 +167,7 @@
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(work/q queries/routes-ids)
 
-;(let [id      (data/q queries/user-id (work/db))
-;      data   @(work/pull! [{:user/route [:route/route :route/uuid]}]
-;                          [:user/id id])]
-;  ;(sequence (comp (map :geometry)
-;  ;                (mapcat :coordinates)
-;  ;                (map geometry/latlng))
-;  (:steps (:route/route (:user/route data))))
+;(let [id      (data/q queries/user-id (work/db))]
+;  (:steps (:route/route (:user/route @(work/pull! [{:user/route [:route/route]}]
+;                                                  [:user/id id])))))
+

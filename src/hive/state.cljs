@@ -46,6 +46,8 @@
              :session/uuid          {:db.unique :db.unique/identity}
 
              :route/uuid            {:db.unique :db.unique/identity}
+             :route/steps           {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/many}
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}})
 
