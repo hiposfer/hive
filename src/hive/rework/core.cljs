@@ -118,51 +118,58 @@
   []
   @state/conn)
 
+(declare transact!)
+
+(defn- execute!
+  [result value]
+  ;; async transaction - transact each element
+  (when (tool/chan? value)
+    (async/reduce (fn [_ v] (transact! v)) nil value))
+
+  ;; JS promise - wait for its value then transact it
+  (when (tool/promise? value)
+    (. value (then transact!)))
+
+  (cond
+    ;; functional side effect declaration
+    ;; Execute it and try to execute its result
+    (and (vector? value) (fn? (first value)))
+    (do (execute! [] (apply (first value) (rest value)))
+        (identity result))
+
+    ;; side effect declaration wrapped with delay to allow testing
+    ;; Force it and try to execute its result
+    (delay? value)
+    (do (execute! [] (deref value))
+        (identity result))
+
+    ;; simple datascript transaction
+    (or (map? value) (vector? value))
+    (conj result value)
+    ;; otherwise just keep reducing
+    :else result))
+
 (defn transact!
-  "'Updates' the DataScript state with data.
+  "Single entry point for 'updating' the app state. The behaviour of
+  transact! depends on the arguments.
 
    data can be:
-   - a standard Datomic transaction. See Datomic's API documentation for more
+   - a standard Datascript transaction. See Datomic's API documentation for more
     information. http://docs.datomic.com/transactions.html
-   - a channel containing one or more transactions
+   - a channel yielding one or more transactions
    - a vector whose first element is a function and the rest are its argument.
-     The function will be executed and its return value is passed to transact!
-     again. Useful for keeping functions side-effect free
-   - a delay whose content will be forced and passed to transact! again.
-     Useful for keeping function side-effect free when doing Js interop
-   - a Js Promise, whose return value will be transact. Useful for doing
-     asynchronous Js calls without having to convert it to a core async channel
-
-   Returns Datascript transact! return value or a channel
-   with the content of each transact! result.
+     The function will be executed and its return value is used in-place of
+     the original one. Useful for keeping functions side-effect free
+   - a delay whose content will be forced. Its return value is used in-place
+     of the original one. Useful for side-effect free Js interop
+   - a Js Promise yielding a single transaction. Useful for doing
+     asynchronous Js calls without converting them to a async channel
 
    Not supported data types are ignored"
   [data]
-  (cond
-    ;; async transaction - transact each element
-    (tool/chan? data)
-    (let [c (async/chan 1 (map transact!))]
-      (async/pipe data c))
-    ;; JS promise - wait for its value then transact it
-    (tool/promise? data)
-    (.. data (then transact!))
-    ;; functional side effect declaration
-    ;; Execute it and try to transact it
-    (and (vector? data) (fn? (first data)))
-    (recur (apply (first data) (rest data)))
-    ;; side effect declaration wrapped with DelayJS to allow testing
-    ;; Force it and try to transact it
-    (delay? data)
-    (recur (deref data))
-    ;; simple transaction
-    (sequential? data)
-    (data/transact! state/conn data)
-    ;; useful for debugging
-    (tool/error? data)
-    (js/console.error (clj->js data))))
-    ;:else (do (println "unknown transact! type argument" data)
-    ;          data))) ;; js/Errors, side effects with no return value ...
-
+  (when (sequential? data)
+    (let [tx (reduce execute! [] data)]
+      (data/transact! state/conn tx))))
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
 ;(q '[:find [(pull ?entity [*]) ...]
