@@ -1,6 +1,7 @@
 (ns hive.services.kamal
   (:require [clojure.string :as str]
-            [cljs.tools.reader.edn :as edn])
+            [cljs.tools.reader.edn :as edn]
+            [hive.components.screens.home.route :as route])
   (:import (goog.date DateTime Interval)))
 
 (defn read-object
@@ -41,8 +42,10 @@
 
   Rejects when status not= Ok"
   ^js/Promise
-  [coordinates departure]
+  [coordinates departure user]
   (let [[url opts] (directions coordinates departure)]
     (.. (js/fetch url (clj->js opts))
         (then (fn [^js/Response response] (. response (text))))
-        (then #(edn/read-string {:readers readers} %)))))
+        (then #(edn/read-string {:readers readers} %))
+        (then #(route/process-directions % user)))))
+        ;; TODO: error handling

@@ -130,15 +130,16 @@
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
                     (:text goal)]]))
 
-(defn- path
+(defn- paths
   [db uid]
-  (let [route (data/pull db [{:route/steps [:step/geometry]}]
+  (let [route (data/pull db [{:route/steps [:step/geometry :step/duration]}]
                             [:route/uuid uid])]
-    (sequence (comp (map :step/geometry)
-                    (map :coordinates)
-                    (mapcat #(drop-last %)) ;; last = first of next
-                    (map geometry/latlng))
-              (:route/steps route))))
+    (for [step (:route/steps route)
+          :let [coords (:coordinates (:step/geometry step))]]
+      ^{:key (first coords)}
+      [:> expo/MapPolyline {:coordinates (map geometry/latlng coords)
+                            :strokeColor "#3bb2d0"
+                            :strokeWidth 4}])))
 
 (defn Instructions
   "basic navigation directions.
@@ -151,9 +152,7 @@
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
           (when (some? uid)
-            [:> expo/MapPolyline {:coordinates (path (work/db) uid)
-                                  :strokeColor "#3bb2d0"
-                                  :strokeWidth 4}])]]
+            (paths (work/db) uid))]]
       [:> react/View {:flex 1 :backgroundColor "white"}
         [Info {:flex 1 :paddingTop "1%"}]
         (when (some? uid)
@@ -170,4 +169,3 @@
 ;(let [id      (data/q queries/user-id (work/db))]
 ;  (:steps (:route/route (:user/route @(work/pull! [{:user/route [:route/route]}]
 ;                                                  [:user/id id])))))
-
