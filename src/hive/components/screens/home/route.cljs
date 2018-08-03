@@ -14,14 +14,6 @@
 
 ;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
 
-(defn process-directions
-  "takes a mapbox directions response and returns it.
-   Return an exception if no path was found"
-  [path user]
-  [path
-   {:user/id user
-    :user/route [:route/uuid (:route/uuid path)]}])
-
 (def big-circle 16)
 (def small-circle 10)
 (def section-height 140)
@@ -147,7 +139,8 @@
    Async, some data might be missing when rendered !!"
   [props]
   (let [window (tool/keywordize (. fl/ReactNative (Dimensions.get "window")))
-        uid   @(work/q! '[:find ?route . :where [_ :user/route ?route]])]
+        uid   @(work/q! '[:find ?uid . :where [_ :user/route ?route]
+                                              [?route :route/uuid ?uid]])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
