@@ -19,6 +19,16 @@
 (def section-height 140)
 (def subsection-height 20)
 
+(def route-types
+  {0 {:name "tram" :icon "ios-train"}
+   1 {:name "subway" :icon "ios-train"}
+   2 {:name "train" :icon "ios-train"}
+   3 {:name "bus" :icon "ios-bus"}
+   4 {:name "ferry" :icon ""}
+   5 {:name "Cable car" :icon ""}
+   6 {:name "Gondola" :icon ""}
+   7 {:name "Funicular" :icon ""}})
+
 (defn- TransitLine
   [data expanded?]
   (let [line-height (if expanded? "90%" "80%")]
