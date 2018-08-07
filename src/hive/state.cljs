@@ -51,7 +51,10 @@
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}
              ;; GTFS entities
-             :trip/id               {:db.unique :db.unique/identity}})
+             :trip/id               {:db.unique :db.unique/identity}
+             :trip/route            {:db.valueType :db.type/ref}
+             :trip/service          {:db.valueType :db.type/ref}
+             :route/id              {:db.unique :db.unique/identity}})
 
 ;; needs to be an array of maps. This will be used for data/transact!
 (def init-data

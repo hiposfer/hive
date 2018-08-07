@@ -24,7 +24,9 @@
             reader/*default-data-reader-fn* (fn [tag v] v)
             reader/*read-eval* false]
     (with-open [infile (PushbackReader. (io/reader filename))]
-      (->> (repeatedly #(reader/read {:read-cond :allow :features #{:cljs} :eof ::eof}
+      (->> (repeatedly #(reader/read {:read-cond :allow
+                                      :features #{:cljs}
+                                      :eof ::eof}
                                      infile))
            (take-while #(not= ::eof %))
            (doall)))))

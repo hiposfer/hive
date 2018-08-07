@@ -1,6 +1,7 @@
 (ns hive.services.kamal
   (:require [clojure.string :as str]
-            [cljs.tools.reader.edn :as edn])
+            [cljs.tools.reader.edn :as edn]
+            [hive.rework.core :as work])
   (:import (goog.date DateTime Interval)))
 
 (defn read-object
@@ -36,7 +37,8 @@
 (defn entity!
   "executes the result of entity with js/fetch.
 
-  Returns a promise that will resolve
+  Returns a promise that will resolve to a transaction with the
+  requested entity
   "
   [ref] ;; TODO: dont request if entity already exists in db
   (let [[url opts] (entity ref)]
@@ -46,6 +48,11 @@
         (then vector))))
         ;; TODO: error handling)
 
+(defn- trip-info!
+  [trip-ref]
+  (.. (entity! trip-ref)
+      (then (fn [[trip]] [trip [entity! (:trip/route trip)]]))))
+
 (defn process-directions
   "takes a kamal directions response and attaches it to the current user.
   Further trip information is also retrieved"
@@ -54,12 +61,12 @@
               {:user/id user
                :user/route [:route/uuid (:route/uuid path)]}]]
     (concat base
-      (eduction (filter #(= (:step/mode %) "transit"))
-                ;; check just in case ;)
-                (filter #(some? (:stop_times/trip %)))
-                (map #(vector entity! (:stop_times/trip %)))
-                (distinct)
-                (:route/steps path)))))
+      (distinct
+        (for [step (:route/steps path)
+              :when (= (:step/mode step) "transit")
+              :when (some? (:stop_times/trip step))] ;; check just in case ;)
+          [trip-info! (:stop_times/trip step)])))))
+
 
 (defn directions
   "takes a map with the items required by ::request and replaces their values into
@@ -68,7 +75,7 @@
    https://www.mapbox.com/api-documentation/#request-format"
   [coordinates departure]
   (let [url (-> (str/replace route-url "{coordinates}" coordinates)
-                (str/replace "{departure}" (local-time departure)))]
+                (str/replace "{departure}" "2018-05-07T10:15:30"))] ;;(local-time departure)))]
     [url {:method "GET"
           :headers {:Accept "application/edn"}}]))
 
