@@ -25,8 +25,10 @@
 (def entity-url "http://192.168.0.45:3000/area/frankfurt/{entity}/{id}")
 
 (defn entity
-  [k v]
-  (let [url (-> (str/replace entity-url "{entity}" (name k))
+  "ref is a map with a single key value pair of the form {:trip/id 2}"
+  [ref]
+  (let [[k v]   (first ref)
+        url (-> (str/replace entity-url "{entity}" (namespace k))
                 (str/replace "{id}" v))]
     [url {:method "GET"
           :headers {:Accept "application/edn"}}]))
@@ -36,8 +38,8 @@
 
   Returns a promise that will resolve
   "
-  [k v] ;; TODO: dont request if entity already exists in db
-  (let [[url opts] (entity k v)]
+  [ref] ;; TODO: dont request if entity already exists in db
+  (let [[url opts] (entity ref)]
     (.. (js/fetch url (clj->js opts))
         (then (fn [^js/Response response] (. response (text))))
         (then #(edn/read-string {:readers readers} %))
@@ -55,7 +57,7 @@
       (eduction (filter #(= (:step/mode %) "transit"))
                 ;; check just in case ;)
                 (filter #(some? (:stop_times/trip %)))
-                (map #(vector entity! :trip (:id (:stop_times/trip %))))
+                (map #(vector entity! (:stop_times/trip %)))
                 (distinct)
                 (:route/steps path)))))
 
