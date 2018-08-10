@@ -52,7 +52,7 @@
           :onPress #(work/transact! (set-target (work/db) navigate target))}
          [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-           [:> react/Text {:note true} (str (. distance (toPrecision 2)) " km")]]
+           [:> react/Text {:note true} (str (. distance (toPrecision 4)) " km")]]
          [:> react/View {:flex 0.8 :justifyContent "flex-end"}
            [:> react/Text {:numberOfLines 1} (:text target)]
            [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
