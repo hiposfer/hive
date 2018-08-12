@@ -101,11 +101,12 @@
   (if (= "walking" (:step/mode (first steps)))
     [:> expo/Ionicons {:name "ios-walk" :size 32}]
     (case (:route/type (:trip/route (:stop_times/trip (first steps))))
+      0 [:> expo/Ionicons {:name "ios-train" :size 32}]
       1 [:> expo/Ionicons {:name "ios-subway" :size 32}]
-      2 [:> expo/Ionicons {:name "ios-train" :size 32}]
+      2 [:> expo/Ionicons {:name "md-train" :size 32}]
       3 [:> expo/Ionicons {:name "ios-bus" :size 32}]
       ;; default
-      [:> expo/Ionicons {:name "ios-train" :size 32}])))
+      [:> react/ActivityIndicator])))
 
 (defn- Transfers
   [route-id]
@@ -113,7 +114,7 @@
                            [:route/uuid route-id])
         sections (partition-by :step/mode (:route/steps route))]
     [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
-                    :top "0.5%"}
+                    :top "0.5%" :alignItems "center"}
       (butlast ;; drop last arrow icon
         (interleave
           (for [steps sections]
@@ -121,7 +122,7 @@
             [SectionIcon steps])
           (for [i (range (count sections))]
             ^{:key i}
-            [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}])))]))
+            [:> expo/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"}])))]))
 
 
 (defn- Info
