@@ -80,7 +80,7 @@
    https://www.mapbox.com/api-documentation/#request-format"
   [coordinates departure]
   (let [url (-> (str/replace route-url "{coordinates}" coordinates)
-                (str/replace "{departure}" "2018-05-07T10:15:30"))] ;;(local-time departure)))]
+                (str/replace "{departure}" (local-time departure)))] ;; "2018-05-07T10:15:30"))]
     [url {:method "GET"
           :headers {:Accept "application/edn"}}]))
 
