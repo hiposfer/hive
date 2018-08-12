@@ -32,6 +32,13 @@
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 
+(defn- humanize-distance
+  "Convert a distance (km) to human readable form."
+  [distance]
+  (if (< distance 1)
+    (str (. (* distance 1000) (toFixed 0)) " m")
+    (str (. distance (toFixed 1)) " km")))
+
 (defn- Places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
@@ -50,7 +57,7 @@
           :onPress #(work/transact! (set-target (work/db) navigate target))}
          [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-           [:> react/Text {:note true} (str (. distance (toPrecision 2)) " km")]]
+           [:> react/Text {:note true} (humanize-distance distance)]]
          [:> react/View {:flex 0.8 :justifyContent "flex-end"}
            [:> react/Text {:numberOfLines 1} (:text target)]
            [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
