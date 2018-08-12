@@ -49,7 +49,16 @@
              :route/steps           {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/many}
              ;; needed to tell datascript to keep only 1 of these
-             :react.navigation/name {:db.unique :db.unique/identity}})
+             :react.navigation/name {:db.unique :db.unique/identity}
+
+             ;; GTFS entities
+             :route/id              {:db.unique :db.unique/identity}
+             :trip/id               {:db.unique :db.unique/identity}
+             :stop/id               {:db.unique :db.unique/identity}
+             :trip/route            {:db.valueType :db.type/ref}
+             :trip/service          {:db.valueType :db.type/ref}
+             :stop_times/trip       {:db.valueType :db.type/ref}
+             :stop_times/stop       {:db.valueType :db.type/ref}})
 
 ;; needs to be an array of maps. This will be used for data/transact!
 (def init-data
