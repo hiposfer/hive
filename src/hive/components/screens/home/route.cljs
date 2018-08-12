@@ -57,15 +57,18 @@
 
 (defn- StepOverview
   [steps expanded?]
-  [:> react/View {:flex 9 :justifyContent "space-around"}
-   [:> react/Text (some :step/name (butlast steps))]
-   [:> react/TouchableOpacity
-    {:style {:flex 1 :justifyContent "space-around"}
-     :onPress #(reset! expanded? (not @expanded?))}
-    [:> react/Text {:style {:color "gray"}}
-     (str/replace (:maneuver/instruction (first steps))
-                  "[Dummy]" "")]]
-   [:> react/Text (:step/name (last steps))]])
+  [:> react/View {:flex 9 :justifyContent "space-between"}
+    [:> react/Text {:style {:flex 1}} (some :step/name (butlast steps))]
+    [:> react/TouchableOpacity {:style {:flex (if @expanded? 1 5)
+                                        :justifyContent "center"}
+                                :onPress #(reset! expanded? (not @expanded?))}
+      [:> react/Text {:style {:color "gray"}}
+                     (str/replace (:maneuver/instruction (first steps))
+                                  "[Dummy]" "")]]
+    (when @expanded?
+      [:> react/View {:flex 5}
+        [StepDetails (butlast (rest steps)) expanded?]])
+    [:> react/Text {:style {:flex 1}} (:step/name (last steps))]])
 
 (defn- RouteSection
   [steps human-time]
@@ -79,9 +82,7 @@
         (if (= "walking" (:step/mode (first steps)))
           [WalkingSymbols steps @expanded?]
           [TransitLine steps @expanded?])
-        (if (not @expanded?)
-           [StepOverview steps expanded?]
-           [StepDetails steps expanded?])])))
+        [StepOverview steps expanded?]])))
 
 (defn- Route
   [uid]
