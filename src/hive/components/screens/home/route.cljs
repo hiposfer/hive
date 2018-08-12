@@ -20,14 +20,39 @@
 (def section-height 140)
 (def subsection-height 20)
 
+(def default-color "#3bb2d0")
+
+;; adapted from
+;; https://stackoverflow.com/a/16348977
+(defn color
+  [text]
+  (let [h (reduce (fn [res i] (+ (. text (charCodeAt i))
+                                 (- (bit-shift-left res 5)
+                                    res)))
+                  0
+                  (range (count text)))]
+    (reduce (fn [res i]
+              (let [v (bit-and (bit-shift-right h (* i 8)) 0xFF)]
+                (str res (. (str "00" (. v (toString 16)))
+                            (substr -2)))))
+            "#"
+            (range 3))))
+
+(defn- route-color
+  [route]
+  (or (:route/color route)
+      (when (some? route) (color (:route/long_name route)))
+      default-color))
+
 (defn- TransitLine
-  [data expanded?]
-  (let [line-height (if expanded? "90%" "80%")]
+  [steps expanded?]
+  (let [line-height (if expanded? "90%" "80%")
+        stroke      (route-color (:trip/route (:stop_times/trip (first steps))))]
     [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/View (merge {:backgroundColor "red"}
+      [:> react/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
-      [:> react/View {:backgroundColor "red" :width "8%" :height line-height}]
-      [:> react/View (merge {:style {:backgroundColor "red" :borderColor "transparent"}}
+      [:> react/View {:backgroundColor stroke :width "8%" :height line-height}]
+      [:> react/View (merge {:style {:backgroundColor stroke :borderColor "transparent"}}
                             (symbols/circle big-circle))]]))
 
 (defn- WalkingSymbols
@@ -64,7 +89,7 @@
         [:> expo/Ionicons {:name (if @expanded? "ios-arrow-down" "ios-arrow-forward")
                            :style {:paddingRight 10}
                            :size 22 :color "gray"}]
-        [:> react/Text {:style {:color "gray" :paddingRight 7 :backgroundColor "yellow"}}
+        [:> react/Text {:style {:color "gray" :paddingRight 7}}
                        (str/replace (:maneuver/instruction (first steps))
                                     "[Dummy]" "")]]]
     (when @expanded?
@@ -90,7 +115,8 @@
   [uid]
   (let [route   @(work/pull! [{:route/steps [:step/departure :step/mode
                                              :step/name :maneuver/instruction
-                                             :step/distance]}]
+                                             :step/distance
+                                             {:stop_times/trip [{:trip/route [:route/long_name :route/color]}]}]}]
                              [:route/uuid uid])]
     [:> react/View {:flex 1}
       (for [steps (partition-by :step/mode (:route/steps route))
@@ -147,13 +173,15 @@
 
 (defn- paths
   [db uid]
-  (let [route (data/pull db [{:route/steps [:step/geometry :step/duration]}]
+  (let [route (data/pull db [{:route/steps [:step/geometry :step/duration :step/mode
+                                            {:stop_times/trip [{:trip/route [:route/color :route/long_name]}]}]}]
                             [:route/uuid uid])]
-    (for [step (:route/steps route)
-          :let [coords (:coordinates (:step/geometry step))]]
-      ^{:key (hash step)}
+    (for [steps (partition-by :step/mode (:route/steps route))
+          :let [coords (mapcat :coordinates (map :step/geometry steps))
+                stroke (route-color (:trip/route (:stop_times/trip (first steps))))]]
+      ^{:key (hash steps)}
       [:> expo/MapPolyline {:coordinates (map geometry/latlng coords)
-                            :strokeColor "#3bb2d0"
+                            :strokeColor stroke
                             :strokeWidth 4}])))
 
 (defn Instructions
