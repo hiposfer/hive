@@ -19,16 +19,6 @@
 (def section-height 140)
 (def subsection-height 20)
 
-(def route-types
-  {0 {:name "tram" :icon "ios-train"}
-   1 {:name "subway" :icon "ios-train"}
-   2 {:name "train" :icon "ios-train"}
-   3 {:name "bus" :icon "ios-bus"}
-   4 {:name "ferry" :icon ""}
-   5 {:name "Cable car" :icon ""}
-   6 {:name "Gondola" :icon ""}
-   7 {:name "Funicular" :icon ""}})
-
 (defn- TransitLine
   [data expanded?]
   (let [line-height (if expanded? "90%" "80%")]
@@ -57,7 +47,7 @@
     {:style {:flex 9 :justifyContent "space-around"}
      :onPress #(reset! expanded? (not @expanded?))}
     (for [step steps]
-      ^{:key (:step/distance step)}
+      ^{:key (hash step)}
       [:> react/Text {:style {:color "gray"}}
         (if (= "transit" (:step/mode step))
           (:step/name step)
@@ -106,25 +96,43 @@
         ^{:key human-time}
         [RouteSection steps human-time])]))
 
+(defn- SectionIcon
+  [steps]
+  (if (= "walking" (:step/mode (first steps)))
+    [:> expo/Ionicons {:name "ios-walk" :size 32}]
+    (case (:route/type (:trip/route (:stop_times/trip (first steps))))
+      1 [:> expo/Ionicons {:name "ios-subway" :size 32}]
+      2 [:> expo/Ionicons {:name "ios-train" :size 32}]
+      3 [:> expo/Ionicons {:name "ios-bus" :size 32}]
+      ;; default
+      [:> expo/Ionicons {:name "ios-train" :size 32}])))
+
 (defn- Transfers
-  []
-  (into [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
-                        :top "0.5%"}]
-        [[:> expo/Ionicons {:name "ios-walk" :size 32}]
-         [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
-         [:> expo/Ionicons {:name "ios-bus" :size 32}]
-         [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}]
-         [:> expo/Ionicons {:name "ios-train" :size 32}]]))
+  [route-id]
+  (let [route @(work/pull! [{:route/steps [:step/mode {:stop_times/trip [{:trip/route [:route/type]}]}]}]
+                           [:route/uuid route-id])
+        sections (partition-by :step/mode (:route/steps route))]
+    [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
+                    :top "0.5%"}
+      (butlast ;; drop last arrow icon
+        (interleave
+          (for [steps sections]
+            ^{:key (hash steps)}
+            [SectionIcon steps])
+          (for [i (range (count sections))]
+            ^{:key i}
+            [:> expo/Ionicons {:name "ios-arrow-forward" :size 26 :color "gray"}])))]))
+
 
 (defn- Info
-  [props]
+  [props route-id]
   (let [[duration goal] @(work/q! '[:find [?duration ?goal]
                                     :where [_      :user/route ?route]
                                            [?route :route/duration ?duration]
                                            [_      :user/goal ?goal]])]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
-      [Transfers]
+      [Transfers route-id]
       [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
        (when (some? duration)
@@ -138,7 +146,7 @@
                             [:route/uuid uid])]
     (for [step (:route/steps route)
           :let [coords (:coordinates (:step/geometry step))]]
-      ^{:key (first coords)}
+      ^{:key (hash step)}
       [:> expo/MapPolyline {:coordinates (map geometry/latlng coords)
                             :strokeColor "#3bb2d0"
                             :strokeWidth 4}])))
@@ -149,15 +157,17 @@
    Async, some data might be missing when rendered !!"
   [props]
   (let [window (tool/keywordize (. fl/ReactNative (Dimensions.get "window")))
-        uid   @(work/q! '[:find ?uid . :where [_ :user/route ?route]
-                                              [?route :route/uuid ?uid]])]
+        uid   @(work/q! '[:find ?uid .
+                          :where [_      :user/route ?route]
+                                 [?route :route/uuid ?uid]])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
           (when (some? uid)
             (paths (work/db) uid))]]
       [:> react/View {:flex 1 :backgroundColor "white"}
-        [Info {:flex 1 :paddingTop "1%"}]
+        (when (some? uid)
+          [Info {:flex 1 :paddingTop "1%"} uid])
         (when (some? uid)
           [Route uid])]
       [:> react/View (merge (symbols/circle 52) symbols/shadow

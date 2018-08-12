@@ -48,10 +48,15 @@
         (then vector))))
         ;; TODO: error handling)
 
-(defn- trip-info!
-  [trip-ref]
+(defn- chain!
+  "request an remote entity and also fetches the entity under keyword k
+  when it arrives.
+
+  For example: fetch the trip/id 123 and then the :trip/route that it
+  points to"
+  [trip-ref k]
   (.. (entity! trip-ref)
-      (then (fn [[trip]] [trip [entity! (:trip/route trip)]]))))
+      (then (fn [[trip]] [trip [entity! (k trip)]]))))
 
 (defn process-directions
   "takes a kamal directions response and attaches it to the current user.
@@ -65,7 +70,7 @@
         (for [step (:route/steps path)
               :when (= (:step/mode step) "transit")
               :when (some? (:stop_times/trip step))] ;; check just in case ;)
-          [trip-info! (:stop_times/trip step)])))))
+          [chain! (:stop_times/trip step) :trip/route])))))
 
 
 (defn directions
