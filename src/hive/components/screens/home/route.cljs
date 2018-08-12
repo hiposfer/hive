@@ -16,6 +16,7 @@
 
 (def big-circle 16)
 (def small-circle 10)
+(def micro-circle 3)
 (def section-height 140)
 (def subsection-height 20)
 
@@ -31,14 +32,14 @@
 
 (defn- WalkingSymbols
   [steps expanded?]
-  (let [divisor (if expanded? 4 2)
-        amount (if (not expanded?) 5 (/ section-height (count steps) divisor))]
+  (let [divisor (if expanded? 2 1)
+        amount  (if (not expanded?) 15 (/ section-height (count steps) divisor))]
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range amount)]
         ^{:key i}
-        [:> react/View {:backgroundColor "slategray" :height big-circle
-                        :width (/ small-circle 3) :borderRadius 4}])]))
+        [:> react/View (merge (symbols/circle micro-circle)
+                              {:backgroundColor "slategray"})])]))
 
 
 (defn- StepDetails
