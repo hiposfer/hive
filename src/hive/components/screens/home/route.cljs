@@ -43,10 +43,8 @@
 
 
 (defn- StepDetails
-  [steps expanded?]
-  [:> react/TouchableOpacity
-    {:style {:flex 9 :justifyContent "space-around"}
-     :onPress #(reset! expanded? (not @expanded?))}
+  [steps]
+  [:> react/View {:style {:flex 9 :justifyContent "space-around"}}
     (for [step steps]
       ^{:key (hash step)}
       [:> react/Text {:style {:color "gray"}}
@@ -59,15 +57,19 @@
   [steps expanded?]
   [:> react/View {:flex 9 :justifyContent "space-between"}
     [:> react/Text {:style {:flex 1}} (some :step/name (butlast steps))]
-    [:> react/TouchableOpacity {:style {:flex (if @expanded? 1 5)
+    [:> react/TouchableOpacity {:style {:flex (if @expanded? 2 5)
                                         :justifyContent "center"}
                                 :onPress #(reset! expanded? (not @expanded?))}
-      [:> react/Text {:style {:color "gray"}}
-                     (str/replace (:maneuver/instruction (first steps))
-                                  "[Dummy]" "")]]
+      [:> react/View {:flex-direction "row"}
+        [:> expo/Ionicons {:name (if @expanded? "ios-arrow-down" "ios-arrow-forward")
+                           :style {:paddingRight 10}
+                           :size 22 :color "gray"}]
+        [:> react/Text {:style {:color "gray" :paddingRight 7 :backgroundColor "yellow"}}
+                       (str/replace (:maneuver/instruction (first steps))
+                                    "[Dummy]" "")]]]
     (when @expanded?
       [:> react/View {:flex 5}
-        [StepDetails (butlast (rest steps)) expanded?]])
+        [StepDetails (butlast (rest steps))]])
     [:> react/Text {:style {:flex 1}} (:step/name (last steps))]])
 
 (defn- RouteSection
