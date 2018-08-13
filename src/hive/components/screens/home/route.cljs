@@ -41,7 +41,8 @@
 (defn- route-color
   [route]
   (or (:route/color route)
-      (when (some? route) (color (:route/long_name route)))
+      (when (some? route)
+        (color (or (:route/short_name route) (:route/long_name route))))
       default-color))
 
 (defn- TransitLine
@@ -57,8 +58,7 @@
 
 (defn- WalkingSymbols
   [steps expanded?]
-  (let [divisor (if expanded? 2 1)
-        amount  (if (not expanded?) 15 (/ section-height (count steps) divisor))]
+  (let [amount  (if (not expanded?) 15 (/ section-height 4))]
     [:> react/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range amount)]
@@ -172,11 +172,11 @@
                     (:text goal)]]))
 
 (defn- paths
-  [db uid]
-  (let [route (data/pull db [{:route/steps [:step/geometry :step/duration :step/mode
-                                            {:stop_times/trip [{:trip/route [:route/color :route/long_name]}]}]}]
-                            [:route/uuid uid])]
-    (for [steps (partition-by :step/mode (:route/steps route))
+  [uid]
+  (let [route (work/pull! [{:route/steps [:step/geometry :step/duration :step/mode
+                                          {:stop_times/trip [{:trip/route [:route/color :route/long_name]}]}]}]
+                          [:route/uuid uid])]
+    (for [steps (partition-by :step/mode (:route/steps @route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
                 stroke (route-color (:trip/route (:stop_times/trip (first steps))))]]
       ^{:key (hash steps)}
@@ -197,7 +197,7 @@
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
           (when (some? uid)
-            (paths (work/db) uid))]]
+            (paths uid))]]
       [:> react/View {:flex 1 :backgroundColor "white"}
         (when (some? uid)
           [Info {:flex 1 :paddingTop "1%"} uid])
