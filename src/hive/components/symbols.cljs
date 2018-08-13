@@ -49,8 +49,6 @@
                              [?id :user/city ?city]
                              [?city :city/geometry ?geometry]])
         area      (region children (geometry/latlng (:coordinates geometry)))]
-    (println (region children (geometry/latlng (:coordinates geometry))))
-
     (if (nil? (:coordinates geometry))
       [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
       [:> expo/MapView {:region                area
