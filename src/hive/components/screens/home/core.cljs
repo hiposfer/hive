@@ -116,7 +116,7 @@
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (r/with-let [tracker  (location/watch! (location/defaults))
+  (r/with-let [tracker  (location/watch! location/defaults)
                navigate (:navigate (:navigation props))
                id       (work/q! queries/user-id)
                info     (work/pull! [:user/places] [:user/id @id])]
