@@ -25,6 +25,7 @@
 (def delete-all-datoms "delete from datoms;")
 
 (defn sync
+  "returns a sequence of sqlite transactions according to Datascript tx-report"
   [tx-report]
   (for [d (:tx-data tx-report)]
     (if (:added d)
@@ -32,17 +33,21 @@
       [delete-datom [(:e d) (pr-str (:a d))]])))
 
 (defn- transact!
+  "executes a sequence of transactions to sync sqlite with datascript"
   [transaction tx-report]
   (doseq [[tx values] (sync tx-report)]
     (. transaction (executeSql tx (clj->js values)))))
 
-(defn sync!
+(defn- sync!
+  "helper function to sync data to sqlite"
   [db tx-report]
   (. db (transaction #(transact! % tx-report)))); println println)))
 ;(cljs.pprint/pprint changes)
 ;(cljs.pprint/pprint tx-report)))
 
 (defn listen!
+  "listen for datascript changes and synchronize them only if the user requested it
+  with ::persist"
   [conn]
   (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
     (. db (transaction (fn [transaction] (. transaction (executeSql create-table)))))
@@ -51,6 +56,7 @@
 
 
 (defn- datoms
+  "helper function to parse the result of a read all transaction"
   [tx result-set]
   (let [result (js->clj (.. result-set -rows -_array)
                         :keywordize-keys true)]
@@ -59,6 +65,9 @@
       (data/datom (:e r) (:a r) (:v r) (:tx r)))))
 
 (defn read!
+  "read all datoms from the sqlite storage.
+
+  Returns a Promise that will resolve with a sequence of datoms"
   ^js/Promise
   []
   (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
@@ -72,14 +81,17 @@
                 ;; success
 
 (defn CLEAR!!
+  "delete all datoms from the datoms table.
+
+  Returns a promise that will resolve if the transaction succeeded"
+  ^js/Promise
   []
   (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
     (new js/Promise
       (fn [resolve reject]
-        (. db (transaction (fn [t] (. t (executeSql delete-all-datoms
-                                                    #js []
-                                                    #(resolve %2))))
-                           reject))))))
+        (. db (transaction (fn [t] (. t (executeSql delete-all-datoms #js [])))
+                           reject
+                           resolve))))))
 
 ;(.. (CLEAR!!)
 ;    (then println)
