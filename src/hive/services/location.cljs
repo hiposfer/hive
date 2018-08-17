@@ -29,7 +29,7 @@
   [db data]
   (let [p    (point (tool/keywordize data))
         puid (assoc p :user/id (data/q queries/user-id db))]
-    (work/transact! (tx-position puid) ::sqlite/sync)))
+    (work/transact! (tx-position puid) :persist/changes)))
 
 (defn with-defaults
   "sensitive defaults for location tracking"

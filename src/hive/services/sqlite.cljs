@@ -41,7 +41,7 @@
 (defn- sync!
   "helper function to sync data to sqlite"
   [db tx-report]
-  (when (= (:tx-meta tx-report) ::sync)
+  (when (= (:tx-meta tx-report) :persist/changes)
     (. db (transaction #(transact! % tx-report))))); println println)))
 ;(cljs.pprint/pprint changes)
 ;(cljs.pprint/pprint tx-report)))
@@ -84,7 +84,7 @@
 (defn CLEAR!!
   "delete all datoms from the datoms table.
 
-  Returns a promise that will resolve if the transaction succeeded"
+  Returns a promise that will resolve to a sequence of datoms"
   ^js/Promise
   []
   (let [db (. fl/Expo (SQLite.openDatabase "sync"))]

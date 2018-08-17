@@ -92,24 +92,23 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (.. (sqlite/read!)
-      (then #(data/conn-from-datoms % state/schema))
-      (then #(do (sqlite/listen! %)
-                 (work/init! %)))
-      (then #(work/transact! state/init-data ::sqlite/sync))
-      (then #(work/transact! [{:session/uuid (data/squuid)
-                               :session/start (js/Date.now)}])))
-  (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
-  ;; handles Android BackButton
-  (. fl/ReactNative (BackHandler.addEventListener
-                      "hardwareBackPress"
-                      back-listener!))
-  (. fl/ReactNative (NetInfo.isConnected.addEventListener
-                      "connectionChange"
-                      conn-listener)))
-
-;hive.rework.state/conn
-
+  (let [conn (data/create-conn state/schema)]
+    (work/init! conn)
+    (sqlite/listen! conn)
+    (work/transact! state/init-data :persist/changes)
+    (work/transact! [{:session/uuid (data/squuid)
+                      :session/start (js/Date.now)}])
+    ;; restore user data ...........................
+    (.. (sqlite/read!) (then work/transact!))
+    ;; start listening for events ..................
+    (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
+    ;; handles Android BackButton
+    (. fl/ReactNative (BackHandler.addEventListener
+                        "hardwareBackPress"
+                        back-listener!))
+    (. fl/ReactNative (NetInfo.isConnected.addEventListener
+                        "connectionChange"
+                        conn-listener))))
 ;(work/transact! [{:user/id -1
 ;                 :foo/bar 1))))
 ;(work/transact! [[:db.fn/retractEntity 7]])

@@ -24,7 +24,7 @@
   (let [params   (:params (:state (:navigation props)))
         city     (:city props)]
     [:> react/TouchableOpacity {:onPress #(work/transact! (change-city city props)
-                                                          ::sqlite/sync)}
+                                                          :persist/changes)}
      [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
                              :borderBottomWidth 1 :paddingTop 5}}
       [symbols/PointOfInterest
