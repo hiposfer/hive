@@ -31,4 +31,4 @@
 ;                  [?id :user/city ?city]]})
 
 (def routes-ids '[:find [?routes ...]
-                  :where [_ :route/uuid ?routes]])
+                  :where [_ :directions/uuid ?routes]])

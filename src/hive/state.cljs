@@ -36,7 +36,7 @@
 (def schema {:user/city             {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
 
-             :user/route            {:db.valueType   :db.type/ref
+             :user/directions       {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
 
              :user/id               {:db.unique :db.unique/identity}
@@ -45,8 +45,8 @@
 
              :session/uuid          {:db.unique :db.unique/identity}
 
-             :route/uuid            {:db.unique :db.unique/identity}
-             :route/steps           {:db.valueType   :db.type/ref
+             :directions/uuid       {:db.unique :db.unique/identity}
+             :directions/steps      {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/many}
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}
