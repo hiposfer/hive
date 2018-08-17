@@ -45,8 +45,10 @@
   destination"
   [props]
   (let [navigate  (:navigate (:navigation props))
-        places   @(work/q! '[:find [(pull ?id [*]) ...] :where [?id :place/id]])
-        position @(work/q! '[:find ?position . :where [_ :user/position ?position]])
+        places   @(work/q! '[:find [(pull ?id [:place/id :place/geometry
+                                               :place/text :place/context]) ...]
+                             :where [?id :place/id]])
+        position @(work/q! queries/user-position)
         height    (* 80 (count places))]
     [:> react/View {:height height :paddingTop 100 :paddingLeft 10}
      (for [target places
@@ -97,16 +99,15 @@
                     (then #(reset-places (work/db) %))))]))))
 
 (defn- SearchBar
-  [user props]
-  (let [data    @(work/pull! [:user/places :user/id]
-                             [:user/id user])
-        ref      (volatile! nil)]
+  [props]
+  (let [pids @(work/q! queries/places-id)
+        ref   (volatile! nil)]
     [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
                     :elevation 5 :borderRadius 5 :shadowColor "#000000"
                     :shadowRadius 5 :shadowOffset {:width 0 :height 3}
                     :shadowOpacity 1.0}
      [:> react/View {:height 30 :width 30 :padding 8 :flex 0.1}
-       (if (empty? (:user/places data))
+       (if (empty? pids)
          [:> expo/Ionicons {:name "ios-search" :size 26}]
          [:> react/TouchableWithoutFeedback
            {:onPress #(when (some? @ref)
@@ -124,14 +125,14 @@
   (r/with-let [tracker  (location/watch! location/defaults)
                navigate (:navigate (:navigation props))
                id       (work/q! queries/user-id)
-               pids     (work/q! '[:find [?id ...] :where [?id :place/id]])]
+               pids     (work/q! queries/places-id)]
     [:> react/View {:flex 1}
       (if (empty? @pids)
         [symbols/CityMap]
         [Places props])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
-        [SearchBar @id props]]
+        [SearchBar props]]
       (when (empty? @pids)
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
