@@ -27,7 +27,8 @@
         position (data/pull db [:user/position] [:user/id user])
         start    (:coordinates (:geometry (:user/position position)))
         end      (:coordinates (:place/geometry target))]
-    [{:user/id user :user/goal target}
+    [{:user/id user
+      :user/goal [:place/id (:place/id target)]}
      [kamal/directions! [start end] (new DateTime) user]
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))

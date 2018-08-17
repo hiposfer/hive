@@ -160,7 +160,8 @@
   (let [[duration goal] @(work/q! '[:find [?duration ?goal]
                                     :where [_      :user/directions ?route]
                                            [?route :directions/duration ?duration]
-                                           [_      :user/goal ?goal]])]
+                                           [_      :user/goal ?target]
+                                           [?target :place/text ?goal]])]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers route-id]
@@ -169,7 +170,7 @@
        (when (some? duration)
          (duration/format (* 1000 (. ^Interval duration (getTotalSeconds)))))]]
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
-                    (:text goal)]]))
+                    goal]]))
 
 (defn- paths
   [uid]
