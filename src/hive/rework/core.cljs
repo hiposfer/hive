@@ -144,7 +144,7 @@
         (identity result))
 
     ;; simple datascript transaction
-    (or (map? value) (vector? value))
+    (or (map? value) (vector? value) (data/datom? value))
     (conj result value)
     ;; otherwise just keep reducing
     :else result))
