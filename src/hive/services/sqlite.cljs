@@ -2,7 +2,8 @@
   "provides a service to synchronize Datascript changes to SQLite using only
   datoms as data structure i.e. E A V T -> Entity Attribute Value Transaction"
   (:require [hive.foreigns :as fl]
-            [datascript.core :as data]))
+            [datascript.core :as data]
+            [cljs.reader :as edn]))
 
 (def create-table (str "create table if not exists datoms ("
                          "id integer primary key autoincrement, "
@@ -18,7 +19,7 @@
 
 (def insert-datom (str "insert into datoms (e, a, v, tx) values (?, ?, ?, ?);"))
 
-(def delete-datom (str "delete from datoms where e = ? and a = ?;"))
+(def delete-datom (str "delete from datoms where e = ? and a = ? and v = ?;"))
 
 (def get-all-datoms "select * from datoms;")
 
@@ -30,7 +31,7 @@
   (for [d (:tx-data tx-report)]
     (if (:added d)
       [insert-datom [(:e d) (pr-str (:a d)) (pr-str (:v d)) (:tx d)]]
-      [delete-datom [(:e d) (pr-str (:a d))]])))
+      [delete-datom [(:e d) (pr-str (:a d)) (pr-str (:v d))]])))
 
 (defn- transact!
   "executes a sequence of transactions to sync sqlite with datascript"
@@ -58,12 +59,14 @@
 
 (defn- datoms
   "helper function to parse the result of a read all transaction"
-  [tx result-set]
-  (let [result (js->clj (.. result-set -rows -_array)
-                        :keywordize-keys true)]
-    (js/console.log result)
-    (for [r result]
-      (data/datom (:e r) (:a r) (:v r) (:tx r)))))
+  [_ result-set]
+  (let [rows (js->clj (.. result-set -rows -_array)
+                      :keywordize-keys true)]
+    (for [r rows]
+      (data/datom (:e r)
+                  (edn/read-string (:a r))
+                  (edn/read-string (:v r))
+                  (:tx r)))))
 
 (defn read!
   "read all datoms from the sqlite storage.
