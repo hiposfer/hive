@@ -2,6 +2,7 @@
   (:require [hive.rework.core :as work]
             [hive.services.secure-store :as store]
             [hive.queries :as queries]
+            [hive.services.sqlite :as sqlite]
             [hive.components.symbols :as symbols]
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]))
@@ -22,7 +23,8 @@
   [props]
   (let [params   (:params (:state (:navigation props)))
         city     (:city props)]
-    [:> react/TouchableOpacity {:onPress #(work/transact! (change-city city props))}
+    [:> react/TouchableOpacity {:onPress #(work/transact! (change-city city props)
+                                                          ::sqlite/sync)}
      [:> react/View {:style {:height 55 :borderBottomColor "lightgray"
                              :borderBottomWidth 1 :paddingTop 5}}
       [symbols/PointOfInterest

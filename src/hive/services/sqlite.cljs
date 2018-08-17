@@ -41,7 +41,8 @@
 (defn- sync!
   "helper function to sync data to sqlite"
   [db tx-report]
-  (. db (transaction #(transact! % tx-report)))); println println)))
+  (when (= (:tx-meta tx-report) ::sync)
+    (. db (transaction #(transact! % tx-report))))); println println)))
 ;(cljs.pprint/pprint changes)
 ;(cljs.pprint/pprint tx-report)))
 

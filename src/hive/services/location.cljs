@@ -5,7 +5,8 @@
             [datascript.core :as data]
             [hive.rework.core :as work]
             [hive.foreigns :as fl]
-            [hive.queries :as queries]))
+            [hive.queries :as queries]
+            [hive.services.sqlite :as sqlite]))
 
 ;; todo: should altitude be inside the point coordinates?
 (defn point
@@ -28,7 +29,7 @@
   [db data]
   (let [p    (point (tool/keywordize data))
         puid (assoc p :user/id (data/q queries/user-id db))]
-    (work/transact! (tx-position puid))))
+    (work/transact! (tx-position puid) ::sqlite/sync)))
 
 (defn with-defaults
   "sensitive defaults for location tracking"

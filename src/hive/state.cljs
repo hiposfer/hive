@@ -63,8 +63,6 @@
 ;; needs to be an array of maps. This will be used for data/transact!
 (def init-data
   (concat (map #(tool/with-ns "city" %) cities)
-          [{:user/id -1} ;; dummy
+          [{:user/id -1
+            :user/city [:city/name "Frankfurt am Main"]} ;; dummy
            tokens]))
-
-
-(def defaults {:user/city [:city/name "Frankfurt am Main"]})

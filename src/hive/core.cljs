@@ -5,7 +5,6 @@
             [hive.rework.core :as work]
             [hive.components.screens.home.welcome :as welcome]
             [datascript.core :as data]
-            [hive.services.secure-store :as store]
             [hive.services.sqlite :as sqlite]
             [hive.queries :as queries]
             [hive.rework.util :as tool]
@@ -63,7 +62,7 @@
     ; [router/router {:root Navigator :init "welcome"}]
     [router/Router {:root Navigator :init "home"}]))
 
-(defn- back-listener
+(defn- back-listener!
   "a generic Android back button listener which pops the last element from the
   navigation stack or exists otherwise.
 
@@ -81,7 +80,7 @@
          (tool/keywordize (:react.navigation/state (first @tx))))
       false ;; nothing to go back to, Exit
 
-      :else (do (work/transact! @tx) true))))
+      :else (some? (work/transact! @tx))))) ;; always returns true
 
 (defn- conn-listener
   "Listens to connection changes mainly for internet access."
@@ -92,38 +91,25 @@
 
 (defn init!
   "register the main UI component in React Native"
-  [] ;; todo: add https://github.com/reagent-project/historian
-  (let [conn   (data/create-conn state/schema)
-        data   (cons {:session/uuid (data/squuid)
-                      :session/start (js/Date.now)}
-                     state/init-data)]
-    (sqlite/listen! conn)
-    (work/init! conn)
-    (work/transact! data)
-    (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
-    ;; handles Android BackButton
-    (. fl/ReactNative (BackHandler.addEventListener
-                        "hardwareBackPress"
-                        back-listener))
-    (. fl/ReactNative (NetInfo.isConnected.addEventListener
-                        "connectionChange"
-                        conn-listener))
-    (let [id        (data/q queries/user-id (work/db))
-          default   (assoc state/defaults :user/id id)
-          user-city (. (store/load! {} :user/city)
-                       (then (fn [m]
-                               (if (empty? m) [default]
-                                 [(assoc m :user/id id)]))))]
-      (work/transact! [user-city]))))
-
-;(async/take! (store/delete! [:user/city]) println)
-
-;; this also works but it is not as clear
-;(async/take! (location/watch! {::location/enableHighAccuracy true
-;                               ::location/timeInterval 3000})
-;             cljs.pprint/pprint)
+  []
+  (.. (sqlite/read!)
+      (then #(data/conn-from-datoms % state/schema))
+      (then #(do (sqlite/listen! %)
+                 (work/init! %)))
+      (then #(work/transact! state/init-data ::sqlite/sync))
+      (then #(work/transact! [{:session/uuid (data/squuid)
+                               :session/start (js/Date.now)}])))
+  (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
+  ;; handles Android BackButton
+  (. fl/ReactNative (BackHandler.addEventListener
+                      "hardwareBackPress"
+                      back-listener!))
+  (. fl/ReactNative (NetInfo.isConnected.addEventListener
+                      "connectionChange"
+                      conn-listener)))
 
 ;hive.rework.state/conn
 
-;(work/transact! [{:foo/bar 1}])
+;(work/transact! [{:user/id -1
+;                 :foo/bar 1))))
 ;(work/transact! [[:db.fn/retractEntity 7]])
