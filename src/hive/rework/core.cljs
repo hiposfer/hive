@@ -166,10 +166,12 @@
      asynchronous Js calls without converting them to a async channel
 
    Not supported data types are ignored"
-  [data]
-  (when (sequential? data)
-    (let [tx (reduce execute! [] data)]
-      (data/transact! state/conn tx))))
+  ([data]
+   (transact! data nil))
+  ([data tx-meta]
+   (when (sequential? data)
+     (let [tx (reduce execute! [] data)]
+       (data/transact! state/conn tx tx-meta)))))
 ;(data/transact! (:conn @app) [{:user/city [:city/name "Frankfurt am Main"]}])
 
 ;(q '[:find [(pull ?entity [*]) ...]

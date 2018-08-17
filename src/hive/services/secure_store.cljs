@@ -1,4 +1,4 @@
-(ns hive.services.store
+(ns hive.services.secure-store
   (:require [cljs.reader :refer [read-string]]
             [hive.rework.util :as tool]
             [hive.foreigns :as fl]))

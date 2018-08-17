@@ -5,7 +5,8 @@
             [hive.rework.core :as work]
             [hive.components.screens.home.welcome :as welcome]
             [datascript.core :as data]
-            [hive.services.store :as store]
+            [hive.services.secure-store :as store]
+            [hive.services.sqlite :as sqlite]
             [hive.queries :as queries]
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
@@ -13,7 +14,6 @@
             [hive.components.router :as router]
             [hive.components.screens.settings.core :as settings]
             [hive.components.screens.settings.city-picker :as city-picker]
-            [cljs.core.async :as async]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.screens.home.route :as route]
             [hive.components.foreigns.react :as react]))
@@ -50,15 +50,14 @@
       :goBack    - pop's the current screen off the stack
       :navigate  - most common way to navigate to the next screen
       :setParams - used to change the params for the current screen}"
-  (let [Navigator
-    (rn-nav/stack-navigator
-      {:home           {:screen (screenify home/Home {:title "map"})}
-       :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
-       :directions     {:screen (screenify route/Instructions {:title "directions"})}
-       :settings       {:screen (screenify settings/Settings {:title "settings"})}
-       :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
-       :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
-      {:headerMode "none"})]
+  (let [Navigator (rn-nav/stack-navigator
+                    {:home           {:screen (screenify home/Home {:title "map"})}
+                     :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
+                     :directions     {:screen (screenify route/Instructions {:title "directions"})}
+                     :settings       {:screen (screenify settings/Settings {:title "settings"})}
+                     :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
+                     :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
+                    {:headerMode "none"})]
     ;id       @(work/q! queries/user-id)]
     ;(if (= -1 id) ;; default
     ; [router/router {:root Navigator :init "welcome"}]
@@ -98,9 +97,9 @@
         data   (cons {:session/uuid (data/squuid)
                       :session/start (js/Date.now)}
                      state/init-data)]
+    (sqlite/listen! conn)
     (work/init! conn)
     (work/transact! data)
-
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
     (. fl/ReactNative (BackHandler.addEventListener
@@ -125,3 +124,6 @@
 ;             cljs.pprint/pprint)
 
 ;hive.rework.state/conn
+
+;(work/transact! [{:foo/bar 1}])
+;(work/transact! [[:db.fn/retractEntity 7]])
