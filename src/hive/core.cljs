@@ -19,7 +19,7 @@
 
 (defn- MessageTray
   [props]
-  (let [id      (data/q queries/session (work/db))
+  (let [id      @(work/q! queries/session)
         alert   @(work/pull! [:session/alert]
                              [:session/uuid id])]
     (when-not (empty? (:session/alert alert))
@@ -85,7 +85,7 @@
 (defn- conn-listener
   "Listens to connection changes mainly for internet access."
   [connected]
-  (let [sid      (data/q queries/session (work/db))]
+  (let [sid @(work/q! queries/session)]
     (if-not connected
         (work/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
 
@@ -109,6 +109,8 @@
     (. fl/ReactNative (NetInfo.isConnected.addEventListener
                         "connectionChange"
                         conn-listener))))
-;(work/transact! [{:user/id -1
-;                 :foo/bar 1))))
+;hive.rework.state/conn
+
+;(work/transact! [{:db/id 4
+;                  :user/id 100}])
 ;(work/transact! [[:db.fn/retractEntity 7]])
