@@ -26,48 +26,56 @@
   (let [user     (data/q queries/user-id db)
         position (data/pull db [:user/position] [:user/id user])
         start    (:coordinates (:geometry (:user/position position)))
-        end      (:coordinates (:geometry target))]
-    [{:user/id user :user/goal target}
+        end      (:coordinates (:place/geometry target))]
+    [{:user/id user
+      :user/goal [:place/id (:place/id target)]}
      [kamal/directions! [start end] (new DateTime) user]
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 
 (defn- humanize-distance
-  "Convert a distance (km) to human readable form."
+  "Convert a distance (meters) to human readable form."
   [distance]
-  (if (< distance 1)
-    (str (. (* distance 1000) (toFixed 0)) " m")
-    (str (. distance (toFixed 1)) " km")))
+  (if (> distance 1000)
+    (str (. (/ distance 1000) (toFixed 1)) " km")
+    (str (. distance (toFixed 0)) " m")))
 
 (defn- Places
   "list of items resulting from a geocode search, displayed to the user to choose his
   destination"
-  [user props]
-  (let [navigate (:navigate (:navigation props))
-        data    @(work/pull! [:user/places :user/position]
-                             [:user/id user])
-        height   (* 80 (count (:user/places data)))]
+  [props]
+  (let [navigate  (:navigate (:navigation props))
+        places   @(work/q! '[:find [(pull ?id [:place/id :place/geometry
+                                               :place/text :place/context]) ...]
+                             :where [?id :place/id]])
+        position @(work/q! queries/user-position)
+        height    (* 80 (count places))]
     [:> react/View {:height height :paddingTop 100 :paddingLeft 10}
-     (for [target (:user/places data)
-           :let [distance (/ (geometry/haversine (:user/position data) target)
-                             1000)]]
-       ^{:key (:id target)}
+     (for [target places
+           :let [distance (geometry/haversine (:coordinates (:geometry position))
+                                              (:coordinates (:place/geometry target)))]]
+       ^{:key (:place/id target)}
        [:> react/TouchableOpacity
          {:style    {:flex 1 :flexDirection "row"}
           :onPress #(work/transact! (set-target (work/db) navigate target))}
          [:> react/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
            [:> expo/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-           [:> react/Text {:note true} (humanize-distance distance)]]
+           [:> react/Text (humanize-distance distance)]]
          [:> react/View {:flex 0.8 :justifyContent "flex-end"}
-           [:> react/Text {:numberOfLines 1} (:text target)]
+           [:> react/Text {:numberOfLines 1} (:place/text target)]
            [:> react/Text {:note true :style {:color "gray"} :numberOfLines 1}
-            (str/join ", " (map :text (:context target)))]]])]))
+            (str/join ", " (map :text (:place/context target)))]]])]))
 
-(defn- update-places
+(defn- reset-places
   "transact the geocoding result under the user id"
-  [data]
-  [{:user/id (:user/id data)
-    :user/places (or (:features data) [])}])
+  ([db]
+   (for [id (data/q '[:find [?id ...] :where [?id :place/id]]
+                    db)]
+     [:db.fn/retractEntity id]))
+  ([db data]
+   (concat (reset-places db)
+           (for [f (:features data)]
+             (tool/with-ns "place" f)))))
 
 (defn- autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
@@ -88,25 +96,23 @@
         [[navigate "location-error" validated]
          (delay (.. fl/ReactNative (Keyboard.dismiss)))]
         [(delay (.. (mapbox/geocoding! args)
-                    (then #(assoc % :user/id user))
-                    (then update-places)))]))))
+                    (then #(reset-places (work/db) %))))]))))
 
 (defn- SearchBar
-  [user props]
-  (let [data    @(work/pull! [:user/places :user/id]
-                             [:user/id user])
-        ref      (volatile! nil)]
+  [props]
+  (let [pids @(work/q! queries/places-id)
+        ref   (volatile! nil)]
     [:> react/View {:flex 1 :flexDirection "row" :backgroundColor "white"
                     :elevation 5 :borderRadius 5 :shadowColor "#000000"
                     :shadowRadius 5 :shadowOffset {:width 0 :height 3}
                     :shadowOpacity 1.0}
      [:> react/View {:height 30 :width 30 :padding 8 :flex 0.1}
-       (if (empty? (:user/places data))
+       (if (empty? pids)
          [:> expo/Ionicons {:name "ios-search" :size 26}]
          [:> react/TouchableWithoutFeedback
            {:onPress #(when (some? @ref)
                         (. @ref clear)
-                        (work/transact! (update-places data)))}
+                        (work/transact! (reset-places (work/db))))}
            [:> expo/Ionicons {:name "ios-close-circle" :size 26}]])]
      [:> react/Input {:placeholder "Where would you like to go?"
                       :ref #(vreset! ref %) :style {:flex 0.9}
@@ -119,15 +125,15 @@
   (r/with-let [tracker  (location/watch! location/defaults)
                navigate (:navigate (:navigation props))
                id       (work/q! queries/user-id)
-               info     (work/pull! [:user/places] [:user/id @id])]
+               pids     (work/q! queries/places-id)]
     [:> react/View {:flex 1}
-      (if (empty? (:user/places @info))
+      (if (empty? @pids)
         [symbols/CityMap]
-        [Places @id props])
+        [Places props])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
-        [SearchBar @id props]]
-      (when (empty? (:user/places @info))
+        [SearchBar props]]
+      (when (empty? @pids)
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
                                :backgroundColor "#FF5722"})
@@ -137,7 +143,7 @@
     ;; remove tracker on component will unmount
     (finally (. tracker (then #(. % remove))))))
 
-;(data/q queries/routes-ids (work/db))
 ;(work/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
-
 ;(data/pull (work/db) '[*] [:route/uuid "5b44dbb7-ac02-40a0-b50f-6c855c5bff14"])
+
+;(data/q '[:find [(pull ?id [*]) ...] :where [?id :place/id]] (work/db))

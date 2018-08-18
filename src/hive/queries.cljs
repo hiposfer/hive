@@ -11,14 +11,9 @@
 (def user-id '[:find ?uid .
                :where [_ :user/id ?uid]])
 
-(def user-city '[:find (pull ?city [*]) .
-                 :where [?uid :user/id]
-                        [?uid :user/city ?city]])
+(def user-position '[:find ?position . :where [_ :user/position ?position]])
 
-(def user-position '[:find ?position .
-                     :where [?id :user/id]
-                            [?id :user/position ?position]])
-
+(def places-id '[:find [?id ...] :where [?id :place/id]])
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def mapbox-token '[:find ?token .
                     :where [_ :ENV/MAPBOX ?token]])
@@ -31,4 +26,4 @@
 ;                  [?id :user/city ?city]]})
 
 (def routes-ids '[:find [?routes ...]
-                  :where [_ :route/uuid ?routes]])
+                  :where [_ :directions/uuid ?routes]])

@@ -38,26 +38,27 @@
 ; - :store/secure -> stores this datom in a secure store locally ... bypasses sqlite
 ; - :store/sync   -> stores every datom for this entity in sqlite and remotely
 
-(def schema {:user/city             {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-
-             :user/route            {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-
-             :user/id               {:db.unique :db.unique/identity
+(def schema {:user/id               {:db.unique :db.unique/identity
                                      :store.type :store/entity}
-
+             :user/city             {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
+             :user/goal             {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
+             :user/directions       {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
+             ;; server support data
              :city/name             {:db.unique :db.unique/identity
                                      :store.type :store/entity}
-
+             ;; mapbox data
+             :place/id              {:db.unique :db.unique/identity}
+             ;; ephemeral data
              :session/uuid          {:db.unique :db.unique/identity}
-
-             :route/uuid            {:db.unique :db.unique/identity}
-             :route/steps           {:db.valueType   :db.type/ref
+             ;; server response data
+             :directions/uuid       {:db.unique :db.unique/identity}
+             :directions/steps      {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/many}
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}
-
              ;; GTFS entities
              :route/id              {:db.unique :db.unique/identity
                                      :store.type :store/entity}

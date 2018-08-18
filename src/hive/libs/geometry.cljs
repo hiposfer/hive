@@ -13,20 +13,11 @@
   [angle]
   (* angle (/ Math/PI 180)))
 
-(defn coordinates
-  "get the coordinates of a point or feature geojson object"
-  [geo]
-  (case (:type geo)
-    "Point" (:coordinates geo)
-    "Feature" (coordinates (:geometry geo))))
-
 (defn haversine
   "Compute the great-circle distance between two points on Earth given their
   longitude and latitude in DEGREES. The distance is computed in meters"
-  ([geo1 geo2]
-   (let [[lon-1 lat-1] (coordinates geo1)
-         [lon-2 lat-2] (coordinates geo2)
-         φ1 (radians lat-1)
+  ([[lon-1 lat-1] [lon-2 lat-2]]
+   (let [φ1 (radians lat-1)
          φ2 (radians lat-2)
          Δφ (radians (- lat-2 lat-1))
          Δλ (radians (- lon-2 lon-1))
