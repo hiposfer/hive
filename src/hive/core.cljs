@@ -95,7 +95,7 @@
   (let [conn (data/create-conn state/schema)]
     (work/init! conn)
     (sqlite/listen! conn)
-    (work/transact! state/init-data :persist/changes)
+    (work/transact! state/init-data)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
     ;; restore user data ...........................
