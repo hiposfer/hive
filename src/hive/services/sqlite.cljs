@@ -3,7 +3,8 @@
   datoms as data structure i.e. E A V T -> Entity Attribute Value Transaction"
   (:require [hive.foreigns :as fl]
             [datascript.core :as data]
-            [cljs.reader :as edn]))
+            [cljs.reader :as edn]
+            [hive.state :as state]))
 
 (def create-table (str "create table if not exists datoms ("
                          "id integer primary key autoincrement, "
@@ -12,9 +13,9 @@
                          "v text, "
                          "tx integer);"))
 
-;; TODO: datascript reports a transaction as a deletion plus an addition
-;; for simplicity we will also do it that way and hope that we dont run out
-;; of int numbers
+;; NOTE: datascript reports a transaction as a deletion plus an addition
+;;       for simplicity we will also do it that way and hope that we dont run
+;;       out of ids :)
 ;(def update-datoms (str "update datoms set v = ?, tx = ? where e = ? and a = ?;"))
 
 (def insert-datom (str "insert into datoms (e, a, v, tx) values (?, ?, ?, ?);"))
@@ -25,10 +26,31 @@
 
 (def delete-all-datoms "delete from datoms;")
 
+(def entity-store (set (for [[k v] state/schema
+                             :when (and (= :store/entity (:store.type v))
+                                        (contains? v :db.unique))]
+                         k)))
+
+(def ignore (set (for [[k v] state/schema
+                       :when (= :store/secure (:store.type v))]
+                   k)))
+
+(defn- sync?
+  "should datom d be persisted in sql. A datom is persisted
+  if the db schema has an entity with :store/entity and the
+  datom attribute is not set as :store/secure"
+  [d tx-report]
+  (let [db     (:db-after tx-report)
+        datoms (filter (comp #{(:e d)} :e) (data/datoms db :eavt))]
+    (cond
+      (contains? ignore (:a d)) false
+      (some #(contains? entity-store (:a %)) datoms) true)))
+
 (defn sync
   "returns a sequence of sqlite transactions according to Datascript tx-report"
   [tx-report]
-  (for [d (:tx-data tx-report)]
+  (for [d (:tx-data tx-report)
+        :when (sync? d tx-report)]
     (if (:added d)
       [insert-datom [(:e d) (pr-str (:a d)) (pr-str (:v d)) (:tx d)]]
       [delete-datom [(:e d) (pr-str (:a d)) (pr-str (:v d))]])))
@@ -39,23 +61,15 @@
   (doseq [[tx values] (sync tx-report)]
     (. transaction (executeSql tx (clj->js values)))))
 
-(defn- sync!
-  "helper function to sync data to sqlite"
-  [db tx-report]
-  (when (= (:tx-meta tx-report) :persist/changes)
-    (. db (transaction #(transact! % tx-report))))); println println)))
-;(cljs.pprint/pprint changes)
-;(cljs.pprint/pprint tx-report)))
-
 (defn listen!
-  "listen for datascript changes and synchronize them only if the user requested it
-  with ::persist"
+  "listen for datascript changes and synchronize them"
   [conn]
   (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
     (. db (transaction (fn [transaction] (. transaction (executeSql create-table)))))
                        ;println println))
-    (data/listen! conn ::sync #(sync! db %))))
-
+    (data/listen! conn
+                  ::sync
+                 (fn [tx-report] (. db (transaction #(transact! % tx-report)))))))
 
 (defn- datoms
   "helper function to parse the result of a read all transaction"

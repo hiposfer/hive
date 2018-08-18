@@ -27,7 +27,7 @@
   [data]
   (let [p    (point (tool/keywordize data))
         puid (assoc p :user/id @(work/q! queries/user-id))]
-    (work/transact! (tx-position puid) :persist/changes)))
+    (work/transact! (tx-position puid))))
 
 (def defaults
   "sensitive defaults for location tracking"
