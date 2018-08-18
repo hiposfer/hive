@@ -33,15 +33,22 @@
 (def cities (js->clj (js/require "./assets/cities.json")
                      :keywordize-keys true))
 
+;; Storage types
+; - :store/entity -> stores every datom for this entity in sqlite local database
+; - :store/secure -> stores this datom in a secure store locally ... bypasses sqlite
+; - :store/sync   -> stores every datom for this entity in sqlite and remotely
+
 (def schema {:user/city             {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
 
              :user/route            {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
 
-             :user/id               {:db.unique :db.unique/identity}
+             :user/id               {:db.unique :db.unique/identity
+                                     :store.type :store/entity}
 
-             :city/name             {:db.unique :db.unique/identity}
+             :city/name             {:db.unique :db.unique/identity
+                                     :store.type :store/entity}
 
              :session/uuid          {:db.unique :db.unique/identity}
 
@@ -52,9 +59,12 @@
              :react.navigation/name {:db.unique :db.unique/identity}
 
              ;; GTFS entities
-             :route/id              {:db.unique :db.unique/identity}
-             :trip/id               {:db.unique :db.unique/identity}
-             :stop/id               {:db.unique :db.unique/identity}
+             :route/id              {:db.unique :db.unique/identity
+                                     :store.type :store/entity}
+             :trip/id               {:db.unique :db.unique/identity
+                                     :store.type :store/entity}
+             :stop/id               {:db.unique :db.unique/identity
+                                     :store.type :store/entity}
              :trip/route            {:db.valueType :db.type/ref}
              :trip/service          {:db.valueType :db.type/ref}
              :stop_times/trip       {:db.valueType :db.type/ref}
@@ -63,8 +73,6 @@
 ;; needs to be an array of maps. This will be used for data/transact!
 (def init-data
   (concat (map #(tool/with-ns "city" %) cities)
-          [{:user/id -1} ;; dummy
+          [{:user/id -1
+            :user/city [:city/name "Frankfurt am Main"]} ;; dummy
            tokens]))
-
-
-(def defaults {:user/city [:city/name "Frankfurt am Main"]})

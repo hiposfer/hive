@@ -1,7 +1,8 @@
 (ns hive.components.screens.settings.city-picker
   (:require [hive.rework.core :as work]
-            [hive.services.store :as store]
+            [hive.services.secure-store :as store]
             [hive.queries :as queries]
+            [hive.services.sqlite :as sqlite]
             [hive.components.symbols :as symbols]
             [hive.components.foreigns.react :as react]
             [hive.components.foreigns.expo :as expo]))

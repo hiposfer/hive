@@ -5,7 +5,7 @@
             [hive.rework.core :as work]
             [hive.components.screens.home.welcome :as welcome]
             [datascript.core :as data]
-            [hive.services.store :as store]
+            [hive.services.sqlite :as sqlite]
             [hive.queries :as queries]
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
@@ -13,14 +13,13 @@
             [hive.components.router :as router]
             [hive.components.screens.settings.core :as settings]
             [hive.components.screens.settings.city-picker :as city-picker]
-            [cljs.core.async :as async]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.screens.home.route :as route]
             [hive.components.foreigns.react :as react]))
 
 (defn- MessageTray
   [props]
-  (let [id      (data/q queries/session (work/db))
+  (let [id      @(work/q! queries/session)
         alert   @(work/pull! [:session/alert]
                              [:session/uuid id])]
     (when-not (empty? (:session/alert alert))
@@ -50,21 +49,20 @@
       :goBack    - pop's the current screen off the stack
       :navigate  - most common way to navigate to the next screen
       :setParams - used to change the params for the current screen}"
-  (let [Navigator
-    (rn-nav/stack-navigator
-      {:home           {:screen (screenify home/Home {:title "map"})}
-       :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
-       :directions     {:screen (screenify route/Instructions {:title "directions"})}
-       :settings       {:screen (screenify settings/Settings {:title "settings"})}
-       :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
-       :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
-      {:headerMode "none"})]
+  (let [Navigator (rn-nav/stack-navigator
+                    {:home           {:screen (screenify home/Home {:title "map"})}
+                     :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
+                     :directions     {:screen (screenify route/Instructions {:title "directions"})}
+                     :settings       {:screen (screenify settings/Settings {:title "settings"})}
+                     :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
+                     :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
+                    {:headerMode "none"})]
     ;id       @(work/q! queries/user-id)]
     ;(if (= -1 id) ;; default
     ; [router/router {:root Navigator :init "welcome"}]
     [router/Router {:root Navigator :init "home"}]))
 
-(defn- back-listener
+(defn- back-listener!
   "a generic Android back button listener which pops the last element from the
   navigation stack or exists otherwise.
 
@@ -82,46 +80,37 @@
          (tool/keywordize (:react.navigation/state (first @tx))))
       false ;; nothing to go back to, Exit
 
-      :else (do (work/transact! @tx) true))))
+      :else (some? (work/transact! @tx))))) ;; always returns true
 
 (defn- conn-listener
   "Listens to connection changes mainly for internet access."
   [connected]
-  (let [sid      (data/q queries/session (work/db))]
+  (let [sid @(work/q! queries/session)]
     (if-not connected
         (work/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
 
 (defn init!
   "register the main UI component in React Native"
-  [] ;; todo: add https://github.com/reagent-project/historian
-  (let [conn   (data/create-conn state/schema)
-        data   (cons {:session/uuid (data/squuid)
-                      :session/start (js/Date.now)}
-                     state/init-data)]
+  []
+  (let [conn (data/create-conn state/schema)]
     (work/init! conn)
-    (work/transact! data)
-
+    (sqlite/listen! conn)
+    (work/transact! state/init-data)
+    (work/transact! [{:session/uuid (data/squuid)
+                      :session/start (js/Date.now)}])
+    ;; restore user data ...........................
+    (.. (sqlite/read!) (then work/transact!))
+    ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
     (. fl/ReactNative (BackHandler.addEventListener
                         "hardwareBackPress"
-                        back-listener))
+                        back-listener!))
     (. fl/ReactNative (NetInfo.isConnected.addEventListener
                         "connectionChange"
-                        conn-listener))
-    (let [id        (data/q queries/user-id (work/db))
-          default   (assoc state/defaults :user/id id)
-          user-city (. (store/load! {} :user/city)
-                       (then (fn [m]
-                               (if (empty? m) [default]
-                                 [(assoc m :user/id id)]))))]
-      (work/transact! [user-city]))))
-
-;(async/take! (store/delete! [:user/city]) println)
-
-;; this also works but it is not as clear
-;(async/take! (location/watch! {::location/enableHighAccuracy true
-;                               ::location/timeInterval 3000})
-;             cljs.pprint/pprint)
-
+                        conn-listener))))
 ;hive.rework.state/conn
+
+;(work/transact! [{:db/id 4
+;                  :user/id 100}])
+;(work/transact! [[:db.fn/retractEntity 7]])

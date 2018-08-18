@@ -116,24 +116,23 @@
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (r/with-let [db       (work/db)
-               tracker  (location/watch! (location/with-defaults db))
+  (r/with-let [tracker  (location/watch! location/defaults)
                navigate (:navigate (:navigation props))
-               id       (data/q queries/user-id db)
-               info     (work/pull! [:user/places] [:user/id id])]
+               id       (work/q! queries/user-id)
+               info     (work/pull! [:user/places] [:user/id @id])]
     [:> react/View {:flex 1}
       (if (empty? (:user/places @info))
         [symbols/CityMap]
-        [Places id props])
+        [Places @id props])
       [:> react/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}
-        [SearchBar id props]]
+        [SearchBar @id props]]
       (when (empty? (:user/places @info))
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
                                :backgroundColor "#FF5722"})
           [:> react/TouchableOpacity
-            {:onPress #(navigate "settings" {:user/id id})}
+            {:onPress #(navigate "settings" {:user/id @id})}
             [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]
     ;; remove tracker on component will unmount
     (finally (. tracker (then #(. % remove))))))

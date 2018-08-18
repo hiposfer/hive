@@ -2,7 +2,6 @@
   (:require [hive.rework.core :as work]
             [hive.rework.util :as tool]
             [hive.queries :as queries]
-            [datascript.core :as data]
             [hive.rework.core :as work]
             [hive.foreigns :as fl]
             [hive.queries :as queries]))
@@ -25,17 +24,16 @@
     :user/position (dissoc data :user/id)}])
 
 (defn set-location!
-  [db data]
+  [data]
   (let [p    (point (tool/keywordize data))
-        puid (assoc p :user/id (data/q queries/user-id db))]
+        puid (assoc p :user/id @(work/q! queries/user-id))]
     (work/transact! (tx-position puid))))
 
-(defn with-defaults
+(def defaults
   "sensitive defaults for location tracking"
-  [db]
   {:enableHighAccuracy true
    :timeInterval       3000
-   :callback          #(set-location! db %)})
+   :callback          set-location!})
 
 (defn- request
   [opts response]
