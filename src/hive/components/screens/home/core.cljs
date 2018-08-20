@@ -122,7 +122,8 @@
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (r/with-let [tracker  (location/watch! location/defaults)
+  (r/with-let [callback #(work/transact! (location/set-location (work/db) %))
+               tracker  (location/watch! (location/defaults callback))
                navigate (:navigate (:navigation props))
                pids     (work/q! queries/places-id)]
     [:> react/View {:flex 1}
