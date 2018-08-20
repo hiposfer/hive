@@ -25,13 +25,13 @@
                 :redirect_uri redirect}
         lp   (for [[k v] params]
                (str (js/encodeURIComponent (name k)) "=" (js/encodeURIComponent v)))
-        opts #js {:authUrl (str "https://" domain "/authorize?" (str/join "&" lp))}
-        cb   (fn [result] (fl/JwtDecode (:id_token (:params result))))]
+        opts #js {:authUrl (str "https://" domain "/authorize?" (str/join "&" lp))}]
+        ;;cb   (fn [result] (fl/JwtDecode (:id_token (:params result))))]
     (tool/async (.. fl/Expo (AuthSession.startAsync opts))
                 (map tool/keywordize)
                 (map (tool/validate ::response))
                 tool/bypass-error
-                (map cb)
+                ;;(map cb)
                 (map pprint/pprint))))
 
 (defn Login

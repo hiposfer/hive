@@ -6,28 +6,29 @@
 (s/def ::token (s/and string? not-empty))
 (s/def ::MAPBOX ::token)
 (s/def ::FIREBASE_APIKEY ::token)
+(s/def ::FIREBASE_AUTH_DOMAIN ::token)
 (s/def ::FIREBASE_DATABASE_URL ::token)
 (s/def ::FIREBASE_STORAGE_BUCKET ::token)
-(s/def ::AUTH0_CLIENT_ID ::token)
-(s/def ::AUTH0_DOMAIN ::token)
 
-(s/def ::env (s/keys :req-un [::MAPBOX ::AUTH0_CLIENT_ID ::AUTH0_DOMAIN]
-                     :opt-un [::FIREBASE_APIKEY ::FIREBASE_DATABASE_URL ::FIREBASE_SORAGE_BUCKET]))
+(s/def ::env (s/keys :req-un [::MAPBOX
+                              ::FIREBASE_APIKEY
+                              ::FIREBASE_AUTH_DOMAIN
+                              ::FIREBASE_DATABASE_URL
+                              ::FIREBASE_SORAGE_BUCKET]))
 
 ;; stop compilation if the required env vars are not provided
 (defn- fetch-env
   "takes a s/keys spec and returns m with only the unqualified keys
    specified in spec. Throws an Error if m does not conform to spec"
-  [spec m]
+  [env]
   (let [data (apply hash-map (rest (s/form ::env)))
         ks   (map #(keyword (name %))
                    (concat (:req-un data) (:opt-un data)))
-        m    (select-keys m ks)]
-    (if (not (s/valid? spec m))
-      (js/console.error "The app is misconfigured. Add env vars and rebuild."))
-    m))
+        m    (select-keys env ks)]
+    (if (s/valid? ::env m) m
+      (js/console.error "The app is misconfigured. Add env vars and rebuild."))))
 
-(def tokens (tool/with-ns "ENV" (fetch-env ::env (work/env))))
+(def tokens (tool/with-ns "ENV" (fetch-env (work/env))))
 
 ;;FIXME: this should come from the server, not being hardcoded
 (def cities (js->clj (js/require "./assets/cities.json")

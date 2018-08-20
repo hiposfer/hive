@@ -92,14 +92,19 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (let [conn (data/create-conn state/schema)]
+  (let [conn       (data/create-conn state/schema)
+        config #js {:apiKey (:ENV/FIREBASE_API_KEY state/tokens)
+                    :authDomain (:ENV/FIREBASE_AUTH_DOMAIN state/tokens)
+                    :databaseUrl (:ENV/FIREBASE_DATABASE_URL state/tokens)
+                    :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
     (work/init! conn)
     (sqlite/listen! conn)
     (work/transact! state/init-data)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
+    (. fl/Firebase (initializeApp config))
     ;; restore user data ...........................
-    (.. (sqlite/read!) (then work/transact!))
+    (. (sqlite/read!) (then work/transact!))
     ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton

@@ -2,8 +2,8 @@
 
 (def React       ^js/React (js/require "react"))
 (def Expo        ^js/Expo (js/require "expo"))
+(def Firebase    ^js/Firebase (js/require "firebase"))
 (def ReactNative ^js/ReactNative (js/require "react-native"))
-(def JwtDecode   (js/require "jwt-decode"))
 (def ReactNavigation (js/require "react-navigation"))
 
 (def AuthSession (. Expo -AuthSession))
