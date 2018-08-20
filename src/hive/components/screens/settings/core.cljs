@@ -1,16 +1,16 @@
 (ns hive.components.screens.settings.core
-  (:require [hive.rework.core :as work :refer-macros [go-try <?]]
+  (:require [hive.rework.core :as work]
             [clojure.string :as str]
             [hive.components.foreigns.react :as react]
             [hive.components.symbols :as symbols]
-            [hive.components.screens.settings.city-picker :as cities]
-            [hive.components.foreigns.expo :as expo]))
+            [hive.components.foreigns.expo :as expo]
+            [hive.queries :as queries]))
 
 (defn Settings
   [props]
-  (let [params   (:params (:state (:navigation props)))
+  (let [id       @(work/q! queries/user-id)
         city     @(work/pull! [{:user/city [:city/name :city/region :city/country]}]
-                              [:user/id (:user/id params)])
+                              [:user/id id])
         navigate (:navigate (:navigation props))]
     [:> react/View {:style {:flex 1}}
      [:> react/View {:style {:height 60 :alignItems "center" :justifyContent "center"
@@ -38,7 +38,7 @@
                      (str/upper-case "current city")]
       [:> react/TouchableOpacity
        {:onPress #(navigate "select-city"
-                            {:user/id (:user/id params)
+                            {:user/id id
                              :city/name (:city/name (:user/city city))})
         :style {:height 45}}
        [symbols/PointOfInterest

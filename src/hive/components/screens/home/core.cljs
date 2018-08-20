@@ -124,7 +124,6 @@
   [props]
   (r/with-let [tracker  (location/watch! location/defaults)
                navigate (:navigate (:navigation props))
-               id       (work/q! queries/user-id)
                pids     (work/q! queries/places-id)]
     [:> react/View {:flex 1}
       (if (empty? @pids)
@@ -137,9 +136,9 @@
         [:> react/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
                                :backgroundColor "#FF5722"})
-          [:> react/TouchableOpacity
-            {:onPress #(navigate "settings" {:user/id @id})}
-            [:> expo/Ionicons {:name "md-apps" :size 26 :style {:color "white"}}]]])]
+          [:> react/TouchableOpacity {:onPress #(navigate "settings")}
+            [:> expo/Ionicons {:name "md-apps" :size 26
+                               :style {:color "white"}}]]])]
     ;; remove tracker on component will unmount
     (finally (. tracker (then #(. % remove))))))
 
