@@ -10,7 +10,7 @@
   [props]
   (let [id       @(work/q! queries/user-id)
         city     @(work/pull! [{:user/city [:city/name :city/region :city/country]}]
-                              [:user/id id])
+                              [:user/uid id])
         navigate (:navigate (:navigation props))]
     [:> react/View {:style {:flex 1}}
      [:> react/View {:style {:height 60 :alignItems "center" :justifyContent "center"
@@ -38,7 +38,7 @@
                      (str/upper-case "current city")]
       [:> react/TouchableOpacity
        {:onPress #(navigate "select-city"
-                            {:user/id id
+                            {:user/uid  id
                              :city/name (:city/name (:user/city city))})
         :style {:height 45}}
        [symbols/PointOfInterest

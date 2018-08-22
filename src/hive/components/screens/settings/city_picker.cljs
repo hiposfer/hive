@@ -10,9 +10,9 @@
   "returns a Datascript transaction to change the user city, an effect
   to store the new setting and an effect to go back in the navigation"
   [city props]
-  (let [user   (:user/id props)
+  (let [user   (:user/uid props)
         goBack (:goBack (:navigation props))
-        tx     {:user/id user
+        tx     {:user/uid  user
                 :user/city [:city/name (:city/name city)]}]
     [tx
      [store/save! (select-keys tx [:user/city])]
@@ -38,7 +38,7 @@
   [props]
   (let [params   (:params (:state (:navigation props)))
         cities  @(work/q! queries/cities)
-        id       (:user/id params)]
+        id       (:user/uid params)]
     [:> react/View {:style {:flex 1}}
       [:> react/View {:style {:height 60 :alignItems "center" :justifyContent "center"
                               :backgroundColor "blue"}}
@@ -47,4 +47,4 @@
       [:> react/View {:style {:flex 9 :backgroundColor "white"}}
         (for [city cities]
           ^{:key (:city/name city)}
-          [city-entry (assoc props :city city :user/id id)])]]))
+          [city-entry (assoc props :city city :user/uid id)])]]))

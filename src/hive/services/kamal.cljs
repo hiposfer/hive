@@ -63,7 +63,7 @@
   Further trip information is also retrieved"
   [path user]
   (let [base [path
-              {:user/id         user
+              {:user/uid        user
                :user/directions [:directions/uuid (:directions/uuid path)]}]]
     (concat base
       (distinct

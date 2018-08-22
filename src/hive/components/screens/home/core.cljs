@@ -13,7 +13,8 @@
             [hive.libs.geometry :as geometry]
             [hive.services.kamal :as kamal]
             [hive.components.symbols :as symbols]
-            [datascript.core :as data])
+            [datascript.core :as data]
+            [hive.state :as state])
   (:import (goog.date DateTime)))
 
 ; NOTE: this is the way to remove all routes ... not sure where to do this
@@ -24,10 +25,10 @@
   "associates a target and a path to get there with the user"
   [db navigate target]
   (let [user     (data/q queries/user-id db)
-        position (data/pull db [:user/position] [:user/id user])
+        position (data/pull db [:user/position] [:user/uid user])
         start    (:coordinates (:geometry (:user/position position)))
         end      (:coordinates (:place/geometry target))]
-    [{:user/id user
+    [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
      [kamal/directions! [start end] (new DateTime) user]
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
@@ -85,11 +86,10 @@
     (let [navigate (:navigate (:navigation props))
           user     (data/q queries/user-id db)
           data     (data/pull db [:user/position {:user/city [:city/bbox]}]
-                                 [:user/id user])
-          token    (data/q queries/mapbox-token db)
+                              [:user/uid user])
           args {:query        text
                 :proximity    (:user/position data)
-                :access_token token
+                :access_token (:ENV/MAPBOX state/tokens)
                 :bbox         (:city/bbox (:user/city data))}
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)

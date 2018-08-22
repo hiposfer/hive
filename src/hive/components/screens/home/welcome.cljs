@@ -45,7 +45,7 @@
                              (work/db))
         id       (data/q queries/user-id (work/db))
         info    @(work/pull! [{:user/city [:city/geometry :city/bbox :city/name]}]
-                             [:user/id id])
+                             [:user/uid id])
         coords   (:coordinates (:city/geometry (:user/city info)))
         dims     (tool/keywordize (.. fl/ReactNative (Dimensions.get "window")))]
     [:> react/View {:style {:flex 1 :backgroundColor "#FFFFFF50"}}

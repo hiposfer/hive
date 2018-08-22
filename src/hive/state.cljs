@@ -1,20 +1,21 @@
 (ns hive.state
   (:require [hive.rework.core :as work]
             [hive.rework.util :as tool]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [expound.alpha :as expound]))
 
 (s/def ::token (s/and string? not-empty))
 (s/def ::MAPBOX ::token)
-(s/def ::FIREBASE_APIKEY ::token)
+(s/def ::FIREBASE_API_KEY ::token)
 (s/def ::FIREBASE_AUTH_DOMAIN ::token)
 (s/def ::FIREBASE_DATABASE_URL ::token)
 (s/def ::FIREBASE_STORAGE_BUCKET ::token)
 
 (s/def ::env (s/keys :req-un [::MAPBOX
-                              ::FIREBASE_APIKEY
+                              ::FIREBASE_API_KEY
                               ::FIREBASE_AUTH_DOMAIN
                               ::FIREBASE_DATABASE_URL
-                              ::FIREBASE_SORAGE_BUCKET]))
+                              ::FIREBASE_STORAGE_BUCKET]))
 
 ;; stop compilation if the required env vars are not provided
 (defn- fetch-env
@@ -26,7 +27,7 @@
                    (concat (:req-un data) (:opt-un data)))
         m    (select-keys env ks)]
     (if (s/valid? ::env m) m
-      (js/console.error "The app is misconfigured. Add env vars and rebuild."))))
+      (js/console.error (expound/expound-str ::env m)))))
 
 (def tokens (tool/with-ns "ENV" (fetch-env (work/env))))
 
@@ -39,7 +40,7 @@
 ; - :store/secure -> stores this datom in a secure store locally ... bypasses sqlite
 ; - :store/sync   -> stores every datom for this entity in sqlite and remotely
 
-(def schema {:user/id               {:db.unique :db.unique/identity
+(def schema {:user/uid              {:db.unique  :db.unique/identity
                                      :store.type :store/entity}
              :user/city             {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
@@ -75,6 +76,5 @@
 ;; needs to be an array of maps. This will be used for data/transact!
 (def init-data
   (concat (map #(tool/with-ns "city" %) cities)
-          [{:user/id -1
-            :user/city [:city/name "Frankfurt am Main"]} ;; dummy
-           tokens]))
+          [{:user/uid  -1
+            :user/city [:city/name "Frankfurt am Main"]}])) ;; dummy

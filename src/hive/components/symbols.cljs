@@ -45,7 +45,7 @@
   "a React Native MapView component which will only re-render on user-city change"
   [children]
   (let [geometry @(work/q! '[:find ?geometry .
-                             :where [?id :user/id]
+                             :where [?id :user/uid]
                                     [?id :user/city ?city]
                                     [?city :city/geometry ?geometry]])
         area      (region children (geometry/latlng (:coordinates geometry)))]

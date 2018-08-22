@@ -9,15 +9,14 @@
               :where [?entity :city/name ?name]])
 
 (def user-id '[:find ?uid .
-               :where [_ :user/id ?uid]])
+               :where [_ :user/uid ?uid]])
 
 (def user-position '[:find ?position . :where [_ :user/position ?position]])
 
 (def places-id '[:find [?id ...] :where [?id :place/id]])
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def mapbox-token '[:find ?token .
-                    :where [_ :ENV/MAPBOX ?token]])
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def session '[:find ?session .
                :where [_ :session/uuid ?session]])
 

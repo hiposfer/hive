@@ -23,7 +23,7 @@
   [db data]
   (let [p    (point (tool/keywordize data))
         uid  (data/q queries/user-id db)]
-    [{:user/id uid
+    [{:user/uid      uid
       :user/position p}]))
 
 (defn defaults
