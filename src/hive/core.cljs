@@ -91,9 +91,12 @@
 
 (defn- auth-listener
   [db result]
-  (let [e (data/q '[:find ?e :where [?e :user/uid]] db)
-        user (js->clj result :keywordize-keys true)]
-    [(merge user {:db/id e})]))
+  (when (some? result) ;; todo: handle user sign out properly
+    (let [e    (data/q '[:find ?e . :where [?e :user/uid]] db)
+          ;; workaround based on https://stackoverflow.com/a/51439387
+          data (js->clj (. result (toJSON)) :keywordize-keys true)]
+      [(merge (tool/with-ns "user" (into {} (for [[k v] data :when (some? v)] [k v])))
+              {:db/id e})])))
 
 (defn init!
   "register the main UI component in React Native"
@@ -108,15 +111,17 @@
     (work/transact! state/init-data)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
-    ;;(. fl/Firebase (initializeApp config))
-    ;(.. fl/Firebase
-    ;    (auth)
-    ;    (onAuthStateChanged #(work/transact! (auth-listener (work/db) %))))
-    ;(.. fl/Firebase
-    ;    (auth)
-    ;    (signInAnonymously) (catch js/console.error))
+    (. fl/Firebase (initializeApp config))
+    (.. fl/Firebase
+        (auth)
+        (onAuthStateChanged #(work/transact! (auth-listener (work/db) %))))
+    (when (nil? (.. fl/Firebase (auth) -currentUser))
+      (.. fl/Firebase
+          (auth)
+          (signInAnonymously)
+          (catch js/console.error)))
     ;; restore user data ...........................
-    (. (sqlite/read!) (then work/transact!))
+    ;(. (sqlite/read!) (then work/transact!))
     ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
@@ -126,13 +131,7 @@
     (. fl/ReactNative (NetInfo.isConnected.addEventListener
                         "connectionChange"
                         conn-listener))))
+
 ;hive.rework.state/conn
 
-;(work/transact! [{:db/id 4
-;                  :user/id 100}])
-;(work/transact! [[:db.fn/retractEntity 7]])
-
-;(js->clj (.. fl/Firebase (auth))
-;         :keywordize-keys true)))
-
-;(.. fl/Firebase (auth) -currentUser)
+;(js/Date "1534970526000")
