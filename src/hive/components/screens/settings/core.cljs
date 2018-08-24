@@ -5,7 +5,8 @@
             [hive.components.foreigns.expo :as expo]
             [hive.queries :as queries]
             [reagent.core :as r]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [hive.services.firebase :as firebase]))
 
 (s/def ::email (s/and string? #(re-matches #"\S+@\S+\.\S+" %)))
 (s/def ::password (s/and string? #(>= (count %) 8)))
@@ -16,10 +17,6 @@
                   :justifyContent "center" :backgroundColor "lightgray"
                   :borderRadius 50/2}
     [:> expo/Ionicons {:name "ios-person-outline" :size 30}]])
-
-(defn- sign-or-login
-  [state]
-  (println state))
 
 (defn- EmailInput
   [uid stage]
@@ -43,20 +40,20 @@
 (defn- PasswordInput
   [uid]
   (let [info (work/pull! [:user/password] [:user/uid uid])]
+    (println @info)
     [:> react/View
-      [:> react/Input {:placeholder "secret password"
-                       :autoCapitalize "none" :returnKeyType "send"
-                       ;:onSubmitEditing #(when (s/valid? ::email (:user/email @info))
-                       ;                    (reset! stage :password)
-                       :onChangeText #(work/transact! [{:user/uid uid :user/password %}])
-                       :style {:width 150 :height 50}}]
+      [:> react/Input {:placeholder     "secret password"
+                       :autoCapitalize  "none" :returnKeyType "send"
+                       :onSubmitEditing #(firebase/sign-up (work/db))
+                       :onChangeText    #(work/transact! [{:user/uid uid :user/password %}])
+                       :style           {:width 150 :height 50}}]
       (cond
         (empty? (:user/password @info)) nil
 
         (not (s/valid? ::password (:user/password @info)))
         [:> react/Text {:style {:color "coral"}} "password is too short"])]))
 
-(defn SignOrLogIn
+(defn SignUp
   []
   (r/with-let [id   (work/q! queries/user-id)
                info (work/pull! [:user/email :user/password]
@@ -72,7 +69,8 @@
         (when (= :password @stage)
           [PasswordInput @id])
         (when (s/valid? ::password (:user/password @info))
-          [:> expo/Ionicons {:name "ios-checkmark" :size 26}])]]))
+          [:> react/TouchableOpacity {:onPress #(firebase/sign-up (work/db))}
+            [:> expo/Ionicons {:name "ios-checkmark" :size 26}]])]]))
 
 (defn Settings
   [props]
@@ -93,7 +91,7 @@
         [:> react/Modal {:animationType "slide" :presentationStyle "overFullScreen"
                          :transparent true :visible @visible?
                          :onRequestClose #(reset! visible? false)}
-          [SignOrLogIn]])
+          [SignUp]])
     ;; USER OVERVIEW ...............
       [:> react/TouchableOpacity {:style {:height 125 :paddingBottom 20 :paddingTop 20}
                                   :onPress #(reset! visible? true)}
@@ -103,9 +101,8 @@
         [:> react/View {:height 50 :flex-direction "row"}
           [UserIcon]
           [:> react/View {:flex 0.7 :justifyContent "center"}
-            [:> react/Text (or (:user/displayName @info)
-                               (:user/email @info)
-                               "ANONYMOUS")]
+            [:> react/Text (if (:user/isAnonymous @info) "ANONYMOUS"
+                             (or (:user/displayName @info) (:user/email @info)))]
             (when (not (:user/isAnonymous @info))
               [:> react/Text {:style {:color "gray"}}
                              "email"])]]]

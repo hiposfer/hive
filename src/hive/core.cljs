@@ -3,7 +3,7 @@
             [hive.foreigns :as fl]
             [hive.state :as state]
             [hive.rework.core :as work]
-            [hive.components.screens.home.welcome :as welcome]
+            [hive.services.firebase :as firebase]
             [datascript.core :as data]
             [hive.services.sqlite :as sqlite]
             [hive.queries :as queries]
@@ -51,15 +51,11 @@
       :setParams - used to change the params for the current screen}"
   (let [Navigator (rn-nav/stack-navigator
                     {:home           {:screen (screenify home/Home {:title "map"})}
-                     :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
                      :directions     {:screen (screenify route/Instructions {:title "directions"})}
                      :settings       {:screen (screenify settings/Settings {:title "settings"})}
                      :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
                      :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
                     {:headerMode "none"})]
-    ;id       @(work/q! queries/user-id)]
-    ;(if (= -1 id) ;; default
-    ; [router/router {:root Navigator :init "welcome"}]
     [router/Router {:root Navigator :init "home"}]))
 
 (defn- back-listener!
@@ -82,21 +78,12 @@
 
       :else (some? (work/transact! @tx))))) ;; always returns true
 
-(defn- conn-listener
+(defn- internet-connection-listener
   "Listens to connection changes mainly for internet access."
   [connected]
   (let [sid @(work/q! queries/session)]
     (if-not connected
         (work/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
-
-(defn- auth-listener
-  [db result]
-  (when (some? result) ;; todo: handle user sign out properly
-    (let [e    (data/q '[:find ?e . :where [?e :user/uid]] db)
-          ;; workaround based on https://stackoverflow.com/a/51439387
-          data (js->clj (.. result -user (toJSON)) :keywordize-keys true)]
-      [(merge (tool/with-ns "user" (into {} (for [[k v] data :when (some? v)] [k v])))
-              {:db/id e})])))
 
 (defn init!
   "register the main UI component in React Native"
@@ -109,21 +96,21 @@
     (work/init! conn)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
-  ;; restore user data ...........................
+    ;; restore user data ...........................
     (.. (sqlite/read!)
         (then #(work/transact! (concat state/init-data %)))
         ;; listen only AFTER restoration
         (then #(sqlite/listen! conn)))
     ;; firebase related funcionality ...............
-    (. fl/Firebase (initializeApp config))
-  ;; if we dont have a user registered - sign in anonymously
-    (when (nil? (.. fl/Firebase (auth) -currentUser))
-      (.. fl/Firebase
+    (. firebase/ref (initializeApp config))
+    ;; if we dont have a user registered - sign in anonymously
+    (when (nil? (.. firebase/ref (auth) -currentUser))
+      (.. firebase/ref
           (auth)
           (signInAnonymously)
           (then #(work/transact! (auth-listener (work/db) %)))
           (catch js/console.error)))
-  ;; start listening for events ..................
+    ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
     (. fl/ReactNative (BackHandler.addEventListener
@@ -131,7 +118,7 @@
                         back-listener!))
     (. fl/ReactNative (NetInfo.isConnected.addEventListener
                         "connectionChange"
-                        conn-listener))))
+                        internet-connection-listener))))
 
 ;hive.rework.state/conn
 
