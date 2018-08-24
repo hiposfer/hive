@@ -42,6 +42,7 @@
 
 (def schema {:user/uid              {:db.unique  :db.unique/identity
                                      :store.type :store/entity}
+             :user/password         {:store.type :store/secure}
              :user/city             {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
              :user/goal             {:db.valueType   :db.type/ref
