@@ -94,7 +94,7 @@
   (when (some? result) ;; todo: handle user sign out properly
     (let [e    (data/q '[:find ?e . :where [?e :user/uid]] db)
           ;; workaround based on https://stackoverflow.com/a/51439387
-          data (js->clj (. result (toJSON)) :keywordize-keys true)]
+          data (js->clj (.. result -user (toJSON)) :keywordize-keys true)]
       [(merge (tool/with-ns "user" (into {} (for [[k v] data :when (some? v)] [k v])))
               {:db/id e})])))
 
