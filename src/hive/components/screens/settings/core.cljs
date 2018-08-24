@@ -6,6 +6,7 @@
             [hive.queries :as queries]
             [reagent.core :as r]
             [cljs.spec.alpha :as s]
+            [hive.services.secure-store :as secure]
             [hive.services.firebase :as firebase]))
 
 (s/def ::email (s/and string? #(re-matches #"\S+@\S+\.\S+" %)))
@@ -38,15 +39,20 @@
         (not (s/valid? ::email (:user/email @info)))
         [:> react/Text {:style {:color "coral"}} "invalid email"])]))
 
+(defn- on-sign-up
+  [data db]
+  (when (s/valid? ::password (:user/password data))
+    [[firebase/sign-up! db]
+     [secure/save! (select-keys data [:user/password])]]))
+
 (defn- PasswordInput
   [uid]
   (let [info (work/pull! [:user/password] [:user/uid uid])]
     [:> react/View
       [:> react/Input {:placeholder     "secret password" :textAlign "center"
                        :autoCapitalize  "none" :returnKeyType "send"
-                       :onSubmitEditing #(when (s/valid? ::password (:user/password @info))
-                                           (work/transact! [[firebase/sign-up! (work/db)]]))
                        :onChangeText    #(work/transact! [{:user/uid uid :user/password %}])
+                       :onSubmitEditing #(work/transact! (on-sign-up @info (work/db)))
                        :style           {:width 150 :height 50}}]
       (cond
         (empty? (:user/password @info)) nil
@@ -70,8 +76,7 @@
         (when (= :password @stage)
           [PasswordInput @id])
         (when (s/valid? ::password (:user/password @info))
-          [:> react/TouchableOpacity {:onPress #(when (s/valid? ::password (:user/password @info))
-                                                  (work/transact! [[firebase/sign-up! (work/db)]]))}
+          [:> react/TouchableOpacity {:onPress #(work/transact! (on-sign-up @info (work/db)))}
             [:> expo/Ionicons {:name "ios-checkmark" :size 26}]])]]))
 
 (defn Settings
