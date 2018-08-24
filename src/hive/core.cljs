@@ -108,7 +108,7 @@
       (.. firebase/ref
           (auth)
           (signInAnonymously)
-          (then #(work/transact! (auth-listener (work/db) %)))
+          (then #(work/transact! (firebase/auth-listener (work/db) %)))
           (catch js/console.error)))
     ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
