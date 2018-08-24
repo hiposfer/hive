@@ -124,6 +124,6 @@
 ;(. (sqlite/read!) (then cljs.pprint/pprint))
 ;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
 
-;(. (secure/load! [:user/password]) (then cljs.pprint/pprint))
+;(. (secure/load! {} [:user/password]) (then cljs.pprint/pprint))
 
-;(. (secure/save! {:user/password "hive1234"}))
+;(. (secure/save! {:user/password "hive1234"}) (then cljs.pprint/pprint))

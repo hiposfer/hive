@@ -25,7 +25,7 @@
                        -SecureStore
                        (setItemAsync (munge k) (pr-str v) opts)
                        (then #(vector k v))
-                       (catch identity)))] ;; return error
+                       (catch js/console.error)))] ;; return error
      (.. (js/Promise.all (clj->js proms))
          (then #(into {} (remove tool/error? %)))))))
 
@@ -37,16 +37,18 @@
   "takes a sequence of namespaced keywords and returns a promise containing a
   map of keys to values"
   ^js/Promise
-  [options & ks]
-  (let [opts  (clj->js options)
-        proms (for [k (distinct ks)]
-                (.. fl/Expo
-                    -SecureStore
-                    (getItemAsync (munge k) opts)
-                    (then #(if (some? %) [k (read-string %)] nil))
-                    (catch identity)))] ;; return error
-    (.. (js/Promise.all (clj->js proms))
-        (then #(into {} (remove nil? (remove tool/error? %)))))))
+  ([options ks]
+   (let [opts  (clj->js options)
+         proms (for [k (distinct ks)]
+                 (.. fl/Expo
+                     -SecureStore
+                     (getItemAsync (munge k) opts)
+                     (then #(if (some? %) [k (read-string %)] nil))
+                     (catch identity)))] ;; return error
+     (.. (js/Promise.all (clj->js proms))
+         (then #(into {} (remove nil? (remove tool/error? %)))))))
+  ([ks]
+   (load! ks {})))
 
 ;(.. (load! {} :foo/bar)
 ;    (then println))
