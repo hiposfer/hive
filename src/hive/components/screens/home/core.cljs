@@ -86,7 +86,7 @@
     (let [navigate (:navigate (:navigation props))
           user     (data/q queries/user-id db)
           data     (data/pull db [:user/position {:user/city [:city/bbox]}]
-                              [:user/uid user])
+                                 [:user/uid user])
           args {:query        text
                 :proximity    (:user/position data)
                 :access_token (:ENV/MAPBOX state/tokens)
