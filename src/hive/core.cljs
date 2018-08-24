@@ -122,4 +122,8 @@
 ;hive.rework.state/conn
 
 ;(. (sqlite/read!) (then cljs.pprint/pprint))
-;(sqlite/CLEAR!!)
+;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
+
+;(. (secure/load! [:user/password]) (then cljs.pprint/pprint))
+
+;(. (secure/save! {:user/password "hive1234"}))

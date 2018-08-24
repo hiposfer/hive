@@ -16,16 +16,18 @@
   ::options can be any of the options defined by Expo. See
   https://docs.expo.io/versions/latest/sdk/securestore.html"
   ^js/Promise
-  [request options]
-  (let [opts    (clj->js (or options {}))
-        proms   (for [[k v] request]
-                  (.. fl/Expo
-                      -SecureStore
-                      (setItemAsync (munge k) (pr-str v) opts)
-                      (then #(vector k v))
-                      (catch identity)))] ;; return error
-    (.. (js/Promise.all (clj->js proms))
-        (then #(into {} (remove tool/error? %))))))
+  ([request]
+   (save! request {}))
+  ([request options]
+   (let [opts    (clj->js (or options {}))
+         proms   (for [[k v] request]
+                   (.. fl/Expo
+                       -SecureStore
+                       (setItemAsync (munge k) (pr-str v) opts)
+                       (then #(vector k v))
+                       (catch identity)))] ;; return error
+     (.. (js/Promise.all (clj->js proms))
+         (then #(into {} (remove tool/error? %)))))))
 
 ;(.. (save! {:foo/bar 3} nil)
 ;    (then println))
