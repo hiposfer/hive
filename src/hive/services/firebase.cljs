@@ -4,7 +4,7 @@
 
 (def ref ^js/Firebase (js/require "firebase"))
 
-(defn- auth-listener
+(defn auth-listener
   "takes the database and a UserCredential from firebase and returns a
   transaction to change the user information
 
@@ -17,7 +17,9 @@
       [(merge (tool/with-ns "user" (into {} (for [[k v] data :when (some? v)] [k v])))
               {:db/id e})])))
 
-(defn- sign-up
+
+
+(defn sign-up
   [db]
   (let [[email password] (data/q '[:find [?email ?password]
                                    :where [?user :user/uid]

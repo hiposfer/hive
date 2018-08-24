@@ -44,7 +44,7 @@
     [:> react/View
       [:> react/Input {:placeholder     "secret password"
                        :autoCapitalize  "none" :returnKeyType "send"
-                       :onSubmitEditing #(firebase/sign-up (work/db))
+                       :onSubmitEditing #(work/transact! (firebase/sign-up (work/db)))
                        :onChangeText    #(work/transact! [{:user/uid uid :user/password %}])
                        :style           {:width 150 :height 50}}]
       (cond
@@ -69,7 +69,7 @@
         (when (= :password @stage)
           [PasswordInput @id])
         (when (s/valid? ::password (:user/password @info))
-          [:> react/TouchableOpacity {:onPress #(firebase/sign-up (work/db))}
+          [:> react/TouchableOpacity {:onPress #(work/transact! (firebase/sign-up (work/db)))}
             [:> expo/Ionicons {:name "ios-checkmark" :size 26}]])]]))
 
 (defn Settings
