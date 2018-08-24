@@ -17,9 +17,7 @@
       [(merge (tool/with-ns "user" (into {} (for [[k v] data :when (some? v)] [k v])))
               {:db/id e})])))
 
-
-
-(defn sign-up
+(defn sign-up!
   [db]
   (let [[email password] (data/q '[:find [?email ?password]
                                    :where [?user :user/uid]
@@ -27,9 +25,8 @@
                                           [?user :user/password ?password]]
                                  db)
         credential (.. ref (auth.EmailAuthProvider.credential email password))]
-    [(delay (.. ref
-                (auth)
-                -currentUser
-                (linkAndRetrieveDataWithCredential credential)
-                (then #(auth-listener db %))
-                (catch js/console.error)))]))
+    (.. ref (auth) -currentUser
+        (linkAndRetrieveDataWithCredential credential)
+        (then #(auth-listener db %))
+        (then #(.. ref (auth) -currentUser (sendEmailVerification)))
+        (catch js/console.error))))

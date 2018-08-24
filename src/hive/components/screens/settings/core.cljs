@@ -24,7 +24,7 @@
     [:> react/View
       (if (= :password @stage)
         [:> react/Text (:user/email @info)]
-        [:> react/Input {:placeholder "example@domain.com"
+        [:> react/Input {:placeholder "example@domain.com" :textAlign "center"
                          :defaultValue (:user/email @info)
                          :autoCapitalize "none" :returnKeyType "next"
                          :keyboardType "email-address"
@@ -42,10 +42,10 @@
   [uid]
   (let [info (work/pull! [:user/password] [:user/uid uid])]
     [:> react/View
-      [:> react/Input {:placeholder     "secret password"
+      [:> react/Input {:placeholder     "secret password" :textAlign "center"
                        :autoCapitalize  "none" :returnKeyType "send"
                        :onSubmitEditing #(when (s/valid? ::password (:user/password @info))
-                                           (work/transact! (firebase/sign-up (work/db))))
+                                           (work/transact! [[firebase/sign-up! (work/db)]]))
                        :onChangeText    #(work/transact! [{:user/uid uid :user/password %}])
                        :style           {:width 150 :height 50}}]
       (cond
@@ -71,7 +71,7 @@
           [PasswordInput @id])
         (when (s/valid? ::password (:user/password @info))
           [:> react/TouchableOpacity {:onPress #(when (s/valid? ::password (:user/password @info))
-                                                  (work/transact! (firebase/sign-up (work/db))))}
+                                                  (work/transact! [[firebase/sign-up! (work/db)]]))}
             [:> expo/Ionicons {:name "ios-checkmark" :size 26}]])]]))
 
 (defn Settings
@@ -103,11 +103,15 @@
         [:> react/View {:height 50 :flex-direction "row"}
           [UserIcon]
           [:> react/View {:flex 0.7 :justifyContent "center"}
-            [:> react/Text (if (:user/isAnonymous @info) "ANONYMOUS"
-                             (or (:user/displayName @info) (:user/email @info)))]
+            (cond
+              (:user/isAnonymous @info)
+              [:> react/Text "ANONYMOUS"]
+
+              (:user/displayName @info)
+              [:> react/Text (:user/displayName @info)])
             (when (not (:user/isAnonymous @info))
               [:> react/Text {:style {:color "gray"}}
-                             "email"])]]]
+                             (:user/email @info)])]]]
     ;; USER CITY .................
       [:> react/View {:height 125}
         [:> react/Text {:style {:color "slategray" :fontSize 15 :paddingLeft 20
