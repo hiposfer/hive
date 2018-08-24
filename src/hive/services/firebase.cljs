@@ -27,6 +27,24 @@
         credential (.. ref (auth.EmailAuthProvider.credential email password))]
     (.. ref (auth) -currentUser
         (linkAndRetrieveDataWithCredential credential)
-        (then #(auth-listener db %))
-        (then #(.. ref (auth) -currentUser (sendEmailVerification)))
+        (then #(do (.. % -user (sendEmailVerification))
+                   (auth-listener db %)))
         (catch js/console.error))))
+
+(defn sign-in!
+  [db]
+  (let [[email password] (data/q '[:find [?email ?password]
+                                   :where [?user :user/uid]
+                                          [?user :user/email ?email]
+                                          [?user :user/password ?password]])]
+    (if (and (some? email) (some? password))
+      (.. ref
+          (auth)
+          (signInWithEmailAndPassword email password)
+          (then #(auth-listener db %)))
+      ;; we dont have a user registered - sign in anonymously
+      (.. ref
+          (auth)
+          (signInAnonymously)
+          (then #(auth-listener db %))
+          (catch js/console.error)))))

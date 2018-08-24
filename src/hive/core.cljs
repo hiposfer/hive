@@ -15,7 +15,8 @@
             [hive.components.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.screens.home.route :as route]
-            [hive.components.foreigns.react :as react]))
+            [hive.components.foreigns.react :as react]
+            [hive.services.secure-store :as secure]))
 
 (defn- MessageTray
   [props]
@@ -96,20 +97,18 @@
     (work/init! conn)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
+    ;; firebase related funcionality ...............
+    (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
     (.. (sqlite/read!)
         (then #(work/transact! (concat state/init-data %)))
         ;; listen only AFTER restoration
-        (then #(sqlite/listen! conn)))
-    ;; firebase related funcionality ...............
-    (. firebase/ref (initializeApp config))
-    ;; if we dont have a user registered - sign in anonymously
-    (when (nil? (.. firebase/ref (auth) -currentUser))
-      (.. firebase/ref
-          (auth)
-          (signInAnonymously)
-          (then #(work/transact! (firebase/auth-listener (work/db) %)))
-          (catch js/console.error)))
+        (then #(sqlite/listen! conn))
+        (then #(secure/load! [:user/password]))
+        (then vector)
+        (then work/transact!)
+        (then #(firebase/sign-in! (work/db)))
+        (then work/transact!))
     ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
