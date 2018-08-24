@@ -36,7 +36,8 @@
   (let [[email password] (data/q '[:find [?email ?password]
                                    :where [?user :user/uid]
                                           [?user :user/email ?email]
-                                          [?user :user/password ?password]])]
+                                          [?user :user/password ?password]]
+                                 db)]
     (if (and (some? email) (some? password))
       (.. ref
           (auth)

@@ -105,8 +105,8 @@
         ;; listen only AFTER restoration
         (then #(sqlite/listen! conn))
         (then #(secure/load! [:user/password]))
-        (then vector)
-        (then work/transact!)
+        (then #(merge {:user/uid (data/q queries/user-id (work/db))} %))
+        (then #(work/transact! [%]))
         (then #(firebase/sign-in! (work/db)))
         (then work/transact!))
     ;; start listening for events ..................
@@ -124,6 +124,9 @@
 ;(. (sqlite/read!) (then cljs.pprint/pprint))
 ;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
 
-;(. (secure/load! {} [:user/password]) (then cljs.pprint/pprint))
+;(. (secure/load! [:user/password]) (then cljs.pprint/pprint))
 
 ;(. (secure/save! {:user/password "hive1234"}) (then cljs.pprint/pprint))
+
+;(work/transact! [{:user/uid "JV9i2uVQcIeVksun3Pw4bpGf7li2"
+;                  :user/email "card06@gmail.com"}])

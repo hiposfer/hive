@@ -1,5 +1,5 @@
 (ns hive.services.secure-store
-  (:require [cljs.reader :refer [read-string]]
+  (:require [cljs.tools.reader.edn :as edn]
             [hive.rework.util :as tool]
             [hive.foreigns :as fl]))
 
@@ -25,7 +25,7 @@
                        -SecureStore
                        (setItemAsync (munge k) (pr-str v) opts)
                        (then #(vector k v))
-                       (catch js/console.error)))] ;; return error
+                       (catch identity)))] ;; return error
      (.. (js/Promise.all (clj->js proms))
          (then #(into {} (remove tool/error? %)))))))
 
@@ -43,12 +43,12 @@
                  (.. fl/Expo
                      -SecureStore
                      (getItemAsync (munge k) opts)
-                     (then #(if (some? %) [k (read-string %)] nil))
+                     (then #(when (some? %) [k (edn/read-string %)]))
                      (catch identity)))] ;; return error
      (.. (js/Promise.all (clj->js proms))
          (then #(into {} (remove nil? (remove tool/error? %)))))))
   ([ks]
-   (load! ks {})))
+   (load! {} ks)))
 
 ;(.. (load! {} :foo/bar)
 ;    (then println))
@@ -65,7 +65,7 @@
                 (.. fl/Expo
                     -SecureStore
                     (deleteItemAsync (munge k) opts)
-                    (then #(println k))
+                    ;(then #(println k))
                     (catch identity)))] ;; return error
     (.. (js/Promise.all proms)
         (then #(into [] (remove tool/error? %))))))
