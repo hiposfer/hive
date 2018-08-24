@@ -116,14 +116,12 @@
         (then #(sqlite/listen! conn)))
     ;; firebase related funcionality ...............
     (. fl/Firebase (initializeApp config))
-    (.. fl/Firebase
-        (auth)
-        (onAuthStateChanged #(work/transact! (auth-listener (work/db) %))))
   ;; if we dont have a user registered - sign in anonymously
     (when (nil? (.. fl/Firebase (auth) -currentUser))
       (.. fl/Firebase
           (auth)
           (signInAnonymously)
+          (then #(work/transact! (auth-listener (work/db) %)))
           (catch js/console.error)))
   ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
