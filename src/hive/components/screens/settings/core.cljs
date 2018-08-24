@@ -25,6 +25,7 @@
       (if (= :password @stage)
         [:> react/Text (:user/email @info)]
         [:> react/Input {:placeholder "example@domain.com"
+                         :defaultValue (:user/email @info)
                          :autoCapitalize "none" :returnKeyType "next"
                          :keyboardType "email-address"
                          :onSubmitEditing #(when (s/valid? ::email (:user/email @info))
@@ -40,11 +41,11 @@
 (defn- PasswordInput
   [uid]
   (let [info (work/pull! [:user/password] [:user/uid uid])]
-    (println @info)
     [:> react/View
       [:> react/Input {:placeholder     "secret password"
                        :autoCapitalize  "none" :returnKeyType "send"
-                       :onSubmitEditing #(work/transact! (firebase/sign-up (work/db)))
+                       :onSubmitEditing #(when (s/valid? ::password (:user/password @info))
+                                           (work/transact! (firebase/sign-up (work/db))))
                        :onChangeText    #(work/transact! [{:user/uid uid :user/password %}])
                        :style           {:width 150 :height 50}}]
       (cond
@@ -69,7 +70,8 @@
         (when (= :password @stage)
           [PasswordInput @id])
         (when (s/valid? ::password (:user/password @info))
-          [:> react/TouchableOpacity {:onPress #(work/transact! (firebase/sign-up (work/db)))}
+          [:> react/TouchableOpacity {:onPress #(when (s/valid? ::password (:user/password @info))
+                                                  (work/transact! (firebase/sign-up (work/db))))}
             [:> expo/Ionicons {:name "ios-checkmark" :size 26}]])]]))
 
 (defn Settings
