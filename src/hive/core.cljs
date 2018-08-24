@@ -107,22 +107,25 @@
                     :databaseUrl (:ENV/FIREBASE_DATABASE_URL state/tokens)
                     :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
     (work/init! conn)
-    (sqlite/listen! conn)
-    (work/transact! state/init-data)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
+  ;; restore user data ...........................
+    (.. (sqlite/read!)
+        (then #(work/transact! (concat state/init-data %)))
+        ;; listen only AFTER restoration
+        (then #(sqlite/listen! conn)))
+    ;; firebase related funcionality ...............
     (. fl/Firebase (initializeApp config))
     (.. fl/Firebase
         (auth)
         (onAuthStateChanged #(work/transact! (auth-listener (work/db) %))))
+  ;; if we dont have a user registered - sign in anonymously
     (when (nil? (.. fl/Firebase (auth) -currentUser))
       (.. fl/Firebase
           (auth)
           (signInAnonymously)
           (catch js/console.error)))
-    ;; restore user data ...........................
-    ;(. (sqlite/read!) (then work/transact!))
-    ;; start listening for events ..................
+  ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
     (. fl/ReactNative (BackHandler.addEventListener
@@ -134,4 +137,5 @@
 
 ;hive.rework.state/conn
 
-;(js/Date "1534970526000")
+;(. (sqlite/read!) (then cljs.pprint/pprint))
+;(sqlite/CLEAR!!)
