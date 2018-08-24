@@ -23,8 +23,9 @@
   [db data]
   (let [p    (point (tool/keywordize data))
         uid  (data/q queries/user-id db)]
-    [{:user/uid      uid
-      :user/position p}]))
+    (when (some? uid)
+      [{:user/uid      uid
+        :user/position p}])))
 
 (defn defaults
   "sensitive defaults for location tracking"
