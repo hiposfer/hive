@@ -101,9 +101,10 @@
     (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
     (.. (sqlite/read!)
-        (then #(work/transact! (concat state/init-data %)))
+        (then work/transact!)
         ;; listen only AFTER restoration
         (then #(sqlite/listen! conn))
+        (then #(work/transact! (state/init-data (work/db))))
         (then #(secure/load! [:user/password]))
         (then #(merge {:user/uid (data/q queries/user-id (work/db))} %))
         (then #(work/transact! [%]))

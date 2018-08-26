@@ -2,7 +2,9 @@
   (:require [hive.rework.core :as work]
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
-            [expound.alpha :as expound]))
+            [expound.alpha :as expound]
+            [datascript.core :as data]
+            [hive.queries :as queries]))
 
 (s/def ::token (s/and string? not-empty))
 (s/def ::MAPBOX ::token)
@@ -75,7 +77,10 @@
              :stop_times/stop       {:db.valueType :db.type/ref}})
 
 ;; needs to be an array of maps. This will be used for data/transact!
-(def init-data
-  (concat (map #(tool/with-ns "city" %) cities)
-          [{:user/uid  ""
-            :user/city [:city/name "Frankfurt am Main"]}])) ;; dummy
+(defn init-data
+  [db]
+  (let [uid    (data/q queries/user-id db)
+        result (map #(tool/with-ns "city" %) cities)]
+    (when (nil? uid) ;; we dont have a user - create a placeholder for it
+      (concat result [{:user/uid  ""  ;; dummy
+                       :user/city [:city/name "Frankfurt am Main"]}]))))
