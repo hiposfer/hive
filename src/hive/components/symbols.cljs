@@ -45,9 +45,9 @@
   "a React Native MapView component which will only re-render on user-city change"
   [children]
   (let [geometry @(work/q! '[:find ?geometry .
-                             :where [?id :user/id]
-                             [?id :user/city ?city]
-                             [?city :city/geometry ?geometry]])
+                             :where [?id :user/uid]
+                                    [?id :user/city ?city]
+                                    [?city :city/geometry ?geometry]])
         area      (region children (geometry/latlng (:coordinates geometry)))]
     (if (nil? (:coordinates geometry))
       [:> expo/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]

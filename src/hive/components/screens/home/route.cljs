@@ -113,13 +113,13 @@
 
 (defn- Route
   [uid]
-  (let [route   @(work/pull! [{:route/steps [:step/departure :step/mode
-                                             :step/name :maneuver/instruction
-                                             :step/distance
-                                             {:stop_times/trip [{:trip/route [:route/long_name :route/color]}]}]}]
-                             [:route/uuid uid])]
+  (let [route   @(work/pull! [{:directions/steps [:step/departure :step/mode
+                                                  :step/name :maneuver/instruction
+                                                  :step/distance
+                                                  {:stop_times/trip [{:trip/route [:route/long_name :route/color]}]}]}]
+                             [:directions/uuid uid])]
     [:> react/View {:flex 1}
-      (for [steps (partition-by :step/mode (:route/steps route))
+      (for [steps (partition-by :step/mode (:directions/steps route))
             :let [departs  (:step/departure (first steps))
                   iso-time (. ^DateTime departs (toIsoTimeString))
                   human-time (subs iso-time 0 5)]]
@@ -140,9 +140,9 @@
 
 (defn- Transfers
   [route-id]
-  (let [route @(work/pull! [{:route/steps [:step/mode {:stop_times/trip [{:trip/route [:route/type]}]}]}]
-                           [:route/uuid route-id])
-        sections (partition-by :step/mode (:route/steps route))]
+  (let [route @(work/pull! [{:directions/steps [:step/mode {:stop_times/trip [{:trip/route [:route/type]}]}]}]
+                           [:directions/uuid route-id])
+        sections (partition-by :step/mode (:directions/steps route))]
     [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
                     :top "0.5%" :alignItems "center"}
       (butlast ;; drop last arrow icon
@@ -158,9 +158,10 @@
 (defn- Info
   [props route-id]
   (let [[duration goal] @(work/q! '[:find [?duration ?goal]
-                                    :where [_      :user/route ?route]
-                                           [?route :route/duration ?duration]
-                                           [_      :user/goal ?goal]])]
+                                    :where [_      :user/directions ?route]
+                                           [?route :directions/duration ?duration]
+                                           [_      :user/goal ?target]
+                                           [?target :place/text ?goal]])]
     [:> react/View props
      [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers route-id]
@@ -169,14 +170,14 @@
        (when (some? duration)
          (duration/format (* 1000 (. ^Interval duration (getTotalSeconds)))))]]
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
-                    (:text goal)]]))
+                    goal]]))
 
 (defn- paths
   [uid]
-  (let [route (work/pull! [{:route/steps [:step/geometry :step/duration :step/mode
-                                          {:stop_times/trip [{:trip/route [:route/color :route/long_name]}]}]}]
-                          [:route/uuid uid])]
-    (for [steps (partition-by :step/mode (:route/steps @route))
+  (let [route (work/pull! [{:directions/steps [:step/geometry :step/duration :step/mode
+                                               {:stop_times/trip [{:trip/route [:route/color :route/long_name]}]}]}]
+                          [:directions/uuid uid])]
+    (for [steps (partition-by :step/mode (:directions/steps @route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
                 stroke (route-color (:trip/route (:stop_times/trip (first steps))))]]
       ^{:key (hash steps)}
@@ -191,8 +192,8 @@
   [props]
   (let [window (tool/keywordize (. fl/ReactNative (Dimensions.get "window")))
         uid   @(work/q! '[:find ?uid .
-                          :where [_      :user/route ?route]
-                                 [?route :route/uuid ?uid]])]
+                          :where [_      :user/directions ?route]
+                                 [?route :directions/uuid ?uid]])]
     [:> react/ScrollView {:flex 1}
       [:> react/View {:height (* 0.9 (:height window))}
         [symbols/CityMap

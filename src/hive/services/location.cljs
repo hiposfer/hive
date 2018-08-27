@@ -4,7 +4,8 @@
             [hive.queries :as queries]
             [hive.rework.core :as work]
             [hive.foreigns :as fl]
-            [hive.queries :as queries]))
+            [hive.queries :as queries]
+            [datascript.core :as data]))
 
 ;; todo: should altitude be inside the point coordinates?
 (defn point
@@ -18,22 +19,20 @@
      :geometry point
      :properties (merge ncords (dissoc expo-loc :coords))}))
 
-(defn tx-position
-  [data]
-  [{:user/id (:user/id data)
-    :user/position (dissoc data :user/id)}])
-
-(defn set-location!
-  [data]
+(defn set-location
+  [db data]
   (let [p    (point (tool/keywordize data))
-        puid (assoc p :user/id @(work/q! queries/user-id))]
-    (work/transact! (tx-position puid))))
+        uid  (data/q queries/user-id db)]
+    (when (some? uid)
+      [{:user/uid      uid
+        :user/position p}])))
 
-(def defaults
+(defn defaults
   "sensitive defaults for location tracking"
+  [callback]
   {:enableHighAccuracy true
    :timeInterval       3000
-   :callback          set-location!})
+   :callback          callback})
 
 (defn- request
   [opts response]

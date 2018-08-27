@@ -3,7 +3,7 @@
             [hive.foreigns :as fl]
             [hive.state :as state]
             [hive.rework.core :as work]
-            [hive.components.screens.home.welcome :as welcome]
+            [hive.services.firebase :as firebase]
             [datascript.core :as data]
             [hive.services.sqlite :as sqlite]
             [hive.queries :as queries]
@@ -15,7 +15,8 @@
             [hive.components.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.screens.home.route :as route]
-            [hive.components.foreigns.react :as react]))
+            [hive.components.foreigns.react :as react]
+            [hive.services.secure-store :as secure]))
 
 (defn- MessageTray
   [props]
@@ -51,15 +52,11 @@
       :setParams - used to change the params for the current screen}"
   (let [Navigator (rn-nav/stack-navigator
                     {:home           {:screen (screenify home/Home {:title "map"})}
-                     :welcome        {:screen (screenify welcome/Login {:title "welcome"})}
                      :directions     {:screen (screenify route/Instructions {:title "directions"})}
                      :settings       {:screen (screenify settings/Settings {:title "settings"})}
                      :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
                      :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
                     {:headerMode "none"})]
-    ;id       @(work/q! queries/user-id)]
-    ;(if (= -1 id) ;; default
-    ; [router/router {:root Navigator :init "welcome"}]
     [router/Router {:root Navigator :init "home"}]))
 
 (defn- back-listener!
@@ -82,7 +79,7 @@
 
       :else (some? (work/transact! @tx))))) ;; always returns true
 
-(defn- conn-listener
+(defn- internet-connection-listener
   "Listens to connection changes mainly for internet access."
   [connected]
   (let [sid @(work/q! queries/session)]
@@ -92,14 +89,27 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (let [conn (data/create-conn state/schema)]
+  (let [conn       (data/create-conn state/schema)
+        config #js {:apiKey (:ENV/FIREBASE_API_KEY state/tokens)
+                    :authDomain (:ENV/FIREBASE_AUTH_DOMAIN state/tokens)
+                    :databaseUrl (:ENV/FIREBASE_DATABASE_URL state/tokens)
+                    :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
     (work/init! conn)
-    (sqlite/listen! conn)
-    (work/transact! state/init-data)
     (work/transact! [{:session/uuid (data/squuid)
                       :session/start (js/Date.now)}])
+    ;; firebase related funcionality ...............
+    (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
-    (.. (sqlite/read!) (then work/transact!))
+    (.. (sqlite/read!)
+        (then work/transact!)
+        ;; listen only AFTER restoration
+        (then #(sqlite/listen! conn))
+        (then #(work/transact! (state/init-data (work/db))))
+        (then #(secure/load! [:user/password]))
+        (then #(merge {:user/uid (data/q queries/user-id (work/db))} %))
+        (then #(work/transact! [%]))
+        (then #(firebase/sign-in! (work/db)))
+        (then work/transact!))
     ;; start listening for events ..................
     (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
     ;; handles Android BackButton
@@ -108,9 +118,11 @@
                         back-listener!))
     (. fl/ReactNative (NetInfo.isConnected.addEventListener
                         "connectionChange"
-                        conn-listener))))
+                        internet-connection-listener))))
+
 ;hive.rework.state/conn
 
-;(work/transact! [{:db/id 4
-;                  :user/id 100}])
-;(work/transact! [[:db.fn/retractEntity 7]])
+;(. (sqlite/read!) (then cljs.pprint/pprint))
+;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
+
+;(. (secure/load! [:user/password]) (then cljs.pprint/pprint))

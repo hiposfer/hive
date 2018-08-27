@@ -63,11 +63,11 @@
   Further trip information is also retrieved"
   [path user]
   (let [base [path
-              {:user/id user
-               :user/route [:route/uuid (:route/uuid path)]}]]
+              {:user/uid        user
+               :user/directions [:directions/uuid (:directions/uuid path)]}]]
     (concat base
       (distinct
-        (for [step (:route/steps path)
+        (for [step (:directions/steps path)
               :when (= (:step/mode step) "transit")
               :when (some? (:stop_times/trip step))] ;; check just in case ;)
           [chain! (:stop_times/trip step) :trip/route])))))

@@ -59,6 +59,7 @@
   "executes a sequence of transactions to sync sqlite with datascript"
   [transaction tx-report]
   (doseq [[tx values] (sync tx-report)]
+    ;(println tx values)
     (. transaction (executeSql tx (clj->js values)))))
 
 (defn listen!

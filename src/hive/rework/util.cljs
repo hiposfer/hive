@@ -25,13 +25,6 @@
   [value]
   (and (some? value) (exists? (.-then value))))
 
-(defn- print-warning!
-  [e pipe request]
-  (if (instance? js/Error (ex-data e))
-    (.warn js/console (ex-data e))
-    (do (.info js/console (clj->js pipe) (pr-str request))
-        (.warn js/console (ex-message e) (str (ex-cause e))))))
-
 (defn with-ns
   "modify a map keys to be namespaced with ns"
   [ns m]

@@ -1,5 +1,5 @@
 (ns hive.services.secure-store
-  (:require [cljs.reader :refer [read-string]]
+  (:require [cljs.tools.reader.edn :as edn]
             [hive.rework.util :as tool]
             [hive.foreigns :as fl]))
 
@@ -16,16 +16,18 @@
   ::options can be any of the options defined by Expo. See
   https://docs.expo.io/versions/latest/sdk/securestore.html"
   ^js/Promise
-  [request options]
-  (let [opts    (clj->js (or options {}))
-        proms   (for [[k v] request]
-                  (.. fl/Expo
-                      -SecureStore
-                      (setItemAsync (munge k) (pr-str v) opts)
-                      (then #(vector k v))
-                      (catch identity)))] ;; return error
-    (.. (js/Promise.all (clj->js proms))
-        (then #(into {} (remove tool/error? %))))))
+  ([request]
+   (save! request {}))
+  ([request options]
+   (let [opts    (clj->js (or options {}))
+         proms   (for [[k v] request]
+                   (.. fl/Expo
+                       -SecureStore
+                       (setItemAsync (munge k) (pr-str v) opts)
+                       (then #(vector k v))
+                       (catch identity)))] ;; return error
+     (.. (js/Promise.all (clj->js proms))
+         (then #(into {} (remove tool/error? %)))))))
 
 ;(.. (save! {:foo/bar 3} nil)
 ;    (then println))
@@ -35,16 +37,18 @@
   "takes a sequence of namespaced keywords and returns a promise containing a
   map of keys to values"
   ^js/Promise
-  [options & ks]
-  (let [opts  (clj->js options)
-        proms (for [k (distinct ks)]
-                (.. fl/Expo
-                    -SecureStore
-                    (getItemAsync (munge k) opts)
-                    (then #(if (some? %) [k (read-string %)] nil))
-                    (catch identity)))] ;; return error
-    (.. (js/Promise.all (clj->js proms))
-        (then #(into {} (remove nil? (remove tool/error? %)))))))
+  ([options ks]
+   (let [opts  (clj->js options)
+         proms (for [k (distinct ks)]
+                 (.. fl/Expo
+                     -SecureStore
+                     (getItemAsync (munge k) opts)
+                     (then #(when (some? %) [k (edn/read-string %)]))
+                     (catch identity)))] ;; return error
+     (.. (js/Promise.all (clj->js proms))
+         (then #(into {} (remove nil? (remove tool/error? %)))))))
+  ([ks]
+   (load! {} ks)))
 
 ;(.. (load! {} :foo/bar)
 ;    (then println))
@@ -61,7 +65,7 @@
                 (.. fl/Expo
                     -SecureStore
                     (deleteItemAsync (munge k) opts)
-                    (then #(println k))
+                    ;(then #(println k))
                     (catch identity)))] ;; return error
     (.. (js/Promise.all proms)
         (then #(into [] (remove tool/error? %))))))
