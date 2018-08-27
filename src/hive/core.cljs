@@ -126,8 +126,3 @@
 ;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
 
 ;(. (secure/load! [:user/password]) (then cljs.pprint/pprint))
-
-;(. (secure/save! {:user/password "hive1234"}) (then cljs.pprint/pprint))
-
-;(work/transact! [{:user/uid "JV9i2uVQcIeVksun3Pw4bpGf7li2"
-;                  :user/email "card06@gmail.com"}])
