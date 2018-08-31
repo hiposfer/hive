@@ -9,9 +9,14 @@
     java.time.Duration (Interval.fromIsoString text)
     java.time.LocalDateTime (DateTime.fromRfc822String text)))
 
+(defn point
+  [location]
+  {:type "Point"
+   :coordinates [(:lon location) (:lat location)]})
+
 (def readers {'uuid   uuid
               ;; TODO: do I need a more specific representation?
-              'hiposfer.kamal.network.core.Location identity
+              'hiposfer.kamal.network.core.Location point
               'object read-object})
 
 (defn- local-time

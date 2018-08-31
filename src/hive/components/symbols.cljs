@@ -23,21 +23,35 @@
 (defn- linestring
   [obj]
   {:type "LineString"
-   :coordinates (map coordinate (:coordinates obj))})
+   :coordinates (map coordinate obj)})
+
+(defn- point
+  [obj]
+  {:type "Point"
+   :coordinates (coordinate obj)})
 
 (def space 0.005)
 
+;; TODO: take into account the user position
 (defn- region
   [children default-center]
   (let [lines (eduction (filter map?)
                         (filter :coordinates)
+                        (map :coordinates)
                         (map linestring)
                         (tree-seq coll? seq children))
-        coll  (assoc {:type "GeometryCollection"} :geometries lines)
-        [minx, miny, maxx, maxy]  (geojson/bbox coll)]
-    (if (empty? (:geometries coll))
+        points (eduction (filter map?)
+                         (filter :coordinate)
+                         (map :coordinate)
+                         (map point)
+                         (tree-seq coll? seq children))
+        coll {:type "GeometryCollection"
+              :geometries (concat lines points [(point default-center)])}
+        [minx, miny, maxx, maxy] (geojson/bbox coll)]
+    (if (= 1 (count (:geometries coll))) ;; more than just the default
       (merge {:latitudeDelta 0.02 :longitudeDelta 0.02} default-center)
-      {:latitude (/ (+ miny maxy) 2) :longitude (/ (+ maxx minx) 2)
+      {:latitude (/ (+ miny maxy) 2)
+       :longitude (/ (+ maxx minx) 2)
        :latitudeDelta (Math/abs (- miny maxy))
        :longitudeDelta (+ (Math/abs (- maxx minx)) space)})))
 
