@@ -28,7 +28,7 @@
         end      (:coordinates (:place/geometry target))]
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
-     [kamal/directions! [start end] (new js/Date) user]
+     [kamal/directions! [start end] user]
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 

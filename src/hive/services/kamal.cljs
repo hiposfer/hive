@@ -15,9 +15,9 @@
 (defn- local-time
   "returns a compatible Java LocalDateTime string representation"
   ([]
-   (local-time (new js/Date)))
+   (local-time (new DateTime)))
   ([^js/DateTime now]
-   (. now (toISOString))))
+   (str/replace (. now (toIsoString true true)) " " "T")))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
 (def route-url "http://192.168.0.45:3000/area/Frankfurt_am_Main/directions?coordinates={coordinates}&departure={departure}")
@@ -90,10 +90,12 @@
 
   All gtfs trips and route are also requested"
   ^js/Promise
-  [coordinates departure user]
-  (let [[url opts] (directions coordinates departure)]
-    (.. (js/fetch url (clj->js opts))
-        (then (fn [^js/Response response] (. response (text))))
-        (then #(edn/read-string {:readers readers} %))
-        (then #(process-directions % user)))))
+  ([coordinates user departure]
+   (let [[url opts] (directions coordinates departure)]
+     (.. (js/fetch url (clj->js opts))
+         (then (fn [^js/Response response] (. response (text))))
+         (then #(edn/read-string {:readers readers} %))
+         (then #(process-directions % user)))))
         ;; TODO: error handling
+  ([coordinates user]
+   (directions! coordinates user (new DateTime))))
