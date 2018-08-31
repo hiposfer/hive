@@ -5,7 +5,6 @@
             [hive.queries :as queries]
             [hive.rework.core :as work]
             [hive.rework.util :as tool]
-            [hive.components.screens.home.route :as route]
             [hive.services.mapbox :as mapbox]
             [hive.services.location :as location]
             [hive.components.foreigns.react :as react]
@@ -14,8 +13,7 @@
             [hive.services.kamal :as kamal]
             [hive.components.symbols :as symbols]
             [datascript.core :as data]
-            [hive.state :as state])
-  (:import (goog.date DateTime)))
+            [hive.state :as state]))
 
 ; NOTE: this is the way to remove all routes ... not sure where to do this
 ;(for [r (data/q queries/routes-ids (work/db))]
@@ -30,7 +28,7 @@
         end      (:coordinates (:place/geometry target))]
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
-     [kamal/directions! [start end] (new DateTime) user]
+     [kamal/directions! [start end] (new js/Date) user]
      (delay (.. fl/ReactNative (Keyboard.dismiss)))
      [navigate "directions"]]))
 
