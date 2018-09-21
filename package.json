@@ -1,4 +1,4 @@
-{
+  {
   "name": "hive",
   "version": "0.0.1",
   "description": "Your go-to app for public transport routing",
@@ -6,7 +6,6 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "exp": "exp",
     "appr": "appr"
   },
   "dependencies": {
