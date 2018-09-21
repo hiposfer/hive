@@ -93,7 +93,7 @@
     (new js/Promise
       (fn [resolve reject]
         (. db (transaction (fn [t]
-                             (. transaction (executeSql create-table))
+                             (. t (executeSql create-table))
                              (. t (executeSql get-all-datoms
                                               #js []
                                               #(resolve (datoms %1 %2))
