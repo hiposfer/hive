@@ -1,7 +1,6 @@
 (ns hive.components.screens.home.route
   (:require [hive.components.foreigns.react :as react]
             [hive.rework.util :as tool]
-            [datascript.core :as data]
             [hive.rework.core :as work]
             [hive.components.symbols :as symbols]
             [hive.foreigns :as fl]
@@ -9,10 +8,7 @@
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
             [reagent.core :as r]
-            [clojure.string :as str])
-  (:import [goog.date Interval DateTime]))
-
-;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
+            [clojure.string :as str]))
 
 (def big-circle 16)
 (def small-circle 10)
@@ -121,7 +117,7 @@
     [:> react/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))
             :let [departs  (:step/departure (first steps))
-                  iso-time (. ^DateTime departs (toIsoTimeString))
+                  iso-time (. (new js/Date (* 1000 departs)) (toTimeString))
                   human-time (subs iso-time 0 5)]]
         ^{:key human-time}
         [RouteSection steps human-time])]))
@@ -168,7 +164,7 @@
       [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
        (when (some? duration)
-         (duration/format (* 1000 (. ^Interval duration (getTotalSeconds)))))]]
+         (duration/format (* 1000 duration)))]]
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
                     goal]]))
 
