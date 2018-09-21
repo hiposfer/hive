@@ -92,14 +92,13 @@
   (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
     (new js/Promise
       (fn [resolve reject]
-        (. db (transaction (fn [transaction]
-                             (. transaction (executeSql create-table)))))
         (. db (transaction (fn [t]
+                             (. transaction (executeSql create-table))
                              (. t (executeSql get-all-datoms
                                               #js []
                                               #(resolve (datoms %1 %2))
                                               #(reject %2))))
-                reject))))))
+                           reject))))))
             ;; success
 
 (defn CLEAR!!
