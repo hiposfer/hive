@@ -13,8 +13,8 @@ Your go-to public transport routing app
 # install js modules
 yarn install
 
-# signup using exp CLI
-yarn run exp signup
+# login with your expo account
+yarn run expo login
 
 # start the figwheel server and cljs repl 
 lein figwheel
@@ -23,12 +23,12 @@ lein figwheel
 in another terminal
 ``` shell
 ## Start exponent server
-yarn run exp start
+yarn run expo start
 ```
 
 Once you have a figwheel and exp server running. Open the
 expo app in your mobile device and scan the QR code shown
-in the terminal where `exp` is running.
+in the terminal where `expo` is running.
 
 From now on everytime that you make a change to the source
 code, figwheel will automatically reload the changes
