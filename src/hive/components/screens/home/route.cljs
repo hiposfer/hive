@@ -8,8 +8,7 @@
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
             [reagent.core :as r]
-            [clojure.string :as str]
-            [hive.services.kamal :as kamal]))
+            [clojure.string :as str]))
 
 (def big-circle 16)
 (def small-circle 10)
@@ -63,21 +62,20 @@
         [:> react/View (merge (symbols/circle micro-circle)
                               {:backgroundColor "slategray"})])]))
 
-(defn- onStopPress
-  [props step]
-  (let [navigate (:navigate (:navigation props))
-        stop     (select-keys (:stop_times/stop step) [:stop/id])]
-    [[navigate "gtfs" stop]
-     [kamal/entity! stop]]))
-
+#_(defn- onStopPress
+    [props step]
+    (let [navigate (:navigate (:navigation props))
+          stop     (select-keys (:stop_times/stop step) [:stop/id])]
+      [[navigate "gtfs" stop]
+       [kamal/entity! stop]]))
 
 (defn- StepDetails
   [props steps]
   (into [:> react/View {:style {:flex 9 :justifyContent "space-around"}}]
     (for [step steps]
       (if (= "transit" (:step/mode step))
-        [:> react/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
-          [:> react/Text {:style {:color "gray"}} (:step/name step)]]
+        ;[:> react/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
+        [:> react/Text {:style {:color "gray"}} (:step/name step)]
         [:> react/Text {:style {:color "gray"}}
                        (str/replace (:maneuver/instruction (:step/maneuver step))
                                     "[Dummy]" "")]))))
