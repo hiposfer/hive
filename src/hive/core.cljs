@@ -102,7 +102,8 @@
     ;; firebase related funcionality ...............
     (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
-    (.. (sqlite/read!)
+    (.. (sqlite/CLEAR!!) ;; TODO: remove this
+        (then #(sqlite/read!))
         (then work/transact!)
         ;; listen only AFTER restoration
         (then #(sqlite/listen! conn))
