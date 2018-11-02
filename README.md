@@ -11,10 +11,10 @@ Your go-to public transport routing app
 
 ``` shell
 # install js modules
-yarn install
+npm install
 
 # signup using exp CLI
-yarn run exp signup
+npm run exp signup
 
 # start the figwheel server and cljs repl 
 lein figwheel
@@ -23,7 +23,7 @@ lein figwheel
 in another terminal
 ``` shell
 ## Start exponent server
-yarn run exp start
+npm run exp start
 ```
 
 Once you have a figwheel and exp server running. Open the
@@ -69,3 +69,6 @@ app is architectured.
 ## known problems
 - we are currently using a very outdated version of react native, expo and the expo template
 itself. We are working on it.
+- sometimes the metro packager cannot properly find the source files. In such cases you see an
+error in the terminal like `10:59:42 [exp] NotFoundError: Cannot find entry file target/expo/reagent/impl/template.js.js in any of the roots: ["/Users/Camilo/Proyectos/hive"]`.
+To solve it, simply run `patch node_modules/metro/src/Server/index.js metro.patch`

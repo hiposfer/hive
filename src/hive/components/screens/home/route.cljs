@@ -1,7 +1,6 @@
 (ns hive.components.screens.home.route
   (:require [hive.components.foreigns.react :as react]
             [hive.rework.util :as tool]
-            [datascript.core :as data]
             [hive.rework.core :as work]
             [hive.components.symbols :as symbols]
             [hive.foreigns :as fl]
@@ -48,7 +47,7 @@
 (defn- TransitLine
   [steps expanded?]
   (let [line-height (if expanded? "90%" "80%")
-        stroke      (route-color (:trip/route (:stop_times/trip (first steps))))]
+        stroke      (route-color (:trip/route (:step/trip (first steps))))]
     [:> react/View {:flex 1 :alignItems "center"}
       [:> react/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
@@ -66,17 +65,15 @@
         [:> react/View (merge (symbols/circle micro-circle)
                               {:backgroundColor "slategray"})])]))
 
-
 (defn- StepDetails
   [steps]
-  [:> react/View {:style {:flex 9 :justifyContent "space-around"}}
+  (into [:> react/View {:style {:flex 9 :justifyContent "space-around"}}]
     (for [step steps]
-      ^{:key (hash step)}
       [:> react/Text {:style {:color "gray"}}
         (if (= "transit" (:step/mode step))
           (:step/name step)
-          (str/replace (:maneuver/instruction step)
-                       "[Dummy]" ""))])])
+          (str/replace (:maneuver/instruction (:step/maneuver step))
+                       "[Dummy]" ""))])))
 
 (defn- StepOverview
   [steps expanded?]
@@ -90,7 +87,7 @@
                            :style {:paddingRight 10}
                            :size 22 :color "gray"}]
         [:> react/Text {:style {:color "gray" :paddingRight 7}}
-                       (str/replace (:maneuver/instruction (first steps))
+                       (str/replace (:maneuver/instruction (:step/maneuver (first steps)))
                                     "[Dummy]" "")]]]
     (when @expanded?
       [:> react/View {:flex 5}
@@ -113,24 +110,24 @@
 
 (defn- Route
   [uid]
-  (let [route   @(work/pull! [{:directions/steps [:step/departure :step/mode
-                                                  :step/name :maneuver/instruction
+  (let [route   @(work/pull! [{:directions/steps [:step/arrive :step/mode :step/name
+                                                  {:step/maneuver [:maneuver/instruction]}
                                                   :step/distance
-                                                  {:stop_times/trip [{:trip/route [:route/long_name :route/color]}]}]}]
+                                                  {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
                              [:directions/uuid uid])]
     [:> react/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))
-            :let [departs  (:step/departure (first steps))
-                  iso-time (. ^DateTime departs (toIsoTimeString))
+            :let [arrives  (:step/arrive (first steps))
+                  iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
                   human-time (subs iso-time 0 5)]]
-        ^{:key human-time}
+        ^{:key arrives}
         [RouteSection steps human-time])]))
 
 (defn- SectionIcon
   [steps]
   (if (= "walking" (:step/mode (first steps)))
     [:> expo/Ionicons {:name "ios-walk" :size 32}]
-    (case (:route/type (:trip/route (:stop_times/trip (first steps))))
+    (case (:route/type (:trip/route (:step/trip (first steps))))
       0 [:> expo/Ionicons {:name "ios-train" :size 32}]
       1 [:> expo/Ionicons {:name "ios-subway" :size 32}]
       2 [:> expo/Ionicons {:name "md-train" :size 32}]
@@ -140,7 +137,10 @@
 
 (defn- Transfers
   [route-id]
-  (let [route @(work/pull! [{:directions/steps [:step/mode {:stop_times/trip [{:trip/route [:route/type]}]}]}]
+  (let [route @(work/pull! [{:directions/steps
+                             [:step/arrive
+                              :step/mode
+                              {:step/trip [{:trip/route [:route/type]}]}]}]
                            [:directions/uuid route-id])
         sections (partition-by :step/mode (:directions/steps route))]
     [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
@@ -148,7 +148,7 @@
       (butlast ;; drop last arrow icon
         (interleave
           (for [steps sections]
-            ^{:key (hash steps)}
+            ^{:key (:step/arrive (first steps))}
             [SectionIcon steps])
           (for [i (range (count sections))]
             ^{:key i}
@@ -168,18 +168,19 @@
       [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
        (when (some? duration)
-         (duration/format (* 1000 (. ^Interval duration (getTotalSeconds)))))]]
+         (duration/format (* 1000 duration)))]]
      [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
                     goal]]))
 
 (defn- paths
   [uid]
-  (let [route (work/pull! [{:directions/steps [:step/geometry :step/duration :step/mode
-                                               {:stop_times/trip [{:trip/route [:route/color :route/long_name]}]}]}]
-                          [:directions/uuid uid])]
-    (for [steps (partition-by :step/mode (:directions/steps @route))
+  (let [route @(work/pull! [{:directions/steps
+                             [:step/geometry :step/mode
+                              {:step/trip [{:trip/route [:route/color :route/long_name]}]}]}]
+                           [:directions/uuid uid])]
+    (for [steps (partition-by :step/mode (:directions/steps route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
-                stroke (route-color (:trip/route (:stop_times/trip (first steps))))]]
+                stroke (route-color (:trip/route (:step/trip (first steps))))]]
       ^{:key (hash steps)}
       [:> expo/MapPolyline {:coordinates (map geometry/latlng coords)
                             :strokeColor stroke

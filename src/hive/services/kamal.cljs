@@ -1,24 +1,16 @@
 (ns hive.services.kamal
   (:require [clojure.string :as str]
-            [cljs.tools.reader.edn :as edn]
-            [hive.rework.core :as work])
+            [cljs.tools.reader.edn :as edn])
   (:import (goog.date DateTime Interval)))
 
-(defn read-object
-  [[tag _ text]]
-  (case tag
-    java.time.Duration (Interval.fromIsoString text)
-    java.time.LocalDateTime (DateTime.fromRfc822String text)))
+(def readers {'uuid uuid})
 
-(def readers {'uuid   uuid
-              'object read-object})
-
-(defn- local-time
+(defn- zoned-time
   "returns a compatible Java LocalDateTime string representation"
   ([]
-   (local-time (new DateTime)))
+   (zoned-time (new DateTime)))
   ([^js/DateTime now]
-   (let [gtime (. now (toIsoString true))]
+   (let [gtime (. now (toIsoString true true))]
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
@@ -69,8 +61,8 @@
       (distinct
         (for [step (:directions/steps path)
               :when (= (:step/mode step) "transit")
-              :when (some? (:stop_times/trip step))] ;; check just in case ;)
-          [chain! (:stop_times/trip step) :trip/route])))))
+              :when (some? (:step/trip step))] ;; check just in case ;)
+          [chain! (:step/trip step) :trip/route])))))
 
 
 (defn directions
@@ -80,7 +72,7 @@
    https://www.mapbox.com/api-documentation/#request-format"
   [coordinates departure]
   (let [url (-> (str/replace route-url "{coordinates}" coordinates)
-                (str/replace "{departure}" (local-time departure)))] ;; "2018-05-07T10:15:30"))]
+                (str/replace "{departure}" (js/encodeURIComponent (zoned-time departure))))] ;; "2018-05-07T10:15:30+01:00"))]
     [url {:method "GET"
           :headers {:Accept "application/edn"}}]))
 
