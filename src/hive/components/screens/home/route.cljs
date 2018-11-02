@@ -1,7 +1,6 @@
 (ns hive.components.screens.home.route
   (:require [hive.components.foreigns.react :as react]
             [hive.rework.util :as tool]
-            [datascript.core :as data]
             [hive.rework.core :as work]
             [hive.components.symbols :as symbols]
             [hive.foreigns :as fl]
@@ -66,17 +65,15 @@
         [:> react/View (merge (symbols/circle micro-circle)
                               {:backgroundColor "slategray"})])]))
 
-
 (defn- StepDetails
   [steps]
-  [:> react/View {:style {:flex 9 :justifyContent "space-around"}}
+  (into [:> react/View {:style {:flex 9 :justifyContent "space-around"}}]
     (for [step steps]
-      ^{:key (hash step)}
       [:> react/Text {:style {:color "gray"}}
         (if (= "transit" (:step/mode step))
           (:step/name step)
           (str/replace (:maneuver/instruction (:step/maneuver step))
-                       "[Dummy]" ""))])])
+                       "[Dummy]" ""))])))
 
 (defn- StepOverview
   [steps expanded?]
@@ -90,9 +87,8 @@
                            :style {:paddingRight 10}
                            :size 22 :color "gray"}]
         [:> react/Text {:style {:color "gray" :paddingRight 7}}
-                       (:step/maneuver (first steps))
-                       #_(str/replace (:maneuver/instruction (:step/maneuver (first steps)))
-                                      "[Dummy]" "")]]]
+                       (str/replace (:maneuver/instruction (:step/maneuver (first steps)))
+                                    "[Dummy]" "")]]]
     (when @expanded?
       [:> react/View {:flex 5}
         [StepDetails (butlast (rest steps))]])
@@ -115,7 +111,7 @@
 (defn- Route
   [uid]
   (let [route   @(work/pull! [{:directions/steps [:step/arrive :step/mode :step/name
-                                                  {:step:maneuver [:maneuver/instruction]}
+                                                  {:step/maneuver [:maneuver/instruction]}
                                                   :step/distance
                                                   {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
                              [:directions/uuid uid])]
@@ -124,7 +120,7 @@
             :let [arrives  (:step/arrive (first steps))
                   iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
                   human-time (subs iso-time 0 5)]]
-        ^{:key human-time}
+        ^{:key arrives}
         [RouteSection steps human-time])]))
 
 (defn- SectionIcon

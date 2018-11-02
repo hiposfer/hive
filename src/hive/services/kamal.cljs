@@ -61,8 +61,8 @@
       (distinct
         (for [step (:directions/steps path)
               :when (= (:step/mode step) "transit")
-              :when (some? (:stop_times/trip step))] ;; check just in case ;)
-          [chain! (:stop_times/trip step) :trip/route])))))
+              :when (some? (:step/trip step))] ;; check just in case ;)
+          [chain! (:step/trip step) :trip/route])))))
 
 
 (defn directions
