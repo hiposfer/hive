@@ -137,7 +137,10 @@
 
 (defn- Transfers
   [route-id]
-  (let [route @(work/pull! [{:directions/steps [:step/mode {:step/trip [{:trip/route [:route/type]}]}]}]
+  (let [route @(work/pull! [{:directions/steps
+                             [:step/arrive
+                              :step/mode
+                              {:step/trip [{:trip/route [:route/type]}]}]}]
                            [:directions/uuid route-id])
         sections (partition-by :step/mode (:directions/steps route))]
     [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
@@ -145,7 +148,7 @@
       (butlast ;; drop last arrow icon
         (interleave
           (for [steps sections]
-            ^{:key (hash steps)}
+            ^{:key (:step/arrive (first steps))}
             [SectionIcon steps])
           (for [i (range (count sections))]
             ^{:key i}
