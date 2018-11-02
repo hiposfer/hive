@@ -1,0 +1,28 @@
+--- index.js	2018-06-27 00:36:07.226552711 +0200
++++ node_modules/metro/src/Server/index.js	2018-06-27 00:37:03.010362163 +0200
+@@ -775,7 +775,7 @@
+
+     // Backwards compatibility. Options used to be as added as '.' to the
+     // entry module name. We can safely remove these options.
+-    const entryFile =
++    let entryFile =
+     pathname.
+     replace(/^\//, '').
+     split('.').
+@@ -795,7 +795,8 @@
+       }
+       return true;
+     }).
+-    join('.') + '.js';
++    join('.');
++    entryFile = entryFile.endsWith('.js') ? entryFile : entryFile + '.js';
+
+     // try to get the platform from the url
+     const platform =
+@@ -906,4 +907,4 @@
+   }
+ }
+
+-module.exports = Server;
+\ No newline at end of file
++module.exports = Server;

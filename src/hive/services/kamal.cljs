@@ -3,32 +3,19 @@
             [cljs.tools.reader.edn :as edn])
   (:import (goog.date DateTime Interval)))
 
-(defn read-object
-  [[tag _ text]]
-  (case tag
-    java.time.Duration (Interval.fromIsoString text)
-    java.time.LocalDateTime (DateTime.fromRfc822String text)))
+(def readers {'uuid uuid})
 
-(defn point
-  [location]
-  {:type "Point"
-   :coordinates [(:lon location) (:lat location)]})
-
-(def readers {'uuid   uuid
-              ;; TODO: do I need a more specific representation?
-              'hiposfer.kamal.network.core.Location point
-              'object read-object})
-
-(defn- local-time
+(defn- zoned-time
   "returns a compatible Java LocalDateTime string representation"
   ([]
-   (local-time (new DateTime)))
+   (zoned-time (new DateTime)))
   ([^js/DateTime now]
-   (str/replace (. now (toIsoString true true)) " " "T")))
+   (let [gtime (. now (toIsoString true true))]
+     (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
-(def route-url "http://192.168.0.45:3000/area/Frankfurt_am_Main/directions?coordinates={coordinates}&departure={departure}")
-(def entity-url "http://192.168.0.45:3000/area/Frankfurt_am_Main/{entity}/{id}")
+(def route-url "http://192.168.0.45:3000/area/frankfurt/directions?coordinates={coordinates}&departure={departure}")
+(def entity-url "http://192.168.0.45:3000/area/frankfurt/{entity}/{id}")
 
 (defn entity
   "ref is a map with a single key value pair of the form {:trip/id 2}"
@@ -67,14 +54,15 @@
   "takes a kamal directions response and attaches it to the current user.
   Further trip information is also retrieved"
   [path user]
-  (concat [path
-           {:user/uid        user
-            :user/directions [:directions/uuid (:directions/uuid path)]}]
-    (distinct
-      (for [step (:directions/steps path)
-            :when (= (:step/mode step) "transit")
-            :when (some? (:stop_times/trip step))] ;; check just in case ;)
-        [chain! (:stop_times/trip step) :trip/route]))))
+  (let [base [path
+              {:user/uid        user
+               :user/directions [:directions/uuid (:directions/uuid path)]}]]
+    (concat base
+      (distinct
+        (for [step (:directions/steps path)
+              :when (= (:step/mode step) "transit")
+              :when (some? (:step/trip step))] ;; check just in case ;)
+          [chain! (:step/trip step) :trip/route])))))
 
 
 (defn directions
@@ -84,7 +72,7 @@
    https://www.mapbox.com/api-documentation/#request-format"
   [coordinates departure]
   (let [url (-> (str/replace route-url "{coordinates}" coordinates)
-                (str/replace "{departure}" (js/encodeURIComponent (local-time departure))))]
+                (str/replace "{departure}" (js/encodeURIComponent (zoned-time departure))))] ;; "2018-05-07T10:15:30+01:00"))]
     [url {:method "GET"
           :headers {:Accept "application/edn"}}]))
 

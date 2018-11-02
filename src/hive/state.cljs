@@ -62,6 +62,10 @@
              :directions/uuid       {:db.unique :db.unique/identity}
              :directions/steps      {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/many}
+             :step/maneuver         {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
+             :step/trip             {:db.valueType   :db.type/ref
+                                     :db.cardinality :db.cardinality/one}
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}
              ;; GTFS entities
