@@ -9,6 +9,7 @@
             [hive.queries :as queries]
             [hive.rework.util :as tool]
             [hive.components.screens.home.core :as home]
+            [hive.components.screens.home.gtfs :as gtfs]
             [hive.components.screens.errors :as errors]
             [hive.components.router :as router]
             [hive.components.screens.settings.core :as settings]
@@ -53,6 +54,7 @@
   (let [Navigator (rn-nav/stack-navigator
                     {:home           {:screen (screenify home/Home {:title "map"})}
                      :directions     {:screen (screenify route/Instructions {:title "directions"})}
+                     :gtfs           {:screen (screenify gtfs/Data {:title "gtfs"})}
                      :settings       {:screen (screenify settings/Settings {:title "settings"})}
                      :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
                      :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
@@ -100,7 +102,8 @@
     ;; firebase related funcionality ...............
     (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
-    (.. (sqlite/read!)
+    (.. (sqlite/CLEAR!!) ;; TODO: remove this
+        (then #(sqlite/read!))
         (then work/transact!)
         ;; listen only AFTER restoration
         (then #(sqlite/listen! conn))

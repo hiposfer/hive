@@ -84,10 +84,12 @@
 
   All gtfs trips and route are also requested"
   ^js/Promise
-  [coordinates departure user]
-  (let [[url opts] (directions coordinates departure)]
-    (.. (js/fetch url (clj->js opts))
-        (then (fn [^js/Response response] (. response (text))))
-        (then #(edn/read-string {:readers readers} %))
-        (then #(process-directions % user)))))
+  ([coordinates user departure]
+   (let [[url opts] (directions coordinates departure)]
+     (.. (js/fetch url (clj->js opts))
+         (then (fn [^js/Response response] (. response (text))))
+         (then #(edn/read-string {:readers readers} %))
+         (then #(process-directions % user)))))
         ;; TODO: error handling
+  ([coordinates user]
+   (directions! coordinates user (new DateTime))))

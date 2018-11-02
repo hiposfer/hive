@@ -8,10 +8,7 @@
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
             [reagent.core :as r]
-            [clojure.string :as str])
-  (:import [goog.date Interval DateTime]))
-
-;(.. DateTime (fromRfc822String "2018-05-07T10:15:30"))
+            [clojure.string :as str]))
 
 (def big-circle 16)
 (def small-circle 10)
@@ -65,18 +62,26 @@
         [:> react/View (merge (symbols/circle micro-circle)
                               {:backgroundColor "slategray"})])]))
 
+#_(defn- onStopPress
+    [props step]
+    (let [navigate (:navigate (:navigation props))
+          stop     (select-keys (:stop_times/stop step) [:stop/id])]
+      [[navigate "gtfs" stop]
+       [kamal/entity! stop]]))
+
 (defn- StepDetails
-  [steps]
+  [props steps]
   (into [:> react/View {:style {:flex 9 :justifyContent "space-around"}}]
     (for [step steps]
-      [:> react/Text {:style {:color "gray"}}
-        (if (= "transit" (:step/mode step))
-          (:step/name step)
-          (str/replace (:maneuver/instruction (:step/maneuver step))
-                       "[Dummy]" ""))])))
+      (if (= "transit" (:step/mode step))
+        ;[:> react/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
+        [:> react/Text {:style {:color "gray"}} (:step/name step)]
+        [:> react/Text {:style {:color "gray"}}
+                       (str/replace (:maneuver/instruction (:step/maneuver step))
+                                    "[Dummy]" "")]))))
 
 (defn- StepOverview
-  [steps expanded?]
+  [props steps expanded?]
   [:> react/View {:flex 9 :justifyContent "space-between"}
     [:> react/Text {:style {:flex 1}} (some :step/name (butlast steps))]
     [:> react/TouchableOpacity {:style {:flex (if @expanded? 2 5)
@@ -91,11 +96,11 @@
                                     "[Dummy]" "")]]]
     (when @expanded?
       [:> react/View {:flex 5}
-        [StepDetails (butlast (rest steps))]])
+        [StepDetails props (butlast (rest steps))]])
     [:> react/Text {:style {:flex 1}} (:step/name (last steps))]])
 
 (defn- RouteSection
-  [steps human-time]
+  [props steps human-time]
   (r/with-let [expanded? (r/atom false)]
     (let [subsize (* subsection-height (count steps))
           height  (+ section-height (if @expanded? subsize 0))]
@@ -106,14 +111,17 @@
         (if (= "walking" (:step/mode (first steps)))
           [WalkingSymbols steps @expanded?]
           [TransitLine steps @expanded?])
-        [StepOverview steps expanded?]])))
+        [StepOverview props steps expanded?]])))
 
 (defn- Route
-  [uid]
-  (let [route   @(work/pull! [{:directions/steps [:step/arrive :step/mode :step/name
-                                                  {:step/maneuver [:maneuver/instruction]}
-                                                  :step/distance
-                                                  {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
+  [props uid]
+  (let [route   @(work/pull! [{:directions/steps
+                               [:step/arrive
+                                :step/mode
+                                :step/name
+                                {:step/maneuver [:maneuver/instruction]}
+                                :step/distance
+                                {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
                              [:directions/uuid uid])]
     [:> react/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))
@@ -121,7 +129,7 @@
                   iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
                   human-time (subs iso-time 0 5)]]
         ^{:key arrives}
-        [RouteSection steps human-time])]))
+        [RouteSection props steps human-time])]))
 
 (defn- SectionIcon
   [steps]
@@ -204,7 +212,7 @@
         (when (some? uid)
           [Info {:flex 1 :paddingTop "1%"} uid])
         (when (some? uid)
-          [Route uid])]
+          [Route props uid])]
       [:> react/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
