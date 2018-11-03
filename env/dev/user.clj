@@ -6,10 +6,21 @@
             [hawk.core :as hawk]
             [clojure.tools.reader.edn :as edn]
             [clojure.tools.reader :as reader]
-            [clojure.tools.reader.reader-types :refer [string-push-back-reader]])
+            [clojure.tools.reader.reader-types :refer [string-push-back-reader]]
+            [clojure.walk :as walk]
+            [clojure.java.io :as jio])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
-           (java.io File PushbackReader)))
+           (java.io File PushbackReader Writer)))
 ;; This namespace is loaded automatically by nREPL
+
+(defn spit-clojure
+  "Oppsite of slurp. Opens f with writer, writes each item in coll, then
+  closes f. Options passed to clojure.java.io/writer."
+  {:added "1.2"}
+  [f coll & options]
+  (with-open [^Writer w (apply jio/writer f options)]
+    (doseq [item coll]
+      (.write w (str item "\n")))))
 
 (defn- read-clj
   "read a clojure file into a sequence of edn objects.
@@ -58,8 +69,7 @@
 
 (defn get-expo-settings []
   (try
-    (let [settings (-> (slurp ".expo/settings.json") json/read-str)]
-      settings)
+    (json/read-str (slurp ".expo/settings.json"))
     (catch Exception _
       nil)))
 
@@ -79,7 +89,7 @@
       nil)))
 
 (defn- standard-ip
-  "attemps to check the lan ip through the Java API"
+  "attempts to check the lan ip through the Java API"
   []
   (cond
     (some #{(System/getProperty "os.name")} ["Mac OS X" "Windows 10"])
@@ -116,80 +126,85 @@
     ip))
 
 (defn get-expo-ip []
-  (if-let [expo-settings (get-expo-settings)]
-    (case (get expo-settings "hostType")
-      "lan" (get-lan-ip)
-      "localhost" "localhost"
-      "tunnel" (throw (Exception. "Expo Setting tunnel doesn't work with figwheel.  Please set to LAN or Localhost.")))
-    "localhost"))                                         ;; default
+  (let [expo-settings (get-expo-settings)]
+    (if (nil? expo-settings)
+      "localhost"
+      (case (get expo-settings "hostType")
+        "lan" (get-lan-ip)
+        "localhost" "localhost"
+        "tunnel" (throw (ex-info (str "Expo Setting tunnel doesn't work with figwheel."
+                                      "Please set to LAN or Localhost.")
+                                 {}))))))
+
+(def env-dev '((ns env.dev)
+               (def hostname ::hostname)
+               (def ip ::ip)))
 
 (defn write-env-dev
   "First check the .expo/settings.json file to see what host is specified.  Then set the appropriate IP."
   []
   (let [hostname (.getHostName (InetAddress/getLocalHost))
-        ip (get-expo-ip)]
-    (-> "
-    (ns env.dev)
+        ip       (get-expo-ip)
+        dev-ns   (walk/postwalk-replace {::hostname hostname ::ip ip} env-dev)]
+    (spit-clojure "env/dev/env/dev.cljs" dev-ns)))
 
-    (def hostname \"%s\")
-    (def ip \"%s\")"
-        (format
-          hostname
-          ip)
-        ((partial spit "env/dev/env/dev.cljs")))))
+(def env-index '((ns env.index)
+                 ;; undo main.js goog preamble hack
+                 (set! js/window.goog js/undefined)
+                 ;; ...............................
+                 (-> (js/require "figwheel-bridge")
+                     (.withModules ::js-tag ::modules)
+                     (.start "main" "expo" ::ip))))
 
+(defn- normalize-filename
+  "removes specials characters from the asset filepath"
+  [filepath]
+  (-> filepath (str/replace "\\" "/")
+               (str/replace "@2x" "")
+               (str/replace "@3x" "")))
+
+(defn- fake-require
+  [module]
+  (walk/postwalk-replace {::module module}
+                         '(js/require ::module)))
+
+;; HACK: this functions pressumes the location of the running code to be
+;; inside target/expo/env
 (defn rebuild-env-index
   "prebuild the set of files that the metro packager requires in advance"
   [m]
-  (let [mods    (flatten (vals m))
-        devHost (get-expo-ip)
-        modules (->> (file-seq (io/file "assets"))
-                     (filter #(and (not (re-find #"DS_Store" (str %)))
-                                   (.isFile %)))
-                     (map (fn [file] (when-let [unix-path (->> file .toPath .iterator iterator-seq (str/join "/"))]
-                                       (str "../../" unix-path))))
-                     (concat mods ["react" "react-native" "expo" "create-react-class"])
-                     (distinct))
-        modules-map (zipmap
-                      (->> modules
-                           (map #(str "\""
-                                      (if (str/starts-with? % "../../assets")
-                                        (-> %
-                                            (str/replace "../../" "./")
-                                            (str/replace "\\" "/")
-                                            (str/replace "@2x" "")
-                                            (str/replace "@3x" ""))
-                                        %)
-                                      "\"")))
-                      (->> modules
-                           (map #(format "(js/require \"%s\")"
-                                         (-> %
-                                             (str/replace "../../" "../../../")
-                                             (str/replace "\\" "/")
-                                             (str/replace "@2x" "")
-                                             (str/replace "@3x" ""))))))]
+  (let [devHost     (get-expo-ip)
+        modules     (concat (flatten (vals m))
+                            ["react" "react-native" "expo" "create-react-class"])
+        entries     (concat
+                      (for [module modules]
+                        [module (fake-require module)])
+        ;; HACK: concat assets second to overwrite the entries from modules
+                      (for [file (file-seq (io/file "assets"))
+                            :when (.isFile file)
+                            :when (not (re-find #"DS_Store" (str file)))
+                            :let [unix-path (->> file .toPath
+                                                 .iterator
+                                                 iterator-seq
+                                                 (str/join "/"))
+                                  normal    (normalize-filename unix-path)]]
+                        [(str "./" normal)
+                         (fake-require (str "../../../" normal))]))
+        modules-map (into {} entries)]
     (try
-      (-> "
-      (ns env.index
-        (:require [env.dev :as dev]))
-
-      ;; undo main.js goog preamble hack
-      (set! js/window.goog js/undefined)
-
-      (-> (js/require \"figwheel-bridge\")
-          (.withModules %s)
-          (.start \"main\" \"expo\" \"%s\"))"
-          (format
-            (str "#js " (with-out-str (println modules-map)))
-            devHost)
-          ((partial spit "env/dev/env/index.cljs")))
-
+      (spit-clojure "env/dev/env/index.cljs"
+        (walk/postwalk-replace {::js-tag  (symbol "#js")
+                                ::modules modules-map
+                                ::ip devHost}
+                               env-index))
       (catch Exception e
         (println "Error: " e)))))
 
 (def user-dir (System/getProperty "user.dir"))
 
 (def modules-file ".js-modules.edn")
+
+;(rebuild-env-index (edn/read-string (slurp modules-file)))
 
 (defn relative-path
   "transforms an absolute filename to a relative one. Relative to the current user.dir"
@@ -257,11 +272,6 @@
                  :handler hawk-handler}])
   (ra/start-figwheel! "main")
   (ra/cljs-repl))
-
-(defn stop-figwheel
-  "Stops figwheel"
-  []
-  (ra/stop-figwheel!))
 
 (defn -main
   [args]
