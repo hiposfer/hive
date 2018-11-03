@@ -1,0 +1,9 @@
+(ns env.index)
+
+;; undo main.js goog preamble hack
+(set! js/window.goog js/undefined)
+
+;; ...............................
+(doto (js/require "figwheel-bridge")
+      (.withModules :tag/js :tag/modules)
+      (.start "main" "expo" :tag/ip))
