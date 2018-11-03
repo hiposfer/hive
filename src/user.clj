@@ -1,4 +1,4 @@
-(ns user
+(ns user ;; This namespace is loaded automatically by nREPL
   (:require [hawk.core :as hawk]
             [clojure.walk :as walk]
             [clojure.java.io :as io]
@@ -7,10 +7,23 @@
             [clojure.data.json :as json]
             [clojure.tools.reader.edn :as edn]
             [clojure.tools.reader :as reader]
-            [figwheel-sidecar.repl-api :as ra])
+            [figwheel-sidecar.repl-api :as ra]
+            [clojure.pprint :as pprint])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
            (java.io File PushbackReader Writer)))
-;; This namespace is loaded automatically by nREPL
+
+;; useful constants
+(def user-dir (System/getProperty "user.dir"))
+
+(def modules-cache ".js-modules.edn")
+
+(def source-dir "src")
+
+(def dev-env {:dev   {:edn "resources/dev/dev.edn" :cljs "src/env/dev.cljs"}
+              :index {:edn "resources/dev/index.edn" :cljs "src/env/index.cljs"}
+              :main  {:edn "resources/dev/main.edn" :cljs "src/env/expo/main.cljs"}})
+;; ............................................................................
+
 
 (defn spit-clojure
   "Oppsite of slurp. Opens f with writer, writes each item in coll, then
@@ -19,7 +32,7 @@
   [f coll & options]
   (with-open [^Writer w (apply jio/writer f options)]
     (doseq [item coll]
-      (.write w (str item "\n")))))
+      (.write w (with-out-str (pprint/pprint item))))))
 
 (defn- read-clojure-dirty
   "read a clojure file into a sequence of edn objects.
@@ -134,8 +147,6 @@
                                       "Please set to LAN or Localhost.")
                                  {}))))))
 
-(def env-dev (read-edn-seq "resources/dev/dev.edn"))
-
 (defn write-env-dev
   "First check the .expo/settings.json file to see what host is specified.  Then set the appropriate IP."
   []
@@ -143,11 +154,8 @@
         ip       (get-expo-ip)
         dev-ns   (walk/postwalk-replace {:tag/hostname hostname
                                          :tag/ip       ip}
-                                        env-dev)]
-    (io/make-parents "src/env/dev.cljs")
-    (spit-clojure "src/env/dev.cljs" dev-ns)))
-
-(def env-index (read-edn-seq "resources/dev/index.edn"))
+                                        (read-edn-seq (get-in dev-env [:dev :edn])))]
+    (spit-clojure (get-in dev-env [:dev :cljs]) dev-ns)))
 
 (defn- normalize-filename
   "removes specials characters from the asset filepath"
@@ -185,18 +193,13 @@
                          (fake-require (str "../../../" normal))]))
         modules-map (into {} entries)]
     (try
-      (io/make-parents "src/env/index.cljs")
-      (spit-clojure "src/env/index.cljs"
-        (walk/postwalk-replace {:tag/js      (symbol "#js")
-                                :tag/modules modules-map
-                                :tag/ip      devHost}
-                               env-index))
+      (spit-clojure (get-in dev-env [:index :cljs])
+                    (walk/postwalk-replace {:tag/js      (symbol "#js")
+                                            :tag/modules modules-map
+                                            :tag/ip      devHost}
+                                           (read-edn-seq (get-in dev-env [:index :edn]))))
       (catch Exception e
         (println "Error: " e)))))
-
-(def user-dir (System/getProperty "user.dir"))
-
-(def modules-cache ".js-modules.edn")
 
 ;(rebuild-env-index (edn/read-string (slurp modules-file)))
 
@@ -235,8 +238,6 @@
       (rebuild-env-index new-modules))
     ctx))
 
-(def source-dir "src/hive")
-
 (defn rebuild-modules-cache!
   "traverse src dir and fetch all modules"
   []
@@ -249,7 +250,7 @@
         modules (into {} mapping)]
     (spit modules-cache modules)))
 
-  ;; Lein
+;; Lein
 (defn start-figwheel!
   "Start figwheel for one or more builds"
   [];& build-ids]
@@ -259,9 +260,8 @@
   (io/copy (io/file "resources/dev/main.js")
            (io/file "main.js"))
   (write-env-dev)
-  (io/make-parents "src/env/expo/main.cljs")
-  (io/copy (io/file "resources/dev/main.edn")
-           (io/file "src/env/expo/main.cljs"))
+  (io/copy (io/file (get-in dev-env [:main :edn]))
+           (io/file (get-in dev-env [:main :cljs])))
   ;; Each file maybe corresponds to multiple modules.
   (hawk/watch! [{:paths   [source-dir]
                  :filter  (fn cljs-file??
@@ -275,14 +275,16 @@
   [args]
   (case args
     "--figwheel"
-    (start-figwheel!)
+    (do (doseq [file (map :cljs (vals dev-env))]
+          (io/make-parents file))
+        (start-figwheel!))
 
     "--prepare-release"
     ;; assumes the dev env files were cleaned :)
-    (do (io/delete-file "src/env/index.cljs" :silently true)
-        (io/delete-file "src/env/dev.cljs" :silently true)
-        (io/copy (io/file "resources/release/main.edn")
-                 (io/file "src/env/expo/main.cljs")))
+    (do (doseq [file (map :cljs (vals dev-env))]
+          (io/delete-file file :silently true))
+        (io/copy (io/file (io/file "resources/release/main.edn"))
+                 (io/file (get-in dev-env [:main :cljs]))))
 
     "--rebuild-modules"
     (rebuild-modules-cache!)))
