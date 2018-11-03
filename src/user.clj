@@ -268,7 +268,7 @@
                             [_ {:keys [file]}]
                             (cljs-file? file))
                  :handler hawk-handler}])
-  (ra/start-figwheel! "main")
+  (ra/start-figwheel! "development")
   (ra/cljs-repl))
 
 (defn- prepare-env!

@@ -19,29 +19,31 @@
   :aliases {"figwheel"   ["run" "-m" "user" "--figwheel"]
             "prod-build" ["do" ["clean"]
                                ["run" "-m" "user" "--prepare-release"]
-                               ["with-profile" "prod" "cljsbuild" "once" "main"]]}
+                               ["cljsbuild" "once" "release"]]}
   :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.14"]
                                    [com.cemerick/piggieback "0.2.1"]
                                    [org.clojure/test.check "0.9.0"]]
-                    :cljsbuild    {:builds [{:id           "main"
-                                             :source-paths ["src"]
-                                             :figwheel     true
-                                             :compiler     {:output-to     "target/expo/not-used.js"
-                                                            :main          "env.expo.main"
-                                                            :infer-externs  true
-                                                            :output-dir    "target/expo"
-                                                            :optimizations :none}}]}
-                    :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}
-             :prod {:cljsbuild {:builds [{:id           "main"
-                                          :source-paths ["src"]
-                                          :compiler     {:output-to          "main.js"
-                                                         :main               "env.expo.main"
-                                                         :output-dir         "target/expo"
-                                                         :static-fns         true
-                                                         :fn-invoke-direct   true
-                                                         :externs            ["js/externs.js"]
-                                                         :infer-externs      true
-                                                         :parallel-build     true
-                                                         :optimize-constants true
-                                                         :optimizations      :advanced
-                                                         :closure-defines    {"goog.DEBUG" false}}}]}}})
+                    :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}}
+
+  :cljsbuild {:builds [{:id           "development"
+                        :source-paths ["src"]
+                        :figwheel     true
+                        :compiler     {:output-to "target/expo/not-used.js"}
+                        :main          "env.expo.main"
+                        :infer-externs  true
+                        :output-dir    "target/expo"
+                        :optimizations :none}
+
+                       {:id           "release"
+                        :source-paths ["src"]
+                        :compiler     {:output-to          "main.js"
+                                       :main               "env.expo.main"
+                                       :output-dir         "target/expo"
+                                       :static-fns         true
+                                       :fn-invoke-direct   true
+                                       :externs            ["js/externs.js"]
+                                       :infer-externs      true
+                                       :parallel-build     true
+                                       :optimize-constants true
+                                       :optimizations      :advanced
+                                       :closure-defines    {"goog.DEBUG" false}}}]})
