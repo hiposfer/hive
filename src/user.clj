@@ -1,14 +1,13 @@
 (ns user
-  (:require [figwheel-sidecar.repl-api :as ra]
+  (:require [hawk.core :as hawk]
+            [clojure.walk :as walk]
             [clojure.java.io :as io]
-            [clojure.data.json :as json]
             [clojure.string :as str]
-            [hawk.core :as hawk]
+            [clojure.java.io :as jio]
+            [clojure.data.json :as json]
             [clojure.tools.reader.edn :as edn]
             [clojure.tools.reader :as reader]
-            [clojure.tools.reader.reader-types :refer [string-push-back-reader]]
-            [clojure.walk :as walk]
-            [clojure.java.io :as jio])
+            [figwheel-sidecar.repl-api :as ra])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
            (java.io File PushbackReader Writer)))
 ;; This namespace is loaded automatically by nREPL
@@ -22,7 +21,7 @@
     (doseq [item coll]
       (.write w (str item "\n")))))
 
-(defn- read-clj
+(defn- read-clojure-dirty
   "read a clojure file into a sequence of edn objects.
 
   WARNING:
@@ -31,20 +30,31 @@
    of it. Only your own code will be read though so nothing should happen
    here that was not meant to happen in your original code base"
   [filename]
-  (binding [reader/*alias-map* identity
+  (binding [reader/*alias-map*              identity
             reader/*default-data-reader-fn* (fn [tag v] v)
-            reader/*read-eval* false]
+            reader/*read-eval*              false]
     (with-open [infile (PushbackReader. (io/reader filename))]
-      (->> (repeatedly #(reader/read {:read-cond :allow
-                                      :features #{:cljs}
-                                      :eof ::eof}
-                                     infile))
-           (take-while #(not= ::eof %))
-           (doall)))))
+      (doall (for [_ (range)
+                   :let [form (reader/read {:read-cond :allow
+                                            :features  #{:cljs}
+                                            :eof       ::eof}
+                                           infile)]
+                   :while (not= ::eof form)]
+               form)))))
+
+(defn- read-edn-seq
+  "read an EDN file containing more than one element"
+  [filename]
+  (with-open [infile (PushbackReader. (io/reader filename))]
+    (doall (for [_ (range)
+                 :let [form (edn/read {:eof ::eof} infile)]
+                 :while (not= ::eof form)]
+             form))))
 
 (defn- cljs-file?
   [^File file]
-  (and (. file (isFile)) (str/ends-with? (. file (getPath)) ".cljs")))
+  (and (. file (isFile))
+       (str/ends-with? (. file (getPath)) ".cljs")))
 
 (defn enable-source-maps
   "patch the metro packager to use Clojurescript source maps"
@@ -54,18 +64,6 @@
     (spit path (str/replace content #"match\(\/\\.map\$\/\)"
                                     "match(/main\\.*\\\\.map\\$/)"))
     (println "Source maps enabled.")))
-
-(defn write-main-js
-  "create a fake main.js file to make the metro packager happy"
-  []
-  (spit "main.js"
-    "'use strict';
-    // cljsbuild adds a preamble mentioning goog so hack around it
-    window.goog = {
-      provide: function() {},
-      require: function() {},
-      };
-    require('./target/expo/env/index.js');"))
 
 (defn get-expo-settings []
   (try
@@ -136,25 +134,20 @@
                                       "Please set to LAN or Localhost.")
                                  {}))))))
 
-(def env-dev '((ns env.dev)
-               (def hostname ::hostname)
-               (def ip ::ip)))
+(def env-dev (read-edn-seq "resources/dev/dev.edn"))
 
 (defn write-env-dev
   "First check the .expo/settings.json file to see what host is specified.  Then set the appropriate IP."
   []
   (let [hostname (.getHostName (InetAddress/getLocalHost))
         ip       (get-expo-ip)
-        dev-ns   (walk/postwalk-replace {::hostname hostname ::ip ip} env-dev)]
-    (spit-clojure "env/dev/env/dev.cljs" dev-ns)))
+        dev-ns   (walk/postwalk-replace {:tag/hostname hostname
+                                         :tag/ip       ip}
+                                        env-dev)]
+    (io/make-parents "src/env/dev.cljs")
+    (spit-clojure "src/env/dev.cljs" dev-ns)))
 
-(def env-index '((ns env.index)
-                 ;; undo main.js goog preamble hack
-                 (set! js/window.goog js/undefined)
-                 ;; ...............................
-                 (-> (js/require "figwheel-bridge")
-                     (.withModules ::js-tag ::modules)
-                     (.start "main" "expo" ::ip))))
+(def env-index (read-edn-seq "resources/dev/index.edn"))
 
 (defn- normalize-filename
   "removes specials characters from the asset filepath"
@@ -168,7 +161,7 @@
   (walk/postwalk-replace {::module module}
                          '(js/require ::module)))
 
-;; HACK: this functions pressumes the location of the running code to be
+;; HACK: this functions presumes the location of the running code to be
 ;; inside target/expo/env
 (defn rebuild-env-index
   "prebuild the set of files that the metro packager requires in advance"
@@ -192,17 +185,18 @@
                          (fake-require (str "../../../" normal))]))
         modules-map (into {} entries)]
     (try
-      (spit-clojure "env/dev/env/index.cljs"
-        (walk/postwalk-replace {::js-tag  (symbol "#js")
-                                ::modules modules-map
-                                ::ip devHost}
+      (io/make-parents "src/env/index.cljs")
+      (spit-clojure "src/env/index.cljs"
+        (walk/postwalk-replace {:tag/js      (symbol "#js")
+                                :tag/modules modules-map
+                                :tag/ip      devHost}
                                env-index))
       (catch Exception e
         (println "Error: " e)))))
 
 (def user-dir (System/getProperty "user.dir"))
 
-(def modules-file ".js-modules.edn")
+(def modules-cache ".js-modules.edn")
 
 ;(rebuild-env-index (edn/read-string (slurp modules-file)))
 
@@ -215,7 +209,7 @@
   "returns a vector of string with the names of the imported modules. Ignoring those
   that are commented out"
   [filename]
-  (->> (read-clj filename)
+  (->> (read-clojure-dirty filename)
        (tree-seq seq? seq) ;; read all function calls
        (filter seq?) ;; filter only function calls
        (filter #(= 'js/require (first %))) ;; only js/require
@@ -234,40 +228,44 @@
 
 (defn- hawk-handler
   [ctx {:keys [kind file] :as event}]
-  (let [old-modules (edn/read-string (slurp modules-file))
+  (let [old-modules (edn/read-string (slurp modules-cache))
         new-modules (on-file-change old-modules kind file)]
     (when (not= old-modules new-modules)
-      (spit modules-file new-modules)
+      (spit modules-cache new-modules)
       (rebuild-env-index new-modules))
     ctx))
 
-(defn rebuild-modules
+(def source-dir "src/hive")
+
+(defn rebuild-modules-cache!
+  "traverse src dir and fetch all modules"
   []
-   ;; traverse src dir and fetch all modules
-  (let [mapping (for [fs (file-seq (File. "src"))
+  (let [mapping (for [fs (file-seq (io/file source-dir))
                       :when (cljs-file? fs)
                       :let [filename (relative-path fs)]
                       :let [js-modules (required-modules filename)]
                       :when (not-empty js-modules)]
                   [filename (vec js-modules)])
         modules (into {} mapping)]
-    (spit modules-file modules)))
+    (spit modules-cache modules)))
 
   ;; Lein
-(defn start-figwheel
+(defn start-figwheel!
   "Start figwheel for one or more builds"
   [];& build-ids]
-  ;; delete previous file
-  (when (.exists (File. ^String modules-file))
-    (io/delete-file modules-file))
-  (rebuild-modules)
-  (rebuild-env-index (edn/read-string (slurp modules-file)))
+  (rebuild-modules-cache!)
+  (rebuild-env-index (edn/read-string (slurp modules-cache)))
   (enable-source-maps)
-  (write-main-js)
+  (io/copy (io/file "resources/dev/main.js")
+           (io/file "main.js"))
   (write-env-dev)
+  (io/make-parents "src/env/expo/main.cljs")
+  (io/copy (io/file "resources/dev/main.edn")
+           (io/file "src/env/expo/main.cljs"))
   ;; Each file maybe corresponds to multiple modules.
-  (hawk/watch! [{:paths   ["src"]
-                 :filter  (fn cljs-file?? [_ {:keys [file]}]
+  (hawk/watch! [{:paths   [source-dir]
+                 :filter  (fn cljs-file??
+                            [_ {:keys [file]}]
                             (cljs-file? file))
                  :handler hawk-handler}])
   (ra/start-figwheel! "main")
@@ -277,9 +275,14 @@
   [args]
   (case args
     "--figwheel"
-    (start-figwheel)
+    (start-figwheel!)
+
+    "--prepare-release"
+    ;; assumes the dev env files were cleaned :)
+    (do (io/delete-file "src/env/index.cljs" :silently true)
+        (io/delete-file "src/env/dev.cljs" :silently true)
+        (io/copy (io/file "resources/release/main.edn")
+                 (io/file "src/env/expo/main.cljs")))
 
     "--rebuild-modules"
-    (rebuild-modules)
-
-    (prn "You can run lein figwheel or lein rebuild-modules.")))
+    (rebuild-modules-cache!)))
