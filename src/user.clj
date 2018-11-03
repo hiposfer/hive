@@ -271,18 +271,23 @@
   (ra/start-figwheel! "main")
   (ra/cljs-repl))
 
+(defn- prepare-env!
+  []
+  (doseq [file (map :cljs (vals dev-env))]
+    (io/make-parents file))
+  (doseq [file (map :cljs (vals dev-env))]
+    (io/delete-file file :silently true)))
+
 (defn -main
   [args]
   (case args
     "--figwheel"
-    (do (doseq [file (map :cljs (vals dev-env))]
-          (io/make-parents file))
+    (do (prepare-env!)
         (start-figwheel!))
 
     "--prepare-release"
     ;; assumes the dev env files were cleaned :)
-    (do (doseq [file (map :cljs (vals dev-env))]
-          (io/delete-file file :silently true))
+    (do (prepare-env!)
         (io/copy (io/file (io/file "resources/release/main.edn"))
                  (io/file (get-in dev-env [:main :cljs]))))
 
