@@ -8,7 +8,7 @@
                  [org.clojure/clojurescript "1.10.339"]
                  [react-native-externs "0.2.0"]
                  [org.clojure/core.async "0.3.465"]
-                 [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
+                 [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
                  [expound "0.7.0"]
                  [cljs-react-navigation "0.1.1"]
@@ -28,9 +28,10 @@
   :cljsbuild {:builds [{:id           "main" ;; do NOT change this - used by figwheel bridge
                         :source-paths ["src"]
                         :figwheel     true
-                        :compiler     {:output-to     "target/expo/not-used.js"
+                        :compiler     {:output-to     "target/expo/index.js"
                                        :main          "env.expo.main"
                                        :infer-externs true
+                                       :target        :nodejs
                                        :output-dir    "target/expo"
                                        :optimizations :none}}
 
@@ -44,5 +45,6 @@
                                        :infer-externs      true
                                        :parallel-build     true
                                        :optimize-constants true
+                                       :target             :nodejs
                                        :optimizations      :advanced
                                        :closure-defines    {"goog.DEBUG" false}}}]})
