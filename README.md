@@ -40,7 +40,7 @@ at the bottom of the screen and error as a full red screen
 add new assets or external modules
 - require the module  
 ``` clj
-(def cljs-logo (js/require "./assets/images/cljs.png"))
+(def cljs-logo (js/require "./resources/images/cljs.png"))
 (def FontAwesome (js/require "@expo/vector-icons/FontAwesome"))
 ```
 - reload simulator or device

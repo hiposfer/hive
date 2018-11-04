@@ -1,4 +1,6 @@
-(ns env.dev)
+(ns env.dev
+  "dummy namespace used to store configuration flags since we cannot js/require
+  EDN files :( .... used in main.edn")
 
 (def hostname :tag/hostname)
 

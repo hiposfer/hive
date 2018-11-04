@@ -1,4 +1,8 @@
 (ns ^:figwheel-no-load env.expo.main
+  "entry point namespace for development.
+
+  This namespace is hardcoded inside the figwheel-bridge such that the bridge
+  itself can start the app by loading it"
   (:require [expound.alpha :as expound]
             [cljs.spec.alpha :as s]
             [figwheel.client :as figwheel :include-macros true]

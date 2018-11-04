@@ -7,6 +7,6 @@ jdk:
 #script: lein do clean, compile, check, eastwood '{:exclude-namespaces [service.conjectures.specs]}', test
 script:
   - lein do clean, compile, check
+  - npm install
   - lein prod-build
-  - yarn install
-  - yarn appr
+  - npm run appr

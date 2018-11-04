@@ -1,4 +1,9 @@
-(ns env.index)
+(ns env.index
+  "namespaced used to make figwheel work with the react native packager.
+  The tagged keywords below are replaced with statical js/require calls
+  that the packager can use to prepare the native app
+
+  This namespace is loaded by main.js in dev mode")
 
 ;; undo main.js goog preamble hack
 (set! js/window.goog js/undefined)
@@ -6,4 +11,5 @@
 ;; ...............................
 (doto (js/require "figwheel-bridge")
       (.withModules :tag/js :tag/modules)
+      ;; use "expo" as platform to share the logic of the re-natal figwheel bridge
       (.start "main" "expo" :tag/ip))
