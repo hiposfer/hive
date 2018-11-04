@@ -10,5 +10,5 @@
 ;(defn alert [title] (.. ReactNative -Alert (alert title))
 
 ;; ------ images -----
-(def thumb-sign (js/require "./assets/images/tb_sign2.png"))
-(def thumb-run  (js/require "./assets/images/tbrun1.png"))
+(def thumb-sign (js/require "./resources/images/tb_sign2.png"))
+(def thumb-run  (js/require "./resources/images/tbrun1.png"))

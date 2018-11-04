@@ -1,0 +1,5 @@
+(ns env.dev)
+
+(def hostname :tag/hostname)
+
+(def ip :tag/ip)

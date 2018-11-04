@@ -13,10 +13,9 @@ pom.xml.asc
 .hgignore
 .hg/
 figwheel_server.log
-main.js
 .js-modules.edn
-/env/dev/env/dev.cljs
-/env/dev/env/index.cljs
+/env/dev.cljs
+/env/index.cljs
 /.idea
 
 
@@ -49,7 +48,8 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 /.idea/
-/assets/init.json
 
 .lan-ip
 /hive.iml
+/main.js
+/src/env/
