@@ -1,5 +1,6 @@
 (ns hive.components.screens.home.core
   (:require [reagent.core :as r]
+            [react-native :as ReactNative]
             [hive.components.foreigns.expo :as expo]
             [clojure.string :as str]
             [hive.queries :as queries]
@@ -8,7 +9,6 @@
             [hive.services.mapbox :as mapbox]
             [hive.services.location :as location]
             [hive.components.foreigns.react :as react]
-            [hive.foreigns :as fl]
             [hive.libs.geometry :as geometry]
             [hive.services.kamal :as kamal]
             [hive.components.symbols :as symbols]
@@ -29,7 +29,7 @@
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
      [kamal/directions! [start end] user]
-     (delay (.. fl/ReactNative (Keyboard.dismiss)))
+     (delay (ReactNative/Keyboard.dismiss))
      [navigate "directions"]]))
 
 (defn- humanize-distance
@@ -92,7 +92,7 @@
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
-         (delay (.. fl/ReactNative (Keyboard.dismiss)))]
+         (delay (ReactNative/Keyboard.dismiss))]
         [(delay (.. (mapbox/geocoding! args)
                     (then #(reset-places (work/db) %))))]))))
 

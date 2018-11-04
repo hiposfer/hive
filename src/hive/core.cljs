@@ -1,6 +1,7 @@
 (ns hive.core
   (:require [reagent.core :as r]
-            [hive.foreigns :as fl]
+            [expo :as Expo]
+            [react-native :as ReactNative]
             [hive.state :as state]
             [hive.rework.core :as work]
             [hive.services.firebase :as firebase]
@@ -114,14 +115,12 @@
         (then #(firebase/sign-in! (work/db)))
         (then work/transact!))
     ;; start listening for events ..................
-    (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
+    (Expo/registerRootComponent (r/reactify-component RootUi))
     ;; handles Android BackButton
-    (. fl/ReactNative (BackHandler.addEventListener
-                        "hardwareBackPress"
-                        back-listener!))
-    (. fl/ReactNative (NetInfo.isConnected.addEventListener
-                        "connectionChange"
-                        internet-connection-listener))))
+    (ReactNative/BackHandler.addEventListener "hardwareBackPress"
+                                              back-listener!)
+    (ReactNative/NetInfo.isConnected.addEventListener "connectionChange"
+                                                      internet-connection-listener)))
 
 ;hive.rework.state/conn
 

@@ -1,5 +1,7 @@
 (ns hive.components.screens.errors
   (:require [hive.components.foreigns.react :as react]
+            [react-native :as ReactNative]
+            [expo :as Expo]
             [hive.foreigns :as fl]
             [hive.rework.util :as tool]
             [hive.rework.core :as work :refer-macros [go-try <?]]
@@ -8,14 +10,14 @@
 (defn- launch-location-settings
   "launch the android location settings hoping that the user enables the gps"
   [goBack]
-  (if (= "android" (.. fl/ReactNative -Platform.OS))
-    (let [settings (.. fl/Expo -IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS)]
-      [(delay (.. fl/Expo (IntentLauncherAndroid.startActivityAsync settings)))
+  (if (= "android" ReactNative/Platform.OS)
+    (let [settings Expo/IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS]
+      [(delay (Expo/IntentLauncherAndroid.startActivityAsync settings))
        [goBack]])))
 
 (defn UserLocation
   [props]
-  (let [dims   (tool/keywordize (.. fl/ReactNative (Dimensions.get "window")))
+  (let [dims   (tool/keywordize (ReactNative/Dimensions.get "window"))
         goBack (:goBack (:navigation props))]
     [:> react/View {:flex 1 :backgroundColor "white" :paddingVertical "20%"
                     :elevation 5 :shadowColor "#000000"

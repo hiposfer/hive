@@ -1,4 +1,5 @@
-(ns hive.foreigns)
+(ns hive.foreigns
+  (:require [react-native :as ReactNative]))
 
 (def React       ^js/React (js/require "react"))
 (def Expo        ^js/Expo (js/require "expo"))

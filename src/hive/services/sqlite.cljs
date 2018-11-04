@@ -1,7 +1,7 @@
 (ns hive.services.sqlite
   "provides a service to synchronize Datascript changes to SQLite using only
   datoms as data structure i.e. E A V T -> Entity Attribute Value Transaction"
-  (:require [hive.foreigns :as fl]
+  (:require [expo :as Expo]
             [datascript.core :as data]
             [cljs.reader :as edn]
             [hive.state :as state]))
@@ -65,7 +65,7 @@
 (defn listen!
   "listen for datascript changes and synchronize them"
   [conn]
-  (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
+  (let [db (Expo/SQLite.openDatabase "sync")]
     (. db (transaction (fn [transaction]
                          (. transaction (executeSql create-table)))))
     (data/listen! conn
@@ -89,7 +89,7 @@
   Returns a Promise that will resolve with a sequence of datoms"
   ^js/Promise
   []
-  (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
+  (let [db (Expo/SQLite.openDatabase "sync")]
     (new js/Promise
       (fn [resolve reject]
         (. db (transaction (fn [t]
@@ -107,7 +107,7 @@
   Returns a promise that will resolve to a sequence of datoms"
   ^js/Promise
   []
-  (let [db (. fl/Expo (SQLite.openDatabase "sync"))]
+  (let [db (Expo/SQLite.openDatabase "sync")]
     (new js/Promise
       (fn [resolve reject]
         (. db (transaction (fn [t] (. t (executeSql delete-all-datoms #js [])))
