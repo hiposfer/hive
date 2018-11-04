@@ -34,7 +34,7 @@
 (def tokens (tool/with-ns "ENV" (fetch-env (work/env))))
 
 ;;FIXME: this should come from the server, not being hardcoded
-(def cities (js->clj (js/require "./assets/cities.json")
+(def cities (js->clj (js/require "./resources/cities.json")
                      :keywordize-keys true))
 
 ;; Storage types

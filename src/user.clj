@@ -157,7 +157,7 @@
                                         (read-edn-seq (get-in dev-env [:dev :edn])))]
     (spit-clojure (get-in dev-env [:dev :cljs]) dev-ns)))
 
-(defn- normalize-filename
+(defn- normalize
   "removes specials characters from the asset filepath"
   [filepath]
   (-> filepath (str/replace "\\" "/")
@@ -169,29 +169,23 @@
   (walk/postwalk-replace {::module module}
                          '(js/require ::module)))
 
-;; HACK: this functions presumes the location of the running code to be
-;; inside target/expo/env
+;; NOTE: we assume that all js/require to assets are relative to main.js
+;; HACK: we overwrite the js/require path to come from target/expo/env/index.js
+;; as this is where all requires are indexed
 (defn rebuild-env-index
   "prebuild the set of files that the metro packager requires in advance"
   [m]
   (let [devHost     (get-expo-ip)
         modules     (concat (flatten (vals m))
                             ["react" "react-native" "expo" "create-react-class"])
-        entries     (concat
+        modules-map (into {}
                       (for [module modules]
-                        [module (fake-require module)])
-        ;; HACK: concat assets second to overwrite the entries from modules
-                      (for [file (file-seq (io/file "assets"))
-                            :when (.isFile file)
-                            :when (not (re-find #"DS_Store" (str file)))
-                            :let [unix-path (->> file .toPath
-                                                 .iterator
-                                                 iterator-seq
-                                                 (str/join "/"))
-                                  normal    (normalize-filename unix-path)]]
-                        [(str "./" normal)
-                         (fake-require (str "../../../" normal))]))
-        modules-map (into {} entries)]
+                        (let [path (if (str/starts-with? module "./resources")
+                                     (str/replace (normalize module)
+                                                  "./"
+                                                  "../../../")
+                                     module)]
+                          [module (fake-require path)])))]
     (try
       (spit-clojure (get-in dev-env [:index :cljs])
                     (walk/postwalk-replace {:tag/js      (symbol "#js")
@@ -200,8 +194,6 @@
                                            (read-edn-seq (get-in dev-env [:index :edn]))))
       (catch Exception e
         (println "Error: " e)))))
-
-;(rebuild-env-index (edn/read-string (slurp modules-file)))
 
 (defn relative-path
   "transforms an absolute filename to a relative one. Relative to the current user.dir"

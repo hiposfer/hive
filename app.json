@@ -8,9 +8,9 @@
     "orientation": "portrait",
     "primaryColor": "#cccccc",
     "privacy": "public",
-    "icon": "./assets/icons/app.png",
+    "icon": "./resources/icons/app.png",
     "splash": {
-      "image": "./assets/icons/loading.png",
+      "image": "./resources/icons/loading.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
