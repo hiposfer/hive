@@ -9,4 +9,4 @@ script:
   - lein do clean, compile, check
   - lein prod-build
   - npm install
-  - npm appr
+  - npm run appr
