@@ -22,6 +22,11 @@
 (def dev-env {:dev   {:edn "resources/dev/dev.edn" :cljs "src/env/dev.cljs"}
               :index {:edn "resources/dev/index.edn" :cljs "src/env/index.cljs"}
               :main  {:edn "resources/dev/main.edn" :cljs "src/env/expo/main.cljs"}})
+
+(def package-json (json/read-str (slurp "package.json")))
+
+(def js-deps (set (keys (merge (get package-json "dependencies")
+                               (get package-json "devDependencies")))))
 ;; ............................................................................
 
 
@@ -195,20 +200,39 @@
       (catch Exception e
         (println "Error: " e)))))
 
-(defn relative-path
+(defn- relative-path
   "transforms an absolute filename to a relative one. Relative to the current user.dir"
   [^File file]
   (str/replace (. file (getPath)) (str user-dir "/") ""))
 
-(defn- required-modules
-  "returns a vector of string with the names of the imported modules. Ignoring those
-  that are commented out"
+(defn- form-require
+  [form]
+  (when (= 'js/require (first form))
+    (second form)))
+
+(defn- ns-requires
+  [form]
+  (when (= :require (first form))
+    (for [dependency (rest form)
+          :let [module (first (str/split (name (first dependency)) #"\."))]
+          :when (contains? js-deps module)]
+      module)))
+
+(defn- modules
   [filename]
-  (->> (read-clojure-dirty filename)
-       (tree-seq seq? seq) ;; read all function calls
-       (filter seq?) ;; filter only function calls
-       (filter #(= 'js/require (first %))) ;; only js/require
-       (map second))) ;; only the required string
+  (for [form    (read-clojure-dirty filename)
+        subform (tree-seq seq? seq form)
+        :when (seq? subform)
+        :let [interop (ns-requires subform)
+              raw     (form-require subform)]
+        :when (or (some? interop) (some? raw))]
+    (cons raw interop)))
+
+(defn- required-modules
+  "returns a vector of string with the names of the imported modules. Ignoring
+   those that are commented out"
+  [filename]
+  (eduction cat (remove nil?) (distinct) (modules filename)))
 
 (defn- on-file-change
   [modules kind file]
