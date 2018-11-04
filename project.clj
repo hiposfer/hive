@@ -25,20 +25,19 @@
                                    [org.clojure/test.check "0.9.0"]]
                     :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}}
 
-  :cljsbuild {:builds [{:id           "development"
+  :cljsbuild {:builds [{:id           "main" ;; do NOT change this - used by figwheel bridge
                         :source-paths ["src"]
                         :figwheel     true
-                        :compiler     {:output-to "target/expo/not-used.js"}
-                        :main          "env.expo.main"
-                        :infer-externs  true
-                        :output-dir    "target/expo"
-                        :optimizations :none}
+                        :compiler     {:output-to     "target/expo/not-used.js"
+                                       :main          "env.expo.main"
+                                       :infer-externs true
+                                       :output-dir    "target/expo"
+                                       :optimizations :none}}
 
                        {:id           "release"
                         :source-paths ["src"]
                         :compiler     {:output-to          "main.js"
                                        :main               "env.expo.main"
-                                       :output-dir         "target/expo"
                                        :static-fns         true
                                        :fn-invoke-direct   true
                                        :externs            ["js/externs.js"]
