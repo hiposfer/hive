@@ -29,7 +29,7 @@
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
      [kamal/directions! [start end] user]
-     (delay (React/Keyboard.dismiss))
+     [React/Keyboard.dismiss]
      [navigate "directions"]]))
 
 (defn- humanize-distance
@@ -92,7 +92,7 @@
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
-         (delay (React/Keyboard.dismiss))]
+         [React/Keyboard.dismiss]]
         [(delay (.. (mapbox/geocoding! args)
                     (then #(reset-places (work/db) %))))]))))
 
