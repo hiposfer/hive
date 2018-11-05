@@ -1,6 +1,7 @@
 (ns hive.core
   (:require [reagent.core :as r]
-            [hive.foreigns :as fl]
+            [expo :as Expo]
+            [react-native :as React]
             [hive.state :as state]
             [hive.rework.core :as work]
             [hive.services.firebase :as firebase]
@@ -16,7 +17,6 @@
             [hive.components.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.screens.home.route :as route]
-            [hive.components.foreigns.react :as react]
             [hive.services.secure-store :as secure]))
 
 (defn- MessageTray
@@ -25,9 +25,9 @@
         alert   @(work/pull! [:session/alert]
                              [:session/uuid id])]
     (when-not (empty? (:session/alert alert))
-      [:> react/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
+      [:> React/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
                       :bottom 0 :width "100%" :height "5%" :position "absolute"}
-        [:> react/Text
+        [:> React/Text
           {:style {:width "100%" :height "100%" :textAlign "center"
                    :backgroundColor "grey" :color "white"}
            :onPress #(work/transact! [{:session/uuid id :session/alert {}}])}
@@ -37,7 +37,7 @@
   [component props]
   (rn-nav/stack-screen
     (fn [props]
-      [:> react/View {:flex 1 :alignItems "stretch"}
+      [:> React/View {:flex 1 :alignItems "stretch"}
         [component props]
         [MessageTray props]])
     props))
@@ -114,14 +114,12 @@
         (then #(firebase/sign-in! (work/db)))
         (then work/transact!))
     ;; start listening for events ..................
-    (. fl/Expo (registerRootComponent (r/reactify-component RootUi)))
+    (Expo/registerRootComponent (r/reactify-component RootUi))
     ;; handles Android BackButton
-    (. fl/ReactNative (BackHandler.addEventListener
-                        "hardwareBackPress"
-                        back-listener!))
-    (. fl/ReactNative (NetInfo.isConnected.addEventListener
-                        "connectionChange"
-                        internet-connection-listener))))
+    (React/BackHandler.addEventListener "hardwareBackPress"
+                                              back-listener!)
+    (React/NetInfo.isConnected.addEventListener "connectionChange"
+                                                      internet-connection-listener)))
 
 ;hive.rework.state/conn
 

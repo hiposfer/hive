@@ -1,7 +1,7 @@
 (ns hive.services.secure-store
   (:require [cljs.tools.reader.edn :as edn]
-            [hive.rework.util :as tool]
-            [hive.foreigns :as fl]))
+            [expo :as Expo]
+            [hive.rework.util :as tool]))
 
 ;https://docs.expo.io/versions/latest/sdk/securestore.html
 
@@ -21,9 +21,9 @@
   ([request options]
    (let [opts    (clj->js (or options {}))
          proms   (for [[k v] request]
-                   (.. fl/Expo
-                       -SecureStore
-                       (setItemAsync (munge k) (pr-str v) opts)
+                   (.. (Expo/SecureStore.setItemAsync (munge k)
+                                                      (pr-str v)
+                                                      opts)
                        (then #(vector k v))
                        (catch identity)))] ;; return error
      (.. (js/Promise.all (clj->js proms))
@@ -40,9 +40,7 @@
   ([options ks]
    (let [opts  (clj->js options)
          proms (for [k (distinct ks)]
-                 (.. fl/Expo
-                     -SecureStore
-                     (getItemAsync (munge k) opts)
+                 (.. (Expo/SecureStore.getItemAsync (munge k) opts)
                      (then #(when (some? %) [k (edn/read-string %)]))
                      (catch identity)))] ;; return error
      (.. (js/Promise.all (clj->js proms))
@@ -62,9 +60,7 @@
   [options & ks]
   (let [opts  (clj->js options)
         proms (for [k (distinct ks)]
-                (.. fl/Expo
-                    -SecureStore
-                    (deleteItemAsync (munge k) opts)
+                (.. (Expo/SecureStore.deleteItemAsync (munge k) opts)
                     ;(then #(println k))
                     (catch identity)))] ;; return error
     (.. (js/Promise.all proms)

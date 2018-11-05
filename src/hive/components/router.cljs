@@ -14,6 +14,8 @@
 
 ;; This is probably not the cleanest way to do it but it gets the job done :)
 
+(def react-navigation (js/require "react-navigation"))
+
 (def state-query '[:find ?state .
                    :where [_ :react.navigation/state ?state]])
 
