@@ -3,7 +3,7 @@
             [expo :as Expo]
             [hive.assets :as fl]
             [hive.utils.miscelaneous :as tool]
-            [hive.rework.core :as work :refer-macros [go-try <?]]
+            [hive.rework.core :as work]
             [hive.assets :as assets]))
 
 (defn- launch-location-settings

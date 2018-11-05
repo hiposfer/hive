@@ -53,3 +53,4 @@ fabric.properties
 /hive.iml
 /main.js
 /src/env/
+/resources/config.json

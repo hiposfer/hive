@@ -1,5 +1,6 @@
 (ns user ;; This namespace is loaded automatically by nREPL
   (:require [hawk.core :as hawk]
+            [expound.alpha :as expound]
             [clojure.walk :as walk]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -8,7 +9,8 @@
             [clojure.tools.reader.edn :as edn]
             [clojure.tools.reader :as reader]
             [figwheel-sidecar.repl-api :as ra]
-            [clojure.pprint :as pprint])
+            [clojure.pprint :as pprint]
+            [clojure.spec.alpha :as s])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
            (java.io File PushbackReader Writer)))
 
@@ -29,6 +31,33 @@
                                (get package-json "devDependencies")))))
 ;; ............................................................................
 
+(s/def ::token (s/and string? not-empty))
+(s/def ::MAPBOX ::token)
+(s/def ::FIREBASE_API_KEY ::token)
+(s/def ::FIREBASE_AUTH_DOMAIN ::token)
+(s/def ::FIREBASE_DATABASE_URL ::token)
+(s/def ::FIREBASE_STORAGE_BUCKET ::token)
+
+(s/def ::config (s/keys :req-un [::MAPBOX
+                                 ::FIREBASE_API_KEY
+                                 ::FIREBASE_AUTH_DOMAIN
+                                 ::FIREBASE_DATABASE_URL
+                                 ::FIREBASE_STORAGE_BUCKET]))
+
+;; stop compilation if the required env vars are not provided
+(defn- trim-config
+  "takes a environment variables map and returns m with only the unqualified keys
+   specified in spec. Throws an Error if m does not conform to spec"
+  [config]
+  (let [data (apply hash-map (rest (s/form ::config)))
+        ks   (map #(keyword (name %))
+                   (concat (:req-un data) (:opt-un data)))
+        m    (select-keys config ks)]
+    (if (s/valid? ::config m) m
+      (throw (ex-info (expound/expound-str ::config m)
+                      config)))))
+
+;; ............................................................................
 
 (defn spit-clojure
   "Oppsite of slurp. Opens f with writer, writes each item in coll, then
@@ -293,8 +322,16 @@
   (doseq [file (map :cljs (vals dev-env))]
     (io/delete-file file :silently true)))
 
+(defn- store-configs!
+  []
+  (let [env-vars (walk/keywordize-keys (into {} (System/getenv)))
+        config   (trim-config env-vars)]
+    (println "writing config to resources")
+    (spit "resources/config.json" (json/write-str config))))
+
 (defn -main
   [args]
+  (store-configs!)
   (case args
     "--figwheel"
     (do (prepare-env!)
