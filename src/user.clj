@@ -136,10 +136,8 @@
   "fetch the ip of the computer that is available for expo app to communicate"
   []
   (let [lip (linux-ip)
-        sip (standard-ip)
-        ip  (or lip sip)]
-    (println "using ip:" ip)
-    ip))
+        sip (standard-ip)]
+    (or lip sip)))
 
 (defn get-expo-ip []
   (let [expo-settings (get-expo-settings)]
@@ -250,6 +248,7 @@
   (let [old-modules (edn/read-string (slurp modules-cache))
         new-modules (on-file-change old-modules kind file)]
     (when (not= old-modules new-modules)
+      (println "module requirements changed ... updating cache")
       (spit modules-cache new-modules)
       (rebuild-env-index new-modules))
     ctx))
