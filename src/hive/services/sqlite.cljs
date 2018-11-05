@@ -4,7 +4,7 @@
   (:require [expo :as Expo]
             [datascript.core :as data]
             [cljs.reader :as edn]
-            [hive.state :as state]))
+            [hive.state.core :as state]))
 
 (def create-table (str "create table if not exists datoms ("
                          "id integer primary key autoincrement, "

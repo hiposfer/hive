@@ -3,7 +3,7 @@
             [react-native :as React]
             [expo :as Expo]
             [clojure.string :as str]
-            [hive.queries :as queries]
+            [hive.state.queries :as queries]
             [hive.rework.core :as work]
             [hive.rework.util :as tool]
             [hive.services.mapbox :as mapbox]
@@ -12,7 +12,7 @@
             [hive.services.kamal :as kamal]
             [hive.screens.symbols :as symbols]
             [datascript.core :as data]
-            [hive.state :as state]
+            [hive.state.core :as state]
             [hive.assets :as assets]))
 
 ; NOTE: this is the way to remove all routes ... not sure where to do this

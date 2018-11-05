@@ -1,10 +1,10 @@
-(ns hive.state
+(ns hive.state.core
   (:require [hive.rework.core :as work]
             [hive.rework.util :as tool]
             [cljs.spec.alpha :as s]
             [expound.alpha :as expound]
             [datascript.core :as data]
-            [hive.queries :as queries]))
+            [hive.state.queries :as queries]))
 
 (s/def ::token (s/and string? not-empty))
 (s/def ::MAPBOX ::token)
