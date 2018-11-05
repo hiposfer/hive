@@ -1,6 +1,5 @@
 (ns hive.screens.home.route
   (:require [hive.utils.miscelaneous :as tool]
-            [hive.rework.core :as work]
             [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
@@ -8,7 +7,8 @@
             [goog.date.duration :as duration]
             [reagent.core :as r]
             [clojure.string :as str]
-            [hive.assets :as assets]))
+            [hive.assets :as assets]
+            [hive.state.core :as state]))
 
 (def big-circle 16)
 (def small-circle 10)
@@ -74,7 +74,7 @@
   (into [:> React/View {:style {:flex 9 :justifyContent "space-around"}}]
     (for [step steps]
       (if (= "transit" (:step/mode step))
-        ;[:> React/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
+        ;[:> React/TouchableOpacity {:onPress #(state/transact! (onStopPress props step))}
         [:> React/Text {:style {:color "gray"}} (:step/name step)]
         [:> React/Text {:style {:color "gray"}}
                        (str/replace (:maneuver/instruction (:step/maneuver step))
@@ -115,14 +115,14 @@
 
 (defn- Route
   [props uid]
-  (let [route   @(work/pull! [{:directions/steps
-                               [:step/arrive
-                                :step/mode
-                                :step/name
-                                {:step/maneuver [:maneuver/instruction]}
-                                :step/distance
-                                {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
-                             [:directions/uuid uid])]
+  (let [route   @(state/pull! [{:directions/steps
+                                [:step/arrive
+                                 :step/mode
+                                 :step/name
+                                 {:step/maneuver [:maneuver/instruction]}
+                                 :step/distance
+                                 {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
+                              [:directions/uuid uid])]
     [:> React/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))
             :let [arrives  (:step/arrive (first steps))
@@ -145,11 +145,11 @@
 
 (defn- Transfers
   [route-id]
-  (let [route @(work/pull! [{:directions/steps
-                             [:step/arrive
-                              :step/mode
-                              {:step/trip [{:trip/route [:route/type]}]}]}]
-                           [:directions/uuid route-id])
+  (let [route @(state/pull! [{:directions/steps
+                              [:step/arrive
+                               :step/mode
+                               {:step/trip [{:trip/route [:route/type]}]}]}]
+                            [:directions/uuid route-id])
         sections (partition-by :step/mode (:directions/steps route))]
     [:> React/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
                     :top "0.5%" :alignItems "center"}
@@ -165,11 +165,11 @@
 
 (defn- Info
   [props route-id]
-  (let [[duration goal] @(work/q! '[:find [?duration ?goal]
-                                    :where [_      :user/directions ?route]
-                                           [?route :directions/duration ?duration]
-                                           [_      :user/goal ?target]
-                                           [?target :place/text ?goal]])]
+  (let [[duration goal] @(state/q! '[:find [?duration ?goal]
+                                     :where [_      :user/directions ?route]
+                                            [?route :directions/duration ?duration]
+                                            [_      :user/goal ?target]
+                                            [?target :place/text ?goal]])]
     [:> React/View props
      [:> React/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers route-id]
@@ -182,10 +182,10 @@
 
 (defn- paths
   [uid]
-  (let [route @(work/pull! [{:directions/steps
-                             [:step/geometry :step/mode
-                              {:step/trip [{:trip/route [:route/color :route/long_name]}]}]}]
-                           [:directions/uuid uid])]
+  (let [route @(state/pull! [{:directions/steps
+                              [:step/geometry :step/mode
+                               {:step/trip [{:trip/route [:route/color :route/long_name]}]}]}]
+                            [:directions/uuid uid])]
     (for [steps (partition-by :step/mode (:directions/steps route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
                 stroke (route-color (:trip/route (:step/trip (first steps))))]]
@@ -200,9 +200,9 @@
    Async, some data might be missing when rendered !!"
   [props]
   (let [window (tool/keywordize (React/Dimensions.get "window"))
-        uid   @(work/q! '[:find ?uid .
-                          :where [_      :user/directions ?route]
-                                 [?route :directions/uuid ?uid]])]
+        uid   @(state/q! '[:find ?uid .
+                           :where [_      :user/directions ?route]
+                                  [?route :directions/uuid ?uid]])]
     [:> React/ScrollView {:flex 1}
       [:> React/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
@@ -219,9 +219,9 @@
         [:> assets/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
 
 ;hive.rework.state/conn
-;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
-;(work/q queries/routes-ids)
+;(into {} (state/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
+;(state/q queries/routes-ids)
 
-;(let [id      (data/q queries/user-id (work/db))]
-;  (:steps (:route/route (:user/route @(work/pull! [{:user/route [:route/route]}]
+;(let [id      (data/q queries/user-id (state/db))]
+;  (:steps (:route/route (:user/route @(state/pull! [{:user/route [:route/route]}]
 ;                                                  [:user/id id])))))

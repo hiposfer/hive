@@ -1,10 +1,10 @@
 (ns hive.screens.settings.city-picker
-  (:require [hive.rework.core :as work]
-            [hive.state.queries :as queries]
+  (:require [hive.state.queries :as queries]
             [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
-            [hive.assets :as assets]))
+            [hive.assets :as assets]
+            [hive.state.core :as state]))
 
 (defn change-city
   "returns a Datascript transaction to change the user city, an effect
@@ -17,8 +17,8 @@
 
 (defn city-entry
   [props city user]
-  (let [info @(work/pull! [{:user/city [:city/name]}] user)]
-    [:> React/TouchableOpacity {:onPress #(work/transact! (change-city props city user))}
+  (let [info @(state/pull! [{:user/city [:city/name]}] user)]
+    [:> React/TouchableOpacity {:onPress #(state/transact! (change-city props city user))}
      [:> React/View {:style {:height 55 :borderBottomColor "lightgray"
                              :borderBottomWidth 1 :paddingTop 5}}
       [symbols/PointOfInterest
@@ -33,8 +33,8 @@
 
 (defn Selector
   [props]
-  (let [cities  @(work/q! queries/cities)
-        user    @(work/q! queries/user-entity)]
+  (let [cities  @(state/q! queries/cities)
+        user    @(state/q! queries/user-entity)]
     [:> React/View {:style {:flex 1}}
       [:> React/View {:style {:height 60 :alignItems "center" :justifyContent "center"
                               :backgroundColor "blue"}}

@@ -3,8 +3,8 @@
             [hive.utils.geometry :as geometry]
             [expo :as Expo]
             [hive.assets :as assets]
-            [hive.rework.core :as work]
-            [hiposfer.geojson.specs :as geojson]))
+            [hiposfer.geojson.specs :as geojson]
+            [hive.state.core :as state]))
 
 (defn PointOfInterest
   "Components for displaying location related items. Usually used inside a List"
@@ -59,10 +59,10 @@
 (defn CityMap
   "a React Native MapView component which will only re-render on user-city change"
   [children]
-  (let [geometry @(work/q! '[:find ?geometry .
-                             :where [?id :user/uid]
-                                    [?id :user/city ?city]
-                                    [?city :city/geometry ?geometry]])
+  (let [geometry @(state/q! '[:find ?geometry .
+                              :where [?id :user/uid]
+                                     [?id :user/city ?city]
+                                     [?city :city/geometry ?geometry]])
         area      (region children (geometry/latlng (:coordinates geometry)))]
     (if (nil? (:coordinates geometry))
       [:> assets/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]

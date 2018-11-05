@@ -7,7 +7,7 @@
   on every reload"
   (:require [cljs-react-navigation.base :as base]
             [cljs-react-navigation.reagent :as reagent]
-            [hive.rework.core :as work]))
+            [hive.state.core :as state]))
 
 ;; copied from cljs-react-navigation.re-frame
 ;; https://github.com/seantempesta/cljs-react-navigation/blob/master/src/cljs_react_navigation/re_frame.cljs
@@ -48,7 +48,7 @@
         next-state        (getStateForAction action state)]
     ;(println action)
     (when (some? next-state) ;; nil on DrawerClose
-      (work/transact! (set-routing root-router next-state)))))
+      (state/transact! (set-routing root-router next-state)))))
 
 (defn Router
   "creates a React Navigation Router Component linked to Datascript storage"
@@ -58,7 +58,7 @@
         getStateForAction         (aget root-router "router" "getStateForAction")
         act                       (getActionForPathAndParams (:init props))
         init                      (getStateForAction act)
-        routing-sub               (work/q! state-query)
+        routing-sub               (state/q! state-query)
         routing-state             (or @routing-sub init)
         add-listener              (fn [a] a)] ;; HACK !! I am not sure how to handle this
     [:> root-router

@@ -29,7 +29,7 @@
 (def session '[:find ?session .
                :where [_ :session/uuid ?session]])
 
-;(work/q '{:find [(pull ?city [*]) .]
+;(state/q '{:find [(pull ?city [*]) .]
 ;          :where [[?id :user/id]
 ;                  [?id :user/city ?city]]})
 

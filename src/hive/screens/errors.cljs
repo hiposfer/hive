@@ -3,7 +3,7 @@
             [expo :as Expo]
             [hive.assets :as fl]
             [hive.utils.miscelaneous :as tool]
-            [hive.rework.core :as work]
+            [hive.state.core :as state]
             [hive.assets :as assets]))
 
 (defn- launch-location-settings
@@ -38,7 +38,7 @@
           :on-press #(goBack)}
          [:> assets/Ionicons {:name "ios-close-circle" :size 30}]]
        [:> React/TouchableOpacity
-         {:on-press #(work/transact! (launch-location-settings goBack))
+         {:on-press #(state/transact! (launch-location-settings goBack))
           :style {:borderRadius 5 :backgroundColor "lawngreen"
                   :height 40 :width 60 :flexDirection "row"
                   :alignItems "center" :justifyContent "space-around"}}
