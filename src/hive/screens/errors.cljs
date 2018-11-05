@@ -9,14 +9,14 @@
 (defn- launch-location-settings
   "launch the android location settings hoping that the user enables the gps"
   [goBack]
-  (if (= "android" ReactNative/Platform.OS)
+  (if (= "android" React/Platform.OS)
     (let [settings Expo/IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS]
       [[Expo/IntentLauncherAndroid.startActivityAsync settings]
        [goBack]])))
 
 (defn UserLocation
   [props]
-  (let [dims   (tool/keywordize (ReactNative/Dimensions.get "window"))
+  (let [dims   (tool/keywordize (React/Dimensions.get "window"))
         goBack (:goBack (:navigation props))]
     [:> React/View {:flex 1 :backgroundColor "white" :paddingVertical "20%"
                     :elevation 5 :shadowColor "#000000"
@@ -48,7 +48,7 @@
 ;(defn no-internet
 ;  "display a nice little monster asking for internet connection"
 ;  []
-;  (let [dims (tool/keywordize (oops/ocall fl/ReactNative "Dimensions.get" "window"))]
+;  (let [dims (tool/keywordize (oops/ocall fl/React "Dimensions.get" "window"))]
 ;    [:> base/Container
 ;     [:> base/Content {:style {:padding 10}}
 ;      [:> base/Card {:style {:width (* (:width dims) 0.95)}}
