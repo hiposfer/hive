@@ -8,7 +8,7 @@
             [hive.utils.miscelaneous :as tool]
             [hive.services.mapbox :as mapbox]
             [hive.services.location :as location]
-            [hive.utils.queries.geometry :as geometry]
+            [hive.utils.geometry :as geometry]
             [hive.services.kamal :as kamal]
             [hive.screens.symbols :as symbols]
             [datascript.core :as data]
