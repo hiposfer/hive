@@ -10,7 +10,6 @@
                  [org.clojure/core.async "0.3.465"]
                  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
-                 [expound "0.7.0"]
                  [cljs-react-navigation "0.1.1"]
                  [hiposfer/geojson.specs "0.2.0"]]
   :plugins [[lein-cljsbuild "1.1.4"]
@@ -20,7 +19,8 @@
             "prod-build" ["do" ["clean"]
                                ["run" "-m" "user" "--prepare-release"]
                                ["cljsbuild" "once" "release"]]}
-  :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.14"]
+  :profiles {:dev  {:dependencies [[expound "0.7.0"]
+                                   [figwheel-sidecar "0.5.14"]
                                    [com.cemerick/piggieback "0.2.1"]
                                    [org.clojure/test.check "0.9.0"]]
                     :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}}

@@ -1,10 +1,10 @@
-(ns hive.components.screens.home.route
-  (:require [hive.rework.util :as tool]
+(ns hive.screens.home.route
+  (:require [hive.utils.miscelaneous :as tool]
             [hive.rework.core :as work]
-            [hive.components.symbols :as symbols]
+            [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
-            [hive.libs.geometry :as geometry]
+            [hive.utils.geometry :as geometry]
             [goog.date.duration :as duration]
             [reagent.core :as r]
             [clojure.string :as str]
@@ -45,21 +45,21 @@
   [steps expanded?]
   (let [line-height (if expanded? "90%" "80%")
         stroke      (route-color (:trip/route (:step/trip (first steps))))]
-    [:> react/View {:flex 1 :alignItems "center"}
-      [:> react/View (merge {:backgroundColor stroke}
+    [:> React/View {:flex 1 :alignItems "center"}
+      [:> React/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
-      [:> react/View {:backgroundColor stroke :width "8%" :height line-height}]
-      [:> react/View (merge {:style {:backgroundColor stroke :borderColor "transparent"}}
+      [:> React/View {:backgroundColor stroke :width "8%" :height line-height}]
+      [:> React/View (merge {:style {:backgroundColor stroke :borderColor "transparent"}}
                             (symbols/circle big-circle))]]))
 
 (defn- WalkingSymbols
   [steps expanded?]
   (let [amount  (if (not expanded?) 15 (/ section-height 4))]
-    [:> react/View {:flex 1 :alignItems "center"
+    [:> React/View {:flex 1 :alignItems "center"
                     :justifyContent "space-around"}
       (for [i (range amount)]
         ^{:key i}
-        [:> react/View (merge (symbols/circle micro-circle)
+        [:> React/View (merge (symbols/circle micro-circle)
                               {:backgroundColor "slategray"})])]))
 
 #_(defn- onStopPress
@@ -71,10 +71,10 @@
 
 (defn- StepDetails
   [props steps]
-  (into [:> react/View {:style {:flex 9 :justifyContent "space-around"}}]
+  (into [:> React/View {:style {:flex 9 :justifyContent "space-around"}}]
     (for [step steps]
       (if (= "transit" (:step/mode step))
-        ;[:> react/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
+        ;[:> React/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
         [:> React/Text {:style {:color "gray"}} (:step/name step)]
         [:> React/Text {:style {:color "gray"}}
                        (str/replace (:maneuver/instruction (:step/maneuver step))

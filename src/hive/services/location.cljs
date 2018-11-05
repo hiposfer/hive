@@ -1,9 +1,9 @@
 (ns hive.services.location
-  (:require [hive.rework.util :as tool]
-            [react-native :as ReactNative]
+  (:require [hive.utils.miscelaneous :as tool]
+            [react-native :as React]
             [expo :as Expo]
-            [hive.queries :as queries]
-            [hive.queries :as queries]
+            [hive.state.queries :as queries]
+            [hive.state.queries :as queries]
             [datascript.core :as data]))
 
 ;; todo: should altitude be inside the point coordinates?
@@ -45,7 +45,7 @@
 
   Returns a promise that will resolve to the watchPositionAsync return value"
   ^js/Promise [opts]
-  (if (and (= "android" ReactNative/Platform.OS)
+  (if (and (= "android" React/Platform.OS)
            (not Expo/Constants.isDevice))
     (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
              (assoc opts ::reason ::emulator-denial))

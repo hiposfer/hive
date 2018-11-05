@@ -2,7 +2,7 @@
   (:require [clojure.string :as str]
             [cljs.spec.alpha :as s]
             [hiposfer.geojson.specs :as geojson]
-            [hive.rework.util :as tool]))
+            [hive.utils.miscelaneous :as tool]))
 
 (s/def ::input (s/and string? not-empty))
 (s/def ::query (s/or :location ::input

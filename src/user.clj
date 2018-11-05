@@ -1,5 +1,6 @@
 (ns user ;; This namespace is loaded automatically by nREPL
   (:require [hawk.core :as hawk]
+            [expound.alpha :as expound]
             [clojure.walk :as walk]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -8,7 +9,8 @@
             [clojure.tools.reader.edn :as edn]
             [clojure.tools.reader :as reader]
             [figwheel-sidecar.repl-api :as ra]
-            [clojure.pprint :as pprint])
+            [clojure.pprint :as pprint]
+            [clojure.spec.alpha :as s])
   (:import (java.net NetworkInterface InetAddress Inet4Address)
            (java.io File PushbackReader Writer)))
 
@@ -29,6 +31,33 @@
                                (get package-json "devDependencies")))))
 ;; ............................................................................
 
+(s/def ::token (s/and string? not-empty))
+(s/def ::MAPBOX ::token)
+(s/def ::FIREBASE_API_KEY ::token)
+(s/def ::FIREBASE_AUTH_DOMAIN ::token)
+(s/def ::FIREBASE_DATABASE_URL ::token)
+(s/def ::FIREBASE_STORAGE_BUCKET ::token)
+
+(s/def ::config (s/keys :req-un [::MAPBOX
+                                 ::FIREBASE_API_KEY
+                                 ::FIREBASE_AUTH_DOMAIN
+                                 ::FIREBASE_DATABASE_URL
+                                 ::FIREBASE_STORAGE_BUCKET]))
+
+;; stop compilation if the required env vars are not provided
+(defn- trim-config
+  "takes a environment variables map and returns m with only the unqualified keys
+   specified in spec. Throws an Error if m does not conform to spec"
+  [config]
+  (let [data (apply hash-map (rest (s/form ::config)))
+        ks   (map #(keyword (name %))
+                   (concat (:req-un data) (:opt-un data)))
+        m    (select-keys config ks)]
+    (if (s/valid? ::config m) m
+      (throw (ex-info (expound/expound-str ::config m)
+                      config)))))
+
+;; ............................................................................
 
 (defn spit-clojure
   "Oppsite of slurp. Opens f with writer, writes each item in coll, then
@@ -74,7 +103,7 @@
   (and (. file (isFile))
        (str/ends-with? (. file (getPath)) ".cljs")))
 
-(defn enable-source-maps
+(defn patch-source-maps
   "patch the metro packager to use Clojurescript source maps"
   []
   (let [path "node_modules/metro/src/Server/index.js"
@@ -150,7 +179,7 @@
                                       "Please set to LAN or Localhost.")
                                  {}))))))
 
-(defn write-env-dev
+(defn write-env-dev!
   "First check the .expo/settings.json file to see what host is specified.  Then set the appropriate IP."
   []
   (let [hostname (.getHostName (InetAddress/getLocalHost))
@@ -175,7 +204,7 @@
 ;; NOTE: we assume that all js/require to assets are relative to main.js
 ;; HACK: we overwrite the js/require path to come from target/expo/env/index.js
 ;; as this is where all requires are indexed
-(defn rebuild-env-index
+(defn write-env-index!
   "prebuild the set of files that the metro packager requires in advance"
   [m]
   (let [devHost     (get-expo-ip)
@@ -250,10 +279,10 @@
     (when (not= old-modules new-modules)
       (println "module requirements changed ... updating cache")
       (spit modules-cache new-modules)
-      (rebuild-env-index new-modules))
+      (write-env-index! new-modules))
     ctx))
 
-(defn rebuild-modules-cache!
+(defn cache-js-modules!
   "traverse src dir and fetch all modules"
   []
   (let [mapping (for [fs (file-seq (io/file source-dir))
@@ -265,16 +294,32 @@
         modules (into {} mapping)]
     (spit modules-cache (with-out-str (pprint/pprint modules)))))
 
+(defn- store-configs!
+  []
+  (let [env-vars (walk/keywordize-keys (into {} (System/getenv)))
+        config   (trim-config env-vars)]
+    (println "writing config to resources")
+    (spit "resources/config.json" (json/write-str config))))
+
+(defn- prepare-env!
+  []
+  (doseq [file (map :cljs (vals dev-env))]
+    (io/make-parents file))
+  (doseq [file (map :cljs (vals dev-env))]
+    (io/delete-file file :silently true)))
+
 ;; Lein
 (defn start-figwheel!
   "Start figwheel for one or more builds"
   [];& build-ids]
-  (rebuild-modules-cache!)
-  (rebuild-env-index (edn/read-string (slurp modules-cache)))
-  (enable-source-maps)
+  (prepare-env!)
+  (store-configs!)
+  (cache-js-modules!)
+  (write-env-index! (edn/read-string (slurp modules-cache)))
+  (patch-source-maps)
   (io/copy (io/file "resources/dev/main.js")
            (io/file "main.js"))
-  (write-env-dev)
+  (write-env-dev!)
   (io/copy (io/file (get-in dev-env [:main :edn]))
            (io/file (get-in dev-env [:main :cljs])))
   ;; Each file maybe corresponds to multiple modules.
@@ -286,25 +331,18 @@
   (ra/start-figwheel! "main")
   (ra/cljs-repl))
 
-(defn- prepare-env!
-  []
-  (doseq [file (map :cljs (vals dev-env))]
-    (io/make-parents file))
-  (doseq [file (map :cljs (vals dev-env))]
-    (io/delete-file file :silently true)))
-
 (defn -main
   [args]
   (case args
     "--figwheel"
-    (do (prepare-env!)
-        (start-figwheel!))
+    (start-figwheel!)
 
     "--prepare-release"
     ;; assumes the dev env files were cleaned :)
     (do (prepare-env!)
+        (store-configs!)
         (io/copy (io/file (io/file "resources/release/main.edn"))
                  (io/file (get-in dev-env [:main :cljs]))))
 
     "--rebuild-modules"
-    (rebuild-modules-cache!)))
+    (cache-js-modules!)))

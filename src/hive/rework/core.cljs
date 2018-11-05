@@ -48,11 +48,10 @@
   Therefore we separate between expected errors like, no internet connection, malformed
   json response or unauthorized app permissions from those arising from incorrect code
   a.k.a bugs"
-  (:require-macros [hive.rework.core])
   (:require [datascript.core :as data]
             [hive.rework.tx :as rtx]
             [reagent.core :as r]
-            [hive.rework.util :as tool]
+            [hive.utils.miscelaneous :as tool]
             [hive.rework.state :as state]
             [cljs.core.async :as async]))
 

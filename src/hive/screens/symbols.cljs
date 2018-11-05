@@ -1,6 +1,6 @@
-(ns hive.components.symbols
+(ns hive.screens.symbols
   (:require [react-native :as React]
-            [hive.libs.geometry :as geometry]
+            [hive.utils.geometry :as geometry]
             [expo :as Expo]
             [hive.assets :as assets]
             [hive.rework.core :as work]

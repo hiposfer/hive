@@ -1,4 +1,4 @@
-(ns hive.components.router
+(ns hive.screens.router
   "Utility functions for linking the React Navigation router implementation
   with Datascript.
 

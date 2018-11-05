@@ -1,7 +1,7 @@
-(ns hive.components.screens.settings.city-picker
+(ns hive.screens.settings.city-picker
   (:require [hive.rework.core :as work]
-            [hive.queries :as queries]
-            [hive.components.symbols :as symbols]
+            [hive.state.queries :as queries]
+            [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
             [hive.assets :as assets]))

@@ -1,9 +1,9 @@
-(ns hive.components.screens.settings.core
+(ns hive.screens.settings.core
   (:require [hive.rework.core :as work]
             [react-native :as React]
-            [hive.components.symbols :as symbols]
+            [hive.screens.symbols :as symbols]
             [expo :as Expo]
-            [hive.queries :as queries]
+            [hive.state.queries :as queries]
             [reagent.core :as r]
             [cljs.spec.alpha :as s]
             [hive.services.secure-store :as secure]

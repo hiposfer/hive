@@ -1,18 +1,18 @@
-(ns hive.components.screens.home.core
+(ns hive.screens.home.core
   (:require [reagent.core :as r]
             [react-native :as React]
             [expo :as Expo]
             [clojure.string :as str]
-            [hive.queries :as queries]
+            [hive.state.queries :as queries]
             [hive.rework.core :as work]
-            [hive.rework.util :as tool]
+            [hive.utils.miscelaneous :as tool]
             [hive.services.mapbox :as mapbox]
             [hive.services.location :as location]
-            [hive.libs.geometry :as geometry]
+            [hive.utils.geometry :as geometry]
             [hive.services.kamal :as kamal]
-            [hive.components.symbols :as symbols]
+            [hive.screens.symbols :as symbols]
             [datascript.core :as data]
-            [hive.state :as state]
+            [hive.state.core :as state]
             [hive.assets :as assets]))
 
 ; NOTE: this is the way to remove all routes ... not sure where to do this
@@ -29,7 +29,7 @@
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
      [kamal/directions! [start end] user]
-     (delay (React/Keyboard.dismiss))
+     [React/Keyboard.dismiss]
      [navigate "directions"]]))
 
 (defn- humanize-distance
@@ -92,7 +92,7 @@
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
-         (delay (React/Keyboard.dismiss))]
+         [React/Keyboard.dismiss]]
         [(delay (.. (mapbox/geocoding! args)
                     (then #(reset-places (work/db) %))))]))))
 
