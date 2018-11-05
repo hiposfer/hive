@@ -1,4 +1,4 @@
-(ns hive.libs.geometry)
+(ns hive.utils.geometry)
 
 ;; Note in these scripts, I generally use
 ;; - latitude, longitude in degrees

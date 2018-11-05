@@ -4,7 +4,7 @@
             [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
-            [hive.libs.geometry :as geometry]
+            [hive.utils.queries.geometry :as geometry]
             [goog.date.duration :as duration]
             [reagent.core :as r]
             [clojure.string :as str]
