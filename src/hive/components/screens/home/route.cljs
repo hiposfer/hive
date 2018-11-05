@@ -2,7 +2,7 @@
   (:require [hive.rework.util :as tool]
             [hive.rework.core :as work]
             [hive.components.symbols :as symbols]
-            [react-native :as ReactNative]
+            [react-native :as React]
             [expo :as Expo]
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
@@ -199,7 +199,7 @@
 
    Async, some data might be missing when rendered !!"
   [props]
-  (let [window (tool/keywordize (ReactNative/Dimensions.get "window"))
+  (let [window (tool/keywordize (React/Dimensions.get "window"))
         uid   @(work/q! '[:find ?uid .
                           :where [_      :user/directions ?route]
                                  [?route :directions/uuid ?uid]])]

@@ -1,5 +1,5 @@
 (ns hive.components.screens.errors
-  (:require [react-native :as ReactNative]
+  (:require [react-native :as React]
             [expo :as Expo]
             [hive.assets :as fl]
             [hive.rework.util :as tool]
