@@ -264,7 +264,7 @@
                       :when (not-empty js-modules)]
                   [filename (vec js-modules)])
         modules (into {} mapping)]
-    (spit modules-cache modules)))
+    (spit modules-cache (with-out-str (pprint/pprint modules)))))
 
 ;; Lein
 (defn start-figwheel!

@@ -1,14 +1,14 @@
 (ns hive.components.screens.home.route
-  (:require [hive.components.foreigns.react :as react]
-            [hive.rework.util :as tool]
+  (:require [hive.rework.util :as tool]
             [hive.rework.core :as work]
             [hive.components.symbols :as symbols]
             [react-native :as ReactNative]
-            [hive.components.foreigns.expo :as expo]
+            [expo :as Expo]
             [hive.libs.geometry :as geometry]
             [goog.date.duration :as duration]
             [reagent.core :as r]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [hive.assets :as assets]))
 
 (def big-circle 16)
 (def small-circle 10)
@@ -75,37 +75,37 @@
     (for [step steps]
       (if (= "transit" (:step/mode step))
         ;[:> react/TouchableOpacity {:onPress #(work/transact! (onStopPress props step))}
-        [:> react/Text {:style {:color "gray"}} (:step/name step)]
-        [:> react/Text {:style {:color "gray"}}
+        [:> React/Text {:style {:color "gray"}} (:step/name step)]
+        [:> React/Text {:style {:color "gray"}}
                        (str/replace (:maneuver/instruction (:step/maneuver step))
                                     "[Dummy]" "")]))))
 
 (defn- StepOverview
   [props steps expanded?]
-  [:> react/View {:flex 9 :justifyContent "space-between"}
-    [:> react/Text {:style {:flex 1}} (some :step/name (butlast steps))]
-    [:> react/TouchableOpacity {:style {:flex (if @expanded? 2 5)
+  [:> React/View {:flex 9 :justifyContent "space-between"}
+    [:> React/Text {:style {:flex 1}} (some :step/name (butlast steps))]
+    [:> React/TouchableOpacity {:style {:flex (if @expanded? 2 5)
                                         :justifyContent "center"}
                                 :onPress #(reset! expanded? (not @expanded?))}
-      [:> react/View {:flex-direction "row"}
-        [:> expo/Ionicons {:name (if @expanded? "ios-arrow-down" "ios-arrow-forward")
-                           :style {:paddingRight 10}
-                           :size 22 :color "gray"}]
-        [:> react/Text {:style {:color "gray" :paddingRight 7}}
+      [:> React/View {:flex-direction "row"}
+        [:> assets/Ionicons {:name  (if @expanded? "ios-arrow-down" "ios-arrow-forward")
+                             :style {:paddingRight 10}
+                             :size  22 :color "gray"}]
+        [:> React/Text {:style {:color "gray" :paddingRight 7}}
                        (str/replace (:maneuver/instruction (:step/maneuver (first steps)))
                                     "[Dummy]" "")]]]
     (when @expanded?
-      [:> react/View {:flex 5}
+      [:> React/View {:flex 5}
         [StepDetails props (butlast (rest steps))]])
-    [:> react/Text {:style {:flex 1}} (:step/name (last steps))]])
+    [:> React/Text {:style {:flex 1}} (:step/name (last steps))]])
 
 (defn- RouteSection
   [props steps human-time]
   (r/with-let [expanded? (r/atom false)]
     (let [subsize (* subsection-height (count steps))
           height  (+ section-height (if @expanded? subsize 0))]
-      [:> react/View {:height height :flexDirection "row"}
-        [:> react/Text {:style {:flex 1 :textAlign "right"
+      [:> React/View {:height height :flexDirection "row"}
+        [:> React/Text {:style {:flex 1 :textAlign "right"
                                 :color "gray" :fontSize 12}}
                       human-time]
         (if (= "walking" (:step/mode (first steps)))
@@ -123,7 +123,7 @@
                                 :step/distance
                                 {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
                              [:directions/uuid uid])]
-    [:> react/View {:flex 1}
+    [:> React/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))
             :let [arrives  (:step/arrive (first steps))
                   iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
@@ -134,14 +134,14 @@
 (defn- SectionIcon
   [steps]
   (if (= "walking" (:step/mode (first steps)))
-    [:> expo/Ionicons {:name "ios-walk" :size 32}]
+    [:> assets/Ionicons {:name "ios-walk" :size 32}]
     (case (:route/type (:trip/route (:step/trip (first steps))))
-      0 [:> expo/Ionicons {:name "ios-train" :size 32}]
-      1 [:> expo/Ionicons {:name "ios-subway" :size 32}]
-      2 [:> expo/Ionicons {:name "md-train" :size 32}]
-      3 [:> expo/Ionicons {:name "ios-bus" :size 32}]
+      0 [:> assets/Ionicons {:name "ios-train" :size 32}]
+      1 [:> assets/Ionicons {:name "ios-subway" :size 32}]
+      2 [:> assets/Ionicons {:name "md-train" :size 32}]
+      3 [:> assets/Ionicons {:name "ios-bus" :size 32}]
       ;; default
-      [:> react/ActivityIndicator])))
+      [:> React/ActivityIndicator])))
 
 (defn- Transfers
   [route-id]
@@ -151,7 +151,7 @@
                               {:step/trip [{:trip/route [:route/type]}]}]}]
                            [:directions/uuid route-id])
         sections (partition-by :step/mode (:directions/steps route))]
-    [:> react/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
+    [:> React/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
                     :top "0.5%" :alignItems "center"}
       (butlast ;; drop last arrow icon
         (interleave
@@ -160,7 +160,7 @@
             [SectionIcon steps])
           (for [i (range (count sections))]
             ^{:key i}
-            [:> expo/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"}])))]))
+            [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"}])))]))
 
 
 (defn- Info
@@ -170,14 +170,14 @@
                                            [?route :directions/duration ?duration]
                                            [_      :user/goal ?target]
                                            [?target :place/text ?goal]])]
-    [:> react/View props
-     [:> react/View {:flexDirection "row" :paddingLeft "1.5%"}
+    [:> React/View props
+     [:> React/View {:flexDirection "row" :paddingLeft "1.5%"}
       [Transfers route-id]
-      [:> react/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
+      [:> React/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
                               :paddingLeft "10%"}}
        (when (some? duration)
          (duration/format (* 1000 duration)))]]
-     [:> react/Text {:style {:color "gray" :paddingLeft "2.5%"}}
+     [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
                     goal]]))
 
 (defn- paths
@@ -190,7 +190,7 @@
           :let [coords (mapcat :coordinates (map :step/geometry steps))
                 stroke (route-color (:trip/route (:step/trip (first steps))))]]
       ^{:key (hash steps)}
-      [:> expo/MapPolyline {:coordinates (map geometry/latlng coords)
+      [:> Expo/MapPolyline {:coordinates (map geometry/latlng coords)
                             :strokeColor stroke
                             :strokeWidth 4}])))
 
@@ -203,20 +203,20 @@
         uid   @(work/q! '[:find ?uid .
                           :where [_      :user/directions ?route]
                                  [?route :directions/uuid ?uid]])]
-    [:> react/ScrollView {:flex 1}
-      [:> react/View {:height (* 0.9 (:height window))}
+    [:> React/ScrollView {:flex 1}
+      [:> React/View {:height (* 0.9 (:height window))}
         [symbols/CityMap
           (when (some? uid)
             (paths uid))]]
-      [:> react/View {:flex 1 :backgroundColor "white"}
+      [:> React/View {:flex 1 :backgroundColor "white"}
         (when (some? uid)
           [Info {:flex 1 :paddingTop "1%"} uid])
         (when (some? uid)
           [Route props uid])]
-      [:> react/View (merge (symbols/circle 52) symbols/shadow
+      [:> React/View (merge (symbols/circle 52) symbols/shadow
                             {:position "absolute" :right "10%"
                              :top (* 0.88 (:height window))})
-        [:> expo/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
+        [:> assets/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
 
 ;hive.rework.state/conn
 ;(into {} (work/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))

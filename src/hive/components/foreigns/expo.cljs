@@ -1,7 +1,8 @@
 (ns hive.components.foreigns.expo
-  (:require [hive.foreigns :as fl]))
+  (:require [expo :as Expo]
+            [hive.assets :as fl]))
 
-(def MapView   (. fl/Expo -MapView))
+(def MapView   Expo/MapView)
 (def MapMarker (. MapView -Marker))
 (def MapPolyline (. MapView -Polyline))
 

@@ -1,5 +1,5 @@
 (ns hive.components.foreigns.react
-  (:require [hive.foreigns :as fl]))
+  (:require [hive.assets :as fl]))
 
 (def View   (. fl/ReactNative -View))
 (def Image  (. fl/ReactNative -Image))
