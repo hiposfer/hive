@@ -1,5 +1,5 @@
 (ns hive.services.location
-  (:require [hive.rework.util :as tool]
+  (:require [hive.utils.miscelaneous :as tool]
             [react-native :as ReactNative]
             [expo :as Expo]
             [hive.state.queries :as queries]

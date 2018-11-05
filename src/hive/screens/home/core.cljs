@@ -5,7 +5,7 @@
             [clojure.string :as str]
             [hive.state.queries :as queries]
             [hive.rework.core :as work]
-            [hive.rework.util :as tool]
+            [hive.utils.miscelaneous :as tool]
             [hive.services.mapbox :as mapbox]
             [hive.services.location :as location]
             [hive.utils.queries.geometry :as geometry]

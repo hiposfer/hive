@@ -8,7 +8,7 @@
             [datascript.core :as data]
             [hive.services.sqlite :as sqlite]
             [hive.state.queries :as queries]
-            [hive.rework.util :as tool]
+            [hive.utils.miscelaneous :as misc]
             [hive.screens.home.core :as home]
             [hive.screens.home.gtfs :as gtfs]
             [hive.screens.errors :as errors]
@@ -75,8 +75,8 @@
       (nil? (second r))
       false ;; no router initialized, Exit
 
-      (= (tool/keywordize (first r))
-         (tool/keywordize (:react.navigation/state (first @tx))))
+      (= (misc/keywordize (first r))
+         (misc/keywordize (:react.navigation/state (first @tx))))
       false ;; nothing to go back to, Exit
 
       :else (some? (work/transact! @tx))))) ;; always returns true

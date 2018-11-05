@@ -1,7 +1,7 @@
 (ns hive.services.secure-store
   (:require [cljs.tools.reader.edn :as edn]
             [expo :as Expo]
-            [hive.rework.util :as tool]))
+            [hive.utils.miscelaneous :as tool]))
 
 ;https://docs.expo.io/versions/latest/sdk/securestore.html
 

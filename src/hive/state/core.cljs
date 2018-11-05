@@ -1,6 +1,6 @@
 (ns hive.state.core
   (:require [hive.rework.core :as work]
-            [hive.rework.util :as tool]
+            [hive.utils.miscelaneous :as tool]
             [cljs.spec.alpha :as s]
             [expound.alpha :as expound]
             [datascript.core :as data]

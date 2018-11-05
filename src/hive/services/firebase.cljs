@@ -1,5 +1,5 @@
 (ns hive.services.firebase
-  (:require [hive.rework.util :as tool]
+  (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hive.state.queries :as queries]
             [hive.rework.core :as work]))

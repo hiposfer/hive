@@ -2,7 +2,7 @@
   (:require [react-native :as React]
             [expo :as Expo]
             [hive.assets :as fl]
-            [hive.rework.util :as tool]
+            [hive.utils.miscelaneous :as tool]
             [hive.rework.core :as work :refer-macros [go-try <?]]
             [hive.assets :as assets]))
 

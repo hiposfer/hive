@@ -1,4 +1,5 @@
-(ns hive.rework.util
+(ns hive.utils.miscelaneous
+  "a namespace for functions that have not found a home :'("
   (:require [cljs.core.async :as async]
             [clojure.spec.alpha :as s]))
 
