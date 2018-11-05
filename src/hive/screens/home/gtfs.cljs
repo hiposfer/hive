@@ -1,12 +1,12 @@
 (ns hive.screens.home.gtfs
   (:require [react-native :as React]
             [datascript.core :as data]
-            [hive.rework.core :as work]
             [clojure.string :as str]
             [hiposfer.geojson.specs :as geojson]
             [clojure.spec.alpha :as s]
             [hive.screens.symbols :as symbols]
-            [expo :as Expo]))
+            [expo :as Expo]
+            [hive.state.core :as state]))
 
 ;; taken from https://stackoverflow.com/a/44357409
 (defn Table
@@ -24,7 +24,7 @@
 (defn Data
   [props]
   (let [ref    (first (:params (:state (:navigation props))))
-        data   (into {} (data/entity (work/db) ref))
+        data   (into {} (data/entity (state/db) ref))
         points (for [[k v] data :when (s/valid? ::geojson/point v)] [k v])]
     [:> React/View {:flex 1}
       ;; Header .....................

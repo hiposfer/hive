@@ -2,7 +2,7 @@
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hive.state.queries :as queries]
-            [hive.rework.core :as work]))
+            [hive.state.core :as state]))
 
 (def ref ^js/Firebase (js/require "firebase"))
 
@@ -56,4 +56,4 @@
                  (sign-up! db))))))
 
 ;hive.rework.state/conn
-;(sign-in-or-up! (work/db))
+;(sign-in-or-up! (state/db))

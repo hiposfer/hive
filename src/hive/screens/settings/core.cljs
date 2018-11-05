@@ -1,5 +1,5 @@
 (ns hive.screens.settings.core
-  (:require [hive.rework.core :as work]
+  (:require [hive.state.core :as state]
             [react-native :as React]
             [hive.screens.symbols :as symbols]
             [expo :as Expo]
@@ -8,7 +8,8 @@
             [cljs.spec.alpha :as s]
             [hive.services.secure-store :as secure]
             [hive.services.firebase :as firebase]
-            [hive.assets :as assets]))
+            [hive.assets :as assets]
+            [hive.state.core :as state]))
 
 (s/def ::email (s/and string? #(re-matches #"\S+@\S+\.\S+" %)))
 (s/def ::password (s/and string? #(>= (count %) 8)))
@@ -22,7 +23,7 @@
 
 (defn- EmailInput
   [user stage]
-  (let [info (work/pull! [:user/email] user)]
+  (let [info (state/pull! [:user/email] user)]
     [:> React/View
       (if (= :password @stage)
         [:> React/Text (:user/email @info)]
@@ -32,7 +33,7 @@
                              :keyboardType "email-address"
                              :onSubmitEditing #(when (s/valid? ::email (:user/email @info))
                                                  (reset! stage :password))
-                             :onChangeText #(work/transact! [{:db/id user :user/email %}])
+                             :onChangeText #(state/transact! [{:db/id user :user/email %}])
                              :style {:width 150 :height 50}}])
       (cond
         (empty? (:user/email @info)) nil
@@ -48,12 +49,12 @@
 
 (defn- PasswordInput
   [user]
-  (let [info (work/pull! [:user/password] user)]
+  (let [info (state/pull! [:user/password] user)]
     [:> React/View
       [:> React/TextInput {:placeholder     "secret password" :textAlign "center"
                            :autoCapitalize  "none" :returnKeyType "send"
-                           :onChangeText    #(work/transact! [{:db/id user :user/password %}])
-                           :onSubmitEditing #(work/transact! (on-sign-up @info (work/db)))
+                           :onChangeText    #(state/transact! [{:db/id user :user/password %}])
+                           :onSubmitEditing #(state/transact! (on-sign-up @info (state/db)))
                            :style           {:width 150 :height 50}}]
       (cond
         (empty? (:user/password @info)) nil
@@ -63,7 +64,7 @@
 
 (defn SignUp
   [user]
-  (r/with-let [info (work/pull! [:user/email :user/password] user)
+  (r/with-let [info (state/pull! [:user/email :user/password] user)
                stage (r/atom :email)]
     [:> React/View {:backgroundColor "rgba(0,0,0,0.5)" :flex 1
                     :alignItems "center" :justifyContent "center"}
@@ -75,13 +76,13 @@
         (when (= :password @stage)
           [PasswordInput user])
         (when (s/valid? ::password (:user/password @info))
-          [:> React/TouchableOpacity {:onPress #(work/transact! (on-sign-up @info (work/db)))}
+          [:> React/TouchableOpacity {:onPress #(state/transact! (on-sign-up @info (state/db)))}
             [:> assets/Ionicons {:name "ios-checkmark" :size 26}]])]]))
 
 (defn- UserInfo
   [user]
-  (let [info     (work/pull! [:user/displayName :user/isAnonymous :user/email]
-                             user)
+  (let [info     (state/pull! [:user/displayName :user/isAnonymous :user/email]
+                              user)
         visible? (r/atom false)]
     (fn []
       [:> React/TouchableOpacity {:style {:height 125 :paddingBottom 20 :paddingTop 20}
@@ -109,8 +110,8 @@
 
 (defn- UserCity
   [props user]
-  (let [info (work/pull! [{:user/city [:city/name :city/region :city/country]}]
-                         user)
+  (let [info (state/pull! [{:user/city [:city/name :city/region :city/country]}]
+                          user)
         navigate (:navigate (:navigation props))]
     [:> React/View {:height 125}
      [:> React/Text {:style {:color "slategray" :fontSize 15 :paddingLeft 20
@@ -131,7 +132,7 @@
 ;; process might change it, thus breaking all pull patterns
 (defn Settings
   [props]
-  (let [user (work/q! queries/user-entity)]
+  (let [user (state/q! queries/user-entity)]
     [:> React/View {:flex 1}
     ;; HEADER .....................
       [:> React/View {:height 60 :alignItems "center" :justifyContent "center"

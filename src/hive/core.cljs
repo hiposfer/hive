@@ -3,7 +3,6 @@
             [expo :as Expo]
             [react-native :as React]
             [hive.state.core :as state]
-            [hive.rework.core :as work]
             [hive.services.firebase :as firebase]
             [datascript.core :as data]
             [hive.services.sqlite :as sqlite]
@@ -17,12 +16,13 @@
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.screens.home.route :as route]
-            [hive.services.secure-store :as secure]))
+            [hive.services.secure-store :as secure]
+            [hiposfer.rata.core :as rata]))
 
 (defn- MessageTray
   [props]
-  (let [id      @(work/q! queries/session)
-        alert   @(work/pull! [:session/alert]
+  (let [id      @(state/q! queries/session)
+        alert   @(state/pull! [:session/alert]
                              [:session/uuid id])]
     (when-not (empty? (:session/alert alert))
       [:> React/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
@@ -30,7 +30,7 @@
         [:> React/Text
           {:style {:width "100%" :height "100%" :textAlign "center"
                    :backgroundColor "grey" :color "white"}
-           :onPress #(work/transact! [{:session/uuid id :session/alert {}}])}
+           :onPress #(state/transact! [{:session/uuid id :session/alert {}}])}
           (:session/alert alert)]])))
 
 (defn- screenify
@@ -69,7 +69,7 @@
   this listener and subscribe your own for the lifecycle of the UI component.
   See `with-let` https://reagent-project.github.io/news/news060-alpha.html"
   []
-  (let [r  (data/q router/data-query (work/db))
+  (let [r  (data/q router/data-query (state/db))
         tx (delay (router/goBack r))]
     (cond
       (nil? (second r))
@@ -79,14 +79,14 @@
          (misc/keywordize (:react.navigation/state (first @tx))))
       false ;; nothing to go back to, Exit
 
-      :else (some? (work/transact! @tx))))) ;; always returns true
+      :else (some? (state/transact! @tx))))) ;; always returns true
 
 (defn- internet-connection-listener
   "Listens to connection changes mainly for internet access."
   [connected]
-  (let [sid @(work/q! queries/session)]
+  (let [sid @(state/q! queries/session)]
     (if-not connected
-        (work/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
+        (state/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
 
 (defn init!
   "register the main UI component in React Native"
@@ -96,32 +96,31 @@
                     :authDomain (:ENV/FIREBASE_AUTH_DOMAIN state/tokens)
                     :databaseUrl (:ENV/FIREBASE_DATABASE_URL state/tokens)
                     :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
-    (work/init! conn)
-    (work/transact! [{:session/uuid (data/squuid)
-                      :session/start (js/Date.now)}])
+    (println "hello World")
+    (println (get @conn ::rata/ratom))
+    (state/transact! [{:session/uuid (data/squuid)
+                       :session/start (js/Date.now)}])
     ;; firebase related funcionality ...............
     (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
     (.. (sqlite/CLEAR!!) ;; TODO: remove this
         (then #(sqlite/read!))
-        (then work/transact!)
+        (then state/transact!)
         ;; listen only AFTER restoration
         (then #(sqlite/listen! conn))
-        (then #(work/transact! (state/init-data (work/db))))
+        (then #(state/transact! (state/init-data (state/db))))
         (then #(secure/load! [:user/password]))
-        (then #(merge {:user/uid (data/q queries/user-id (work/db))} %))
-        (then #(work/transact! [%]))
-        (then #(firebase/sign-in! (work/db)))
-        (then work/transact!))
+        (then #(merge {:user/uid (data/q queries/user-id (state/db))} %))
+        (then #(state/transact! [%]))
+        (then #(firebase/sign-in! (state/db)))
+        (then state/transact!))
     ;; start listening for events ..................
     (Expo/registerRootComponent (r/reactify-component RootUi))
     ;; handles Android BackButton
     (React/BackHandler.addEventListener "hardwareBackPress"
-                                              back-listener!)
+                                        back-listener!)
     (React/NetInfo.isConnected.addEventListener "connectionChange"
-                                                      internet-connection-listener)))
-
-;hive.rework.state/conn
+                                                internet-connection-listener)))
 
 ;(. (sqlite/read!) (then cljs.pprint/pprint))
 ;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
