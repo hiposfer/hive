@@ -190,9 +190,9 @@
           :let [coords (mapcat :coordinates (map :step/geometry steps))
                 stroke (route-color (:trip/route (:step/trip (first steps))))]]
       ^{:key (hash steps)}
-      [:> Expo/MapPolyline {:coordinates (map geometry/latlng coords)
-                            :strokeColor stroke
-                            :strokeWidth 4}])))
+      [:> Expo/MapView.Polyline {:coordinates (map geometry/latlng coords)
+                                 :strokeColor stroke
+                                 :strokeWidth 4}])))
 
 (defn Instructions
   "basic navigation directions.

@@ -1,7 +1,7 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [expo :as Expo]
-            [react-native :as ReactNative]
+            [react-native :as React]
             [hive.state :as state]
             [hive.rework.core :as work]
             [hive.services.firebase :as firebase]
@@ -17,7 +17,6 @@
             [hive.components.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.components.screens.home.route :as route]
-            [react-native :as React]
             [hive.services.secure-store :as secure]))
 
 (defn- MessageTray
@@ -117,9 +116,9 @@
     ;; start listening for events ..................
     (Expo/registerRootComponent (r/reactify-component RootUi))
     ;; handles Android BackButton
-    (ReactNative/BackHandler.addEventListener "hardwareBackPress"
+    (React/BackHandler.addEventListener "hardwareBackPress"
                                               back-listener!)
-    (ReactNative/NetInfo.isConnected.addEventListener "connectionChange"
+    (React/NetInfo.isConnected.addEventListener "connectionChange"
                                                       internet-connection-listener)))
 
 ;hive.rework.state/conn

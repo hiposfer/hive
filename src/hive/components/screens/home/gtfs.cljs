@@ -39,7 +39,7 @@
             (for [[k v] points
                   :let [coords (:coordinates v)]]
               ^{:key (hash coords)}
-              [:> Expo/MapMarker {:coordinate {:latitude (second coords)
-                                               :longitude (first coords)}}])]])
+              [:> Expo/MapView.Marker {:coordinate {:latitude (second coords)
+                                                    :longitude (first coords)}}])]])
       [:> React/View {:height 200}
         [Table (for [row data] (for [v row] (if (keyword? v) (name v) v)))]]]))
