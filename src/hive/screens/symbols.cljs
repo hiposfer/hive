@@ -1,4 +1,4 @@
-(ns hive.components.symbols
+(ns hive.screens.symbols
   (:require [react-native :as React]
             [hive.libs.geometry :as geometry]
             [expo :as Expo]

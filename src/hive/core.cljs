@@ -9,14 +9,14 @@
             [hive.services.sqlite :as sqlite]
             [hive.queries :as queries]
             [hive.rework.util :as tool]
-            [hive.components.screens.home.core :as home]
-            [hive.components.screens.home.gtfs :as gtfs]
-            [hive.components.screens.errors :as errors]
-            [hive.components.router :as router]
-            [hive.components.screens.settings.core :as settings]
-            [hive.components.screens.settings.city-picker :as city-picker]
+            [hive.screens.home.core :as home]
+            [hive.screens.home.gtfs :as gtfs]
+            [hive.screens.errors :as errors]
+            [hive.screens.router :as router]
+            [hive.screens.settings.core :as settings]
+            [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.components.screens.home.route :as route]
+            [hive.screens.home.route :as route]
             [hive.services.secure-store :as secure]))
 
 (defn- MessageTray

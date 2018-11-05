@@ -1,11 +1,11 @@
-(ns hive.components.screens.home.gtfs
+(ns hive.screens.home.gtfs
   (:require [react-native :as React]
             [datascript.core :as data]
             [hive.rework.core :as work]
             [clojure.string :as str]
             [hiposfer.geojson.specs :as geojson]
             [clojure.spec.alpha :as s]
-            [hive.components.symbols :as symbols]
+            [hive.screens.symbols :as symbols]
             [expo :as Expo]))
 
 ;; taken from https://stackoverflow.com/a/44357409

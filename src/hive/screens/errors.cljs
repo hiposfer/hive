@@ -1,4 +1,4 @@
-(ns hive.components.screens.errors
+(ns hive.screens.errors
   (:require [react-native :as React]
             [expo :as Expo]
             [hive.assets :as fl]
@@ -11,7 +11,7 @@
   [goBack]
   (if (= "android" ReactNative/Platform.OS)
     (let [settings Expo/IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS]
-      [(delay (Expo/IntentLauncherAndroid.startActivityAsync settings))
+      [[Expo/IntentLauncherAndroid.startActivityAsync settings]
        [goBack]])))
 
 (defn UserLocation

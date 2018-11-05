@@ -1,4 +1,4 @@
-(ns hive.components.screens.home.core
+(ns hive.screens.home.core
   (:require [reagent.core :as r]
             [react-native :as React]
             [expo :as Expo]
@@ -10,7 +10,7 @@
             [hive.services.location :as location]
             [hive.libs.geometry :as geometry]
             [hive.services.kamal :as kamal]
-            [hive.components.symbols :as symbols]
+            [hive.screens.symbols :as symbols]
             [datascript.core :as data]
             [hive.state :as state]
             [hive.assets :as assets]))

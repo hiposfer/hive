@@ -1,7 +1,7 @@
-(ns hive.components.screens.home.route
+(ns hive.screens.home.route
   (:require [hive.rework.util :as tool]
             [hive.rework.core :as work]
-            [hive.components.symbols :as symbols]
+            [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
             [hive.libs.geometry :as geometry]
