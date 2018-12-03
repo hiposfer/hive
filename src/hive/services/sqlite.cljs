@@ -26,33 +26,50 @@
 
 (def delete-all-datoms "delete from datoms;")
 
+(defn- storable-entity?
+  [entity]
+  (reduce-kv (fn [_ k v]
+               (when (and (= :sqlite/store (get v :hive.storage))
+                          (= :db.unique/identity (get v :db.unique))
+                          (some? (get entity k)))
+                 (reduced true)))
+             nil
+             state/schema))
+
 (defn- sync?
-  "should datom d be persisted in sql. A datom is persisted
-  if the db schema has an entity with :store/entity and the
-  datom attribute is not set as :store/secure"
+  "a datom is persisted if the db schema has an entity with :sqlite/store
+   and the attribute is not marked as :sqlite/ignore.
+
+   Datoms that references other datoms are only stored if both the datom and
+   its reference are marked for storage"
   [datom tx-report]
   (let [db      (:db-after tx-report)
         entity  (data/entity db (:e datom))
-        storage (get-in state/schema [(:a datom) :hive.storage])]
+        storage (get-in state/schema [(:a datom) :hive.storage])
+        _type   (get-in state/schema [(:a datom) :db.valueType])]
     (cond
       ;; attribute explicitly marked as ignore - do not sync
       (= :sqlite/ignore storage)
       false
 
-      ;; attribute explicitly marked as store - do not sync
+      ;; attribute explicitly marked as store
       (= :sqlite/store storage)
       true
 
+      ;; attribute value references an entity marked for storage
+      ;; and the attribute itself is marked for storage
+      (and (storable-entity? (get entity (:a datom)))
+           (storable-entity? entity)
+           (= :db.type/ref _type))
+      true
+
       ;; attribute belongs to an entity marked for storage
-      ;; its identity attribute is marked, not the attribute itself
-      (reduce-kv (fn [_ k v]
-                   (when (and (= :sqlite/store (get v :hive.storage))
-                              (= :db.unique/identity (get v :db.unique))
-                              (some? (get entity k)))
-                     (reduced true)))
-                 nil
-                 state/schema)
-      true)))
+      (and (storable-entity? entity)
+           (not= :db.type/ref _type))
+      true
+
+      ;; ignore by default
+      :else false)))
 
 (defn- transact!
   "executes a sequence of transactions to sync sqlite with datascript"
