@@ -1,8 +1,7 @@
 (ns hive.services.firebase
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
-            [hive.state.queries :as queries]
-            [hive.state.core :as state]))
+            [hive.state.queries :as queries]))
 
 (def ref ^js/Firebase (js/require "firebase"))
 

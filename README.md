@@ -4,7 +4,7 @@ Your go-to public transport routing app
 
 ## requirements
 
-- [yarn](https://yarnpkg.com/lang/en/docs/install/)
+- [npm](https://www.npmjs.com/get-npm)
 - [lein](http://leiningen.org/#install)
 
 ## development
@@ -67,8 +67,7 @@ lein prod-build
 app is architectured.
 
 ## known problems
-- we are currently using a very outdated version of react native, expo and the expo template
-itself. We are working on it.
+- we are currently using a very outdated version of react native and expo. We are working on it.
 - sometimes the metro packager cannot properly find the source files. In such cases you see an
 error in the terminal like `10:59:42 [exp] NotFoundError: Cannot find entry file target/expo/reagent/impl/template.js.js in any of the roots: ["/Users/Camilo/Proyectos/hive"]`.
 To solve it, simply run `patch node_modules/metro/src/Server/index.js resources/metro.patch`
