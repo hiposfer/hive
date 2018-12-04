@@ -58,14 +58,14 @@
 
       ;; attribute value references an entity marked for storage
       ;; and the attribute itself is marked for storage
-      (and (storable-entity? (get entity (:a datom)))
+      (and (= :db.type/ref _type)
            (storable-entity? entity)
-           (= :db.type/ref _type))
+           (storable-entity? (get entity (:a datom))))
       true
 
       ;; attribute belongs to an entity marked for storage
-      (and (storable-entity? entity)
-           (not= :db.type/ref _type))
+      (and (not= :db.type/ref _type)
+           (storable-entity? entity))
       true
 
       ;; ignore by default
