@@ -91,23 +91,19 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (let [conn       (data/create-conn state/schema)
-        config #js {:apiKey (:ENV/FIREBASE_API_KEY state/tokens)
+  (let [config #js {:apiKey (:ENV/FIREBASE_API_KEY state/tokens)
                     :authDomain (:ENV/FIREBASE_AUTH_DOMAIN state/tokens)
                     :databaseUrl (:ENV/FIREBASE_DATABASE_URL state/tokens)
                     :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
-    (println "hello World")
-    (println (get @conn ::rata/ratom))
     (state/transact! [{:session/uuid (data/squuid)
                        :session/start (js/Date.now)}])
     ;; firebase related funcionality ...............
     (. firebase/ref (initializeApp config))
     ;; restore user data ...........................
-    (.. (sqlite/CLEAR!!) ;; TODO: remove this
-        (then #(sqlite/read!))
+    (.. (sqlite/init!)
         (then state/transact!)
         ;; listen only AFTER restoration
-        (then #(sqlite/listen! conn))
+        (then #(sqlite/listen! state/conn))
         (then #(state/transact! (state/init-data (state/db))))
         (then #(secure/load! [:user/password]))
         (then #(merge {:user/uid (data/q queries/user-id (state/db))} %))

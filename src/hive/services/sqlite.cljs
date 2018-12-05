@@ -26,41 +26,62 @@
 
 (def delete-all-datoms "delete from datoms;")
 
-(def entity-store (set (for [[k v] state/schema
-                             :when (and (= :store/entity (:store.type v))
-                                        (contains? v :db.unique))]
-                         k)))
-
-(def ignore (set (for [[k v] state/schema
-                       :when (= :store/secure (:store.type v))]
-                   k)))
+(defn- storable-entity?
+  [entity]
+  (reduce-kv (fn [_ k v]
+               (when (and (= :sqlite/store (get v :hive.storage))
+                          (= :db.unique/identity (get v :db.unique))
+                          (some? (get entity k)))
+                 (reduced true)))
+             nil
+             state/schema))
 
 (defn- sync?
-  "should datom d be persisted in sql. A datom is persisted
-  if the db schema has an entity with :store/entity and the
-  datom attribute is not set as :store/secure"
-  [d tx-report]
-  (let [db     (:db-after tx-report)
-        datoms (filter (comp #{(:e d)} :e) (data/datoms db :eavt))]
-    (cond
-      (contains? ignore (:a d)) false
-      (some #(contains? entity-store (:a %)) datoms) true)))
+  "a datom is persisted if the db schema has an entity with :sqlite/store
+   and the attribute is not marked as :sqlite/ignore.
 
-(defn sync
-  "returns a sequence of sqlite transactions according to Datascript tx-report"
-  [tx-report]
-  (for [d (:tx-data tx-report)
-        :when (sync? d tx-report)]
-    (if (:added d)
-      [insert-datom [(:e d) (pr-str (:a d)) (pr-str (:v d)) (:tx d)]]
-      [delete-datom [(:e d) (pr-str (:a d)) (pr-str (:v d))]])))
+   Datoms that references other datoms are only stored if both the datom and
+   its reference are marked for storage"
+  [datom tx-report]
+  (let [db      (:db-after tx-report)
+        entity  (data/entity db (:e datom))
+        storage (get-in state/schema [(:a datom) :hive.storage])
+        _type   (get-in state/schema [(:a datom) :db.valueType])]
+    (cond
+      ;; attribute explicitly marked as ignore - do not sync
+      (= :sqlite/ignore storage)
+      false
+
+      ;; attribute explicitly marked as store
+      (= :sqlite/store storage)
+      true
+
+      ;; attribute value references an entity marked for storage
+      ;; and the attribute itself is marked for storage
+      (and (= :db.type/ref _type)
+           (storable-entity? entity)
+           (storable-entity? (get entity (:a datom))))
+      true
+
+      ;; attribute belongs to an entity marked for storage
+      (and (not= :db.type/ref _type)
+           (storable-entity? entity))
+      true
+
+      ;; ignore by default
+      :else false)))
 
 (defn- transact!
   "executes a sequence of transactions to sync sqlite with datascript"
   [transaction tx-report]
-  (doseq [[tx values] (sync tx-report)]
-    ;(println tx values)
-    (. transaction (executeSql tx (clj->js values)))))
+  (doseq [d (:tx-data tx-report)
+          :when (sync? d tx-report)
+          :let [values    [(:e d) (pr-str (:a d)) (pr-str (:v d)) (:tx d)]
+                statement (if (:added d)
+                            insert-datom
+                            delete-datom)]]
+    (println d)
+    (. transaction (executeSql statement (clj->js values)))))
 
 (defn listen!
   "listen for datascript changes and synchronize them"
@@ -83,8 +104,8 @@
                   (edn/read-string (:v r))
                   (:tx r)))))
 
-(defn read!
-  "read all datoms from the sqlite storage.
+(defn init!
+  "creates a sqlite table if it doesnt exists and reads all datoms from storage.
 
   Returns a Promise that will resolve with a sequence of datoms"
   ^js/Promise
@@ -101,8 +122,8 @@
                            reject))))))
             ;; success
 
-(defn CLEAR!!
-  "delete all datoms from the datoms table.
+(defn clear!
+  "deletes all datoms from the database.
 
   Returns a promise that will resolve to a sequence of datoms"
   ^js/Promise
@@ -118,5 +139,5 @@
 ;    (then println)
 ;    (catch println))
 
-;(.. (read!)
-;    (then println))
+#_(.. (init!)
+      (then println))

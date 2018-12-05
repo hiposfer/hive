@@ -93,14 +93,9 @@
 (def cities (js->clj (js/require "./resources/cities.json")
                      :keywordize-keys true))
 
-;; Storage types
-; - :store/entity -> stores every datom for this entity in sqlite local database
-; - :store/secure -> stores this datom in a secure store locally ... bypasses sqlite
-; - :store/sync   -> stores every datom for this entity in sqlite and remotely
-
-(def schema {:user/uid              {:db.unique  :db.unique/identity
-                                     :store.type :store/entity}
-             :user/password         {:store.type :store/secure}
+(def schema {:user/uid              {:db.unique    :db.unique/identity
+                                     :hive.storage :sqlite/store}
+             :user/password         {:hive.storage :sqlite/ignore}
              :user/city             {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
              :user/goal             {:db.valueType   :db.type/ref
@@ -108,8 +103,8 @@
              :user/directions       {:db.valueType   :db.type/ref
                                      :db.cardinality :db.cardinality/one}
              ;; server support data
-             :city/name             {:db.unique :db.unique/identity
-                                     :store.type :store/entity}
+             :city/name             {:db.unique    :db.unique/identity
+                                     :hive.storage :sqlite/store}
              ;; mapbox data
              :place/id              {:db.unique :db.unique/identity}
              ;; ephemeral data
@@ -125,12 +120,12 @@
              ;; needed to tell datascript to keep only 1 of these
              :react.navigation/name {:db.unique :db.unique/identity}
              ;; GTFS entities
-             :route/id              {:db.unique :db.unique/identity
-                                     :store.type :store/entity}
-             :trip/id               {:db.unique :db.unique/identity
-                                     :store.type :store/entity}
-             :stop/id               {:db.unique :db.unique/identity
-                                     :store.type :store/entity}
+             :route/id              {:db.unique    :db.unique/identity
+                                     :hive.storage :sqlite/store}
+             :trip/id               {:db.unique    :db.unique/identity
+                                     :hive.storage :sqlite/store}
+             :stop/id               {:db.unique    :db.unique/identity
+                                     :hive.storage :sqlite/store}
              :trip/route            {:db.valueType :db.type/ref}
              :trip/service          {:db.valueType :db.type/ref}
              :stop_times/trip       {:db.valueType :db.type/ref}
