@@ -80,7 +80,7 @@
                 statement (if (:added d)
                             insert-datom
                             delete-datom)]]
-    (println d)
+    #_(println d)
     (. transaction (executeSql statement (clj->js values)))))
 
 (defn listen!

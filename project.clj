@@ -4,12 +4,14 @@
   :license {:name "LGPLv3"
             :url  "https://raw.githubusercontent.com/hiposfer/hive/master/LICENSE"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 ;; TODO: update to next release for better inference
+                 ;; https://github.com/bhauman/lein-figwheel/issues/715
+                 ;; [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojurescript "1.10.339"]
                  [react-native-externs "0.2.0"]
                  [org.clojure/core.async "0.3.465"]
                  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
+                 [hiposfer/gtfs.edn "0.1.1"]
                  [cljs-react-navigation "0.1.1"]
                  [hiposfer/geojson.specs "0.2.0"]
                  [hiposfer/rata "0.2.0"]]
@@ -18,15 +20,15 @@
   :clean-targets ["target/" "main.js"]
   :aliases {"figwheel"   ["run" "-m" "user" "--figwheel"]
             "prod-build" ["do" ["clean"]
-                               ["run" "-m" "user" "--prepare-release"]
-                               ["cljsbuild" "once" "release"]]}
-  :profiles {:dev  {:dependencies [[expound "0.7.0"]
-                                   [figwheel-sidecar "0.5.14"]
-                                   [com.cemerick/piggieback "0.2.1"]
-                                   [org.clojure/test.check "0.9.0"]]
-                    :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}}
+                          ["run" "-m" "user" "--prepare-release"]
+                          ["cljsbuild" "once" "release"]]}
+  :profiles {:dev {:dependencies [[expound "0.7.0"]
+                                  [figwheel-sidecar "0.5.14"]
+                                  [com.cemerick/piggieback "0.2.1"]
+                                  [org.clojure/test.check "0.9.0"]]
+                   :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}}
 
-  :cljsbuild {:builds [{:id           "main" ;; do NOT change this - used by figwheel bridge
+  :cljsbuild {:builds [{:id           "main"                ;; do NOT change this - used by figwheel bridge
                         :source-paths ["src"]
                         :figwheel     true
                         :compiler     {:output-to     "target/expo/index.js"
