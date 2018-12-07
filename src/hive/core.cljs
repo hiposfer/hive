@@ -16,8 +16,7 @@
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.screens.home.route :as route]
-            [hive.services.secure-store :as secure]
-            [hiposfer.rata.core :as rata]))
+            [hive.services.secure-store :as secure]))
 
 (defn- MessageTray
   [props]

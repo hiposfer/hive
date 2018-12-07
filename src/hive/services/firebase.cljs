@@ -14,9 +14,6 @@
                     :authDomain    (:ENV/FIREBASE_AUTH_DOMAIN state/tokens)
                     :databaseUrl   (:ENV/FIREBASE_DATABASE_URL state/tokens)
                     :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
-    (state/transact! [{:session/uuid  (data/squuid)
-                       :session/start (js/Date.now)}])
-    ;; firebase related funcionality ...............
     (. ref (initializeApp config))))
 
 (defn update-user-info
