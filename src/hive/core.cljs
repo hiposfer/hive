@@ -92,8 +92,8 @@
   []
   (state/transact! [{:session/uuid (data/squuid)
                      :session/start (js/Date.now)}])
-  ;; firebase related funcionality ...............
-  (. firebase/init!)
+  ;; firebase related functionality ...............
+  (firebase/init!)
   ;; restore user data ...........................
   (.. (sqlite/init!)
       (then state/transact!)

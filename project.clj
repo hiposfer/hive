@@ -11,7 +11,7 @@
                  [org.clojure/core.async "0.3.465"]
                  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
-                 [hiposfer/gtfs.edn "0.1.1"]
+                 [hiposfer/gtfs.edn "0.1.2"]
                  [cljs-react-navigation "0.1.1"]
                  [hiposfer/geojson.specs "0.2.0"]
                  [hiposfer/rata "0.2.0"]]
