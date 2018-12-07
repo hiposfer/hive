@@ -91,32 +91,28 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (let [config #js {:apiKey (:ENV/FIREBASE_API_KEY state/tokens)
-                    :authDomain (:ENV/FIREBASE_AUTH_DOMAIN state/tokens)
-                    :databaseUrl (:ENV/FIREBASE_DATABASE_URL state/tokens)
-                    :storageBucket (:ENV/FIREBASE_STORAGE_BUCKET state/tokens)}]
-    (state/transact! [{:session/uuid (data/squuid)
-                       :session/start (js/Date.now)}])
-    ;; firebase related funcionality ...............
-    (. firebase/ref (initializeApp config))
-    ;; restore user data ...........................
-    (.. (sqlite/init!)
-        (then state/transact!)
-        ;; listen only AFTER restoration
-        (then #(sqlite/listen! state/conn))
-        (then #(state/transact! (state/init-data (state/db))))
-        (then #(secure/load! [:user/password]))
-        (then #(merge {:user/uid (data/q queries/user-id (state/db))} %))
-        (then #(state/transact! [%]))
-        (then #(firebase/sign-in! (state/db)))
-        (then state/transact!))
-    ;; start listening for events ..................
-    (Expo/registerRootComponent (r/reactify-component RootUi))
-    ;; handles Android BackButton
-    (React/BackHandler.addEventListener "hardwareBackPress"
-                                        back-listener!)
-    (React/NetInfo.isConnected.addEventListener "connectionChange"
-                                                internet-connection-listener)))
+  (state/transact! [{:session/uuid (data/squuid)
+                     :session/start (js/Date.now)}])
+  ;; firebase related funcionality ...............
+  (. firebase/init!)
+  ;; restore user data ...........................
+  (.. (sqlite/init!)
+      (then state/transact!)
+      ;; listen only AFTER restoration
+      (then #(sqlite/listen! state/conn))
+      (then #(state/transact! (state/init-data (state/db))))
+      (then #(secure/load! [:user/password]))
+      (then #(merge {:user/uid (data/q queries/user-id (state/db))} %))
+      (then #(state/transact! [%]))
+      (then #(firebase/sign-in! (state/db)))
+      (then state/transact!))
+  ;; start listening for events ..................
+  (Expo/registerRootComponent (r/reactify-component RootUi))
+  ;; handles Android BackButton
+  (React/BackHandler.addEventListener "hardwareBackPress"
+                                      back-listener!)
+  (React/NetInfo.isConnected.addEventListener "connectionChange"
+                                              internet-connection-listener))
 
 ;(. (sqlite/read!) (then cljs.pprint/pprint))
 ;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
