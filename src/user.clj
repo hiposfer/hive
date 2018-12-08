@@ -351,6 +351,7 @@
     ;; assumes the dev env files were cleaned :)
     (do (prepare-env!)
         (store-configs!)
+        (gtfs-reference!)
         (io/copy (io/file (io/file "resources/release/main.edn"))
                  (io/file (get-in dev-env [:main :cljs]))))
 
