@@ -8,5 +8,5 @@ jdk:
 script:
   - lein do clean, compile, check
   - npm install
-  - lein prod-build
+  - lein simple-release
   - npm run appr
