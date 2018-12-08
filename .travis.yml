@@ -7,6 +7,8 @@ jdk:
 #script: lein do clean, compile, check, eastwood '{:exclude-namespaces [service.conjectures.specs]}', test
 script:
   - lein do clean, compile, check
+  - npm --version
+  - npm install -g npm@latest
   - npm install
-  - lein prod-build
+  - lein simple-release
   - npm run appr
