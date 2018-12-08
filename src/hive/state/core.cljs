@@ -112,6 +112,9 @@
                      :keywordize-keys true))
 
 (def schema (merge-with into
+              ;; GTFS entities
+              (gtfs-schema)
+              ;; hive schema
               {:user/uid              {:db.unique    :db.unique/identity
                                        :hive.storage :sqlite/store}
                :user/password         {:hive.storage :sqlite/ignore}
@@ -137,9 +140,7 @@
                :step/trip             {:db.valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                ;; needed to tell datascript to keep only 1 of these
-               :react.navigation/name {:db.unique :db.unique/identity}}
-               ;; GTFS entities
-              (gtfs-schema)))
+               :react.navigation/name {:db.unique :db.unique/identity}}))
 
 ;; needs to be an array of maps. This will be used for data/transact!
 (defn init-data
