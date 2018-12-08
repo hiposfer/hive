@@ -31,7 +31,7 @@
   Those *intended-effects* (as opposed to side-effects) are inevitable. This
   framework doesnt try to avoid them nor to mark them as evil, instead it accepts
   them as a necessary evil. We encourage the logic of side effect to be encapsulated
-  in frameworks intented for it, like Promises or core.async channels. However we
+  in frameworks intended for it, like Promises or core.async channels. However we
   prefer for functions to *declare* their intended-effects instead of performing them.
   This is meant to ease testing. It is much more easy to test a function that returns
   a sequence of vector with values inside than it is to test a function which returns
@@ -52,7 +52,25 @@
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
             [hive.state.queries :as queries]
-            [cljs.core.async :as async]))
+            [cljs.core.async :as async]
+            [hiposfer.gtfs.edn :as gtfs]))
+
+(def gtfs-data (js->clj (js/require "./resources/gtfs.json")
+                        :keywordize-keys true))
+
+;; General Transfer Feed Specification - entities
+;; identities
+(defn- gtfs-schema
+  []
+  (let [identifiers (gtfs/identifiers gtfs-data)]
+    (into (sorted-map) (remove nil?)
+      (for [field (gtfs/fields gtfs-data)]
+        (cond
+          (:unique field)
+          [(field :keyword) {:db.unique :db.unique/identity}]
+
+          (gtfs/reference? identifiers field)
+          [(field :keyword) {:db/type :db.type/ref}])))))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -93,43 +111,35 @@
 (def cities (js->clj (js/require "./resources/cities.json")
                      :keywordize-keys true))
 
-(def schema {:user/uid              {:db.unique    :db.unique/identity
-                                     :hive.storage :sqlite/store}
-             :user/password         {:hive.storage :sqlite/ignore}
-             :user/city             {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-             :user/goal             {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-             :user/directions       {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-             ;; server support data
-             :city/name             {:db.unique    :db.unique/identity
-                                     :hive.storage :sqlite/store}
-             ;; mapbox data
-             :place/id              {:db.unique :db.unique/identity}
-             ;; ephemeral data
-             :session/uuid          {:db.unique :db.unique/identity}
-             ;; server response data
-             :directions/uuid       {:db.unique :db.unique/identity}
-             :directions/steps      {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/many}
-             :step/maneuver         {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-             :step/trip             {:db.valueType   :db.type/ref
-                                     :db.cardinality :db.cardinality/one}
-             ;; needed to tell datascript to keep only 1 of these
-             :react.navigation/name {:db.unique :db.unique/identity}
-             ;; GTFS entities
-             :route/id              {:db.unique    :db.unique/identity
-                                     :hive.storage :sqlite/store}
-             :trip/id               {:db.unique    :db.unique/identity
-                                     :hive.storage :sqlite/store}
-             :stop/id               {:db.unique    :db.unique/identity
-                                     :hive.storage :sqlite/store}
-             :trip/route            {:db.valueType :db.type/ref}
-             :trip/service          {:db.valueType :db.type/ref}
-             :stop_times/trip       {:db.valueType :db.type/ref}
-             :stop_times/stop       {:db.valueType :db.type/ref}})
+(def schema (merge-with into
+              {:user/uid              {:db.unique    :db.unique/identity
+                                       :hive.storage :sqlite/store}
+               :user/password         {:hive.storage :sqlite/ignore}
+               :user/city             {:db.valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/one}
+               :user/goal             {:db.valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/one}
+               :user/directions       {:db.valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/one}
+               ;; server support data
+               :city/name             {:db.unique    :db.unique/identity
+                                       :hive.storage :sqlite/store}
+               ;; mapbox data
+               :place/id              {:db.unique :db.unique/identity}
+               ;; ephemeral data
+               :session/uuid          {:db.unique :db.unique/identity}
+               ;; server response data
+               :directions/uuid       {:db.unique :db.unique/identity}
+               :directions/steps      {:db.valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/many}
+               :step/maneuver         {:db.valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/one}
+               :step/trip             {:db.valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/one}
+               ;; needed to tell datascript to keep only 1 of these
+               :react.navigation/name {:db.unique :db.unique/identity}}
+               ;; GTFS entities
+              (gtfs-schema)))
 
 ;; needs to be an array of maps. This will be used for data/transact!
 (defn init-data

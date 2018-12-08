@@ -301,6 +301,15 @@
     (println "writing config to resources")
     (spit "resources/config.json" (json/write-str config))))
 
+(defn- gtfs-reference!
+  []
+  (println "saving gtfs reference as json")
+  (->> (io/resource "gtfs/resources/reference.edn")
+       (slurp)
+       (edn/read-string)
+       (json/write-str)
+       (spit "resources/gtfs.json")))
+
 (defn- prepare-env!
   []
   (doseq [file (map :cljs (vals dev-env))]
@@ -316,6 +325,7 @@
   (store-configs!)
   (cache-js-modules!)
   (write-env-index! (edn/read-string (slurp modules-cache)))
+  (gtfs-reference!)
   (patch-source-maps)
   (io/copy (io/file "resources/dev/main.js")
            (io/file "main.js"))

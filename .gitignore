@@ -54,3 +54,4 @@ fabric.properties
 /main.js
 /src/env/
 /resources/config.json
+/resources/gtfs.json
