@@ -65,7 +65,8 @@
                                      [?city :city/geometry ?geometry]])
         area      (region children (geometry/latlng (:coordinates geometry)))]
     (if (nil? (:coordinates geometry))
-      [:> assets/Ionicons {:name "ios-hammer" :size 26 :style {:flex 1 :top "50%" :left "50%"}}]
+      [:> React/View {:flex 1 :alignItems "center" :justifyContent "center"}
+        [:> React/ActivityIndicator {:color "blue" :size "large"}]]
       [:> Expo/MapView {:region                area
                         :showsUserLocation     true
                         :style                 {:flex 1}
