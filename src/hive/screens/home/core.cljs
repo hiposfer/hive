@@ -27,7 +27,7 @@
         end      (:coordinates (:place/geometry target))]
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
-     [kamal/directions! [start end] user]
+     [kamal/get-directions! [start end] user]
      [React/Keyboard.dismiss]
      [navigate "directions"]]))
 
@@ -134,7 +134,8 @@
         [:> React/View (merge (symbols/circle 52) symbols/shadow
                               {:position "absolute" :bottom 20 :right 20
                                :backgroundColor "#FF5722"})
-          [:> React/TouchableOpacity {:onPress #(navigate "settings")}
+          [:> React/TouchableOpacity {:onPress #(state/transact! [[navigate "settings"]
+                                                                  [kamal/get-areas!]])}
             [:> assets/Ionicons {:name "md-apps" :size 26
                                  :style {:color "white"}}]]])]
     ;; remove tracker on component will unmount

@@ -127,6 +127,8 @@
                ;; server support data
                :city/name             {:db.unique    :db.unique/identity
                                        :hive.storage :sqlite/store}
+               :area/id               {:db.unique    :db.unique/identity
+                                       :hive.storage :sqlite/store}
                ;; mapbox data
                :place/id              {:db.unique :db.unique/identity}
                ;; ephemeral data
@@ -140,7 +142,11 @@
                :step/trip             {:db.valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                ;; needed to tell datascript to keep only 1 of these
-               :react.navigation/name {:db.unique :db.unique/identity}}))
+               :react.navigation/name {:db.unique :db.unique/identity}
+               ;; provide a way for user input ERRORS to be registered
+               :input/error           {:db.unique :db.unique/identity}
+               ;; provide a way for remote request ERRORS to be registered
+               :request/error         {:db.unique :db.unique/identity}}))
 
 ;; needs to be an array of maps. This will be used for data/transact!
 (defn init-data

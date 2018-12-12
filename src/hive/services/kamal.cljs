@@ -14,31 +14,46 @@
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
-(def route-url "http://192.168.0.45:3000/area/frankfurt/directions?coordinates={coordinates}&departure={departure}")
-(def entity-url "http://192.168.0.45:3000/area/frankfurt/{entity}/{id}")
+(def urls
+  {:area/directions "http://192.168.0.45:3000/area/frankfurt/directions?coordinates={coordinates}&departure={departure}"
+   :area/entity     "http://192.168.0.45:3000/area/frankfurt/{entity}/{id}"
+   :area/meta       "http://192.168.0.45:3000/area/frankfurt"
+   :kamal/areas     "http://192.168.0.45:3000/area"})
+
+(defn- fill-out
+  "fills out the entries in the provided string, using the keys as match"
+  [template entries]
+  (reduce-kv (fn [res k v] (str/replace res k v))
+             template
+             entries))
+
+(defn- read-text [^js/Response response] (. response (text)))
+
+(defn- parse-edn [text] (edn/read-string {:readers readers} text))
 
 (defn entity
   "ref is a map with a single key value pair of the form {:trip/id 2}"
   [ref]
-  (let [[k v]   (first ref)
-        url (-> (str/replace entity-url "{entity}" (namespace k))
-                (str/replace "{id}" v))]
-    [url {:method "GET"
+  (let [[k v] (first ref)
+        url   (fill-out (:area/entity urls) {"{entity}" (namespace k)
+                                             "{id}"     v})]
+    [url {:method  "GET"
           :headers {:Accept "application/edn"}}]))
 
-(defn entity!
+(defn get-entity!
   "executes the result of entity with js/fetch.
 
   Returns a promise that will resolve to a transaction with the
   requested entity
   "
-  [ref] ;; TODO: dont request if entity already exists in db
+  [ref]
+  ;; TODO: dont request if entity already exists in db
   (let [[url opts] (entity ref)]
     (.. (js/fetch url (clj->js opts))
         (then (fn [^js/Response response] (. response (text))))
         (then #(edn/read-string {:readers readers} %))
         (then vector))))
-        ;; TODO: error handling)
+;; TODO: error handling)
 
 (defn- chain!
   "request an remote entity and also fetches the entity under keyword k
@@ -47,8 +62,8 @@
   For example: fetch the trip/id 123 and then the :trip/route that it
   points to"
   [trip-ref k]
-  (.. (entity! trip-ref)
-      (then (fn [[trip]] [trip [entity! (k trip)]]))))
+  (.. (get-entity! trip-ref)
+      (then (fn [[trip]] [trip [get-entity! (k trip)]]))))
 
 (defn process-directions
   "takes a kamal directions response and attaches it to the current user.
@@ -61,7 +76,8 @@
       (distinct
         (for [step (:directions/steps path)
               :when (= (:step/mode step) "transit")
-              :when (some? (:step/trip step))] ;; check just in case ;)
+              ;; check just in case ;)
+              :when (some? (:step/trip step))]
           [chain! (:step/trip step) :trip/route])))))
 
 
@@ -71,12 +87,14 @@
 
    https://www.mapbox.com/api-documentation/#request-format"
   [coordinates departure]
-  (let [url (-> (str/replace route-url "{coordinates}" coordinates)
-                (str/replace "{departure}" (js/encodeURIComponent (zoned-time departure))))] ;; "2018-05-07T10:15:30+01:00"))]
-    [url {:method "GET"
+  (let [ztime (js/encodeURIComponent (zoned-time departure))
+        url   (fill-out (:area/directions urls)
+                        {"{coordinates}" coordinates
+                         "{departure}"   ztime})] ;; "2018-05-07T10:15:30+01:00"))]
+    [url {:method  "GET"
           :headers {:Accept "application/edn"}}]))
 
-(defn directions!
+(defn get-directions!
   "executes the result of directions with js/fetch.
 
   Returns a transaction that will resolve to a transaction that assigns the
@@ -90,6 +108,13 @@
          (then (fn [^js/Response response] (. response (text))))
          (then #(edn/read-string {:readers readers} %))
          (then #(process-directions % user)))))
-        ;; TODO: error handling
+  ;; TODO: error handling
   ([coordinates user]
-   (directions! coordinates user (new DateTime))))
+   (get-directions! coordinates user (new DateTime))))
+
+(defn get-areas!
+  "fetches the supported areas from kamal"
+  []
+  (.. (js/fetch (:kamal/areas urls))
+      (then read-text)
+      (then parse-edn)))
