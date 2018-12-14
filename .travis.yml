@@ -2,13 +2,8 @@ language: clojure
 jdk:
   - oraclejdk8
 
-# check that it compiles && run linters && run tests
-# stop if any of them fails
-#script: lein do clean, compile, check, eastwood '{:exclude-namespaces [service.conjectures.specs]}', test
 script:
-  - lein do clean, compile, check
-  - npm --version
-  - npm install -g npm@latest
+  - npm --version && npm install -g npm@latest
   - npm install
-  - lein simple-release
+  - lein do clean, compile, check, simple-release
   - npm run appr
