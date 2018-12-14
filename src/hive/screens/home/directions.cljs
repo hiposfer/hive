@@ -20,7 +20,8 @@
   [route]
   (or (:route/color route)
       (when (some? route)
-        (misc/color (str (or (:route/short_name route) (:route/long_name route)))))
+        (misc/color (str (or (:route/long_name route)
+                             (:route/short_name route)))))
       default-color))
 
 (defn- TransitLine
@@ -44,8 +45,9 @@
 
 (defn- StepOverview
   [props steps departs]
+  (cljs.pprint/pprint steps)
   [:> React/View {:flex 1 :justifyContent "space-between"}
-    (when (or departs (= "transit" (:step/mode (first steps))))
+    (when (= "depart" (:maneuver/type (:step/maneuver (first steps))))
       [:> React/Text {:style {:height 20}}
                      (some :step/name (butlast steps))])
     [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
@@ -57,8 +59,10 @@
                            (:step/maneuver)
                            (:maneuver/instruction)
                            (str/replace "[Dummy]" ""))]]]
-    [:> React/Text {:style {:height 20}}
-                   (:step/name (last steps))]])
+    (when (or (= "transit" (:step/mode (first steps)))
+              (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
+      [:> React/Text {:style {:height 20}}
+                     (:step/name (last steps))])])
 
 (defn- RouteSection
   [props steps human-time departs]
@@ -78,9 +82,12 @@
                                 [:step/arrive
                                  :step/mode
                                  :step/name
-                                 {:step/maneuver [:maneuver/instruction]}
+                                 {:step/maneuver [:maneuver/instruction
+                                                  :maneuver/type]}
                                  :step/distance
-                                 {:step/trip [{:trip/route [:route/long_name :route/color]}]}]}]
+                                 {:step/trip [{:trip/route [:route/long_name
+                                                            :route/short_name
+                                                            :route/color]}]}]}]
                               [:directions/uuid uid])]
     [:> React/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))
