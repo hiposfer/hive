@@ -1,4 +1,4 @@
-(ns hive.screens.components.symbols
+(ns hive.screens.symbols
   (:require [react-native :as React]
             [expo :as Expo]
             [hiposfer.geojson.specs :as geojson]
