@@ -45,7 +45,6 @@
 
 (defn- StepOverview
   [props steps departs]
-  (cljs.pprint/pprint steps)
   [:> React/View {:flex 1 :justifyContent "space-between"}
     (when (= "depart" (:maneuver/type (:step/maneuver (first steps))))
       [:> React/Text {:style {:height 20}}
