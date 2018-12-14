@@ -116,8 +116,7 @@
   ;; firebase related functionality ...............
   (firebase/init!)
   ;; restore user data ...........................
-  (.. (sqlite/clear!)
-      (then #(sqlite/init!))
+  (.. (sqlite/init!)
       (then state/transact!)
       ;; listen only AFTER restoration
       (then #(sqlite/listen! state/conn))
