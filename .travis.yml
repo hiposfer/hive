@@ -1,9 +1,11 @@
 language: clojure
 jdk:
   - oraclejdk8
+node_js: "8"
+install: "npm install"
 
 script:
-  - npm --version && npm install -g npm@latest
-  - npm install
+  #- npm --version && npm install -g npm@latest
+  #- npm install
   - lein do clean, compile, check, simple-release
   - npm run appr
