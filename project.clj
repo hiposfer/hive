@@ -8,7 +8,6 @@
                  ;; [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojurescript "1.10.339"]
                  [react-native-externs "0.2.0"]
-                 [org.clojure/core.async "0.3.465"]
                  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
                  [hiposfer/gtfs.edn "0.2.0"]
