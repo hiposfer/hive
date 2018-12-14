@@ -38,3 +38,19 @@
   "reject a promise if its value is an error"
   [v]
   (if (error? v) (throw v) v))
+
+;; adapted from
+;; https://stackoverflow.com/a/16348977
+(defn color
+  [text]
+  (let [h (reduce (fn [res i] (+ (. text (charCodeAt i))
+                                 (- (bit-shift-left res 5)
+                                    res)))
+                  0
+                  (range (count text)))]
+    (reduce (fn [res i]
+              (let [v (bit-and (bit-shift-right h (* i 8)) 0xFF)]
+                (str res (. (str "00" (. v (toString 16)))
+                            (substr -2)))))
+            "#"
+            (range 3))))

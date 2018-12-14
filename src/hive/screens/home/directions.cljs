@@ -5,113 +5,72 @@
             [expo :as Expo]
             [hive.utils.geometry :as geometry]
             [goog.date.duration :as duration]
-            [reagent.core :as r]
             [clojure.string :as str]
             [hive.assets :as assets]
-            [hive.state.core :as state]))
+            [hive.state.core :as state]
+            [hive.utils.miscelaneous :as misc]))
 
 (def big-circle 16)
-(def small-circle 10)
 (def micro-circle 3)
-(def section-height 140)
-(def subsection-height 20)
+(def section-height {"walking" 90 "transit" 120})
 
 (def default-color "#3bb2d0")
-
-;; adapted from
-;; https://stackoverflow.com/a/16348977
-(defn color
-  [text]
-  (let [h (reduce (fn [res i] (+ (. text (charCodeAt i))
-                                 (- (bit-shift-left res 5)
-                                    res)))
-                  0
-                  (range (count text)))]
-    (reduce (fn [res i]
-              (let [v (bit-and (bit-shift-right h (* i 8)) 0xFF)]
-                (str res (. (str "00" (. v (toString 16)))
-                            (substr -2)))))
-            "#"
-            (range 3))))
 
 (defn- route-color
   [route]
   (or (:route/color route)
       (when (some? route)
-        (color (str (or (:route/short_name route) (:route/long_name route)))))
+        (misc/color (str (or (:route/short_name route) (:route/long_name route)))))
       default-color))
 
 (defn- TransitLine
-  [steps expanded?]
-  (let [line-height (if expanded? "90%" "80%")
+  [steps]
+  (let [line-height "80%"
         stroke      (route-color (:trip/route (:step/trip (first steps))))]
-    [:> React/View {:flex 1 :alignItems "center"}
+    [:> React/View {:width 20 :alignItems "center"}
       [:> React/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
-      [:> React/View {:backgroundColor stroke :width "8%" :height line-height}]
-      [:> React/View (merge {:style {:backgroundColor stroke :borderColor "transparent"}}
+      [:> React/View {:backgroundColor stroke :width "15%" :height line-height}]
+      [:> React/View (merge {:backgroundColor stroke :borderColor "transparent"}
                             (symbols/circle big-circle))]]))
 
-(defn- WalkingSymbols
-  [steps expanded?]
-  (let [amount  (if (not expanded?) 15 (/ section-height 4))]
-    [:> React/View {:flex 1 :alignItems "center"
-                    :justifyContent "space-around"}
-      (for [i (range amount)]
-        ^{:key i}
-        [:> React/View (merge (symbols/circle micro-circle)
-                              {:backgroundColor "slategray"})])]))
-
-#_(defn- onStopPress
-    [props step]
-    (let [navigate (:navigate (:navigation props))
-          stop     (select-keys (:stop_times/stop step) [:stop/id])]
-      [[navigate "gtfs" stop]
-       [kamal/entity! stop]]))
-
-(defn- StepDetails
-  [props steps]
-  (into [:> React/View {:style {:flex 9 :justifyContent "space-around"}}]
-    (for [step steps]
-      (if (= "transit" (:step/mode step))
-        ;[:> React/TouchableOpacity {:onPress #(state/transact! (onStopPress props step))}
-        [:> React/Text {:style {:color "gray"}} (:step/name step)]
-        [:> React/Text {:style {:color "gray"}}
-                       (str/replace (:maneuver/instruction (:step/maneuver step))
-                                    "[Dummy]" "")]))))
+(defn- WalkingDots
+  []
+  (let [style (merge (symbols/circle micro-circle)
+                     {:backgroundColor "slategray"})]
+    (into [:> React/View {:width 20 :alignItems "center"
+                          :justifyContent "space-around"}]
+          (repeat 10 [:> React/View style]))))
 
 (defn- StepOverview
-  [props steps expanded?]
-  [:> React/View {:flex 9 :justifyContent "space-between"}
-    [:> React/Text {:style {:flex 1}} (some :step/name (butlast steps))]
-    [:> React/TouchableOpacity {:style {:flex (if @expanded? 2 5)
-                                        :justifyContent "center"}
-                                :onPress #(reset! expanded? (not @expanded?))}
+  [props steps departs]
+  [:> React/View {:flex 1 :justifyContent "space-between"}
+    (when (or departs (= "transit" (:step/mode (first steps))))
+      [:> React/Text {:style {:height 20}}
+                     (some :step/name (butlast steps))])
+    [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
       [:> React/View {:flex-direction "row"}
-        [:> assets/Ionicons {:name  (if @expanded? "ios-arrow-down" "ios-arrow-forward")
-                             :style {:paddingRight 10}
-                             :size  22 :color "gray"}]
+        [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
+                             :size 22 :color "gray"}]
         [:> React/Text {:style {:color "gray" :paddingRight 7}}
-                       (str/replace (:maneuver/instruction (:step/maneuver (first steps)))
-                                    "[Dummy]" "")]]]
-    (when @expanded?
-      [:> React/View {:flex 5}
-        [StepDetails props (butlast (rest steps))]])
-    [:> React/Text {:style {:flex 1}} (:step/name (last steps))]])
+                       (-> (first steps)
+                           (:step/maneuver)
+                           (:maneuver/instruction)
+                           (str/replace "[Dummy]" ""))]]]
+    [:> React/Text {:style {:height 20}}
+                   (:step/name (last steps))]])
 
 (defn- RouteSection
-  [props steps human-time]
-  (r/with-let [expanded? (r/atom false)]
-    (let [subsize (* subsection-height (count steps))
-          height  (+ section-height (if @expanded? subsize 0))]
-      [:> React/View {:height height :flexDirection "row"}
-        [:> React/Text {:style {:flex 1 :textAlign "right"
-                                :color "gray" :fontSize 12}}
-                      human-time]
-        (if (= "walking" (:step/mode (first steps)))
-          [WalkingSymbols steps @expanded?]
-          [TransitLine steps @expanded?])
-        [StepOverview props steps expanded?]])))
+  [props steps human-time departs]
+  (let [height (get section-height (:step/mode (first steps)))]
+    [:> React/View {:height height :flexDirection "row"}
+      [:> React/Text {:style {:width 40 :textAlign "right"
+                              :color "gray" :fontSize 12}}
+                     human-time]
+      (if (= "walking" (:step/mode (first steps)))
+        [WalkingDots]
+        [TransitLine steps])
+      [StepOverview props steps departs]]))
 
 (defn- Route
   [props uid]
@@ -127,9 +86,11 @@
       (for [steps (partition-by :step/mode (:directions/steps route))
             :let [arrives  (:step/arrive (first steps))
                   iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
-                  human-time (subs iso-time 0 5)]]
+                  human-time (subs iso-time 0 5)
+                  departs    (= (first (:directions/steps route))
+                                (first steps))]]
         ^{:key arrives}
-        [RouteSection props steps human-time])]))
+        [RouteSection props steps human-time departs])]))
 
 (defn- SectionIcon
   [steps]
