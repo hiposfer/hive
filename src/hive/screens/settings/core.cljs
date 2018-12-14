@@ -109,9 +109,9 @@
               (:user/email @info)])]]])))
 
 (defn- UserCity
-  [props user]
-  (let [info (state/pull! [{:user/city [:city/name :city/region :city/country]}]
-                          user)
+  [props user-entity]
+  (let [user     (state/pull! [{:user/area [:area/name]}]
+                              user-entity)
         navigate (:navigate (:navigation props))]
     [:> React/View {:height 125}
      [:> React/Text {:style {:color "slategray" :fontSize 15 :paddingLeft 20
@@ -122,10 +122,8 @@
       [symbols/PointOfInterest
        [:> assets/Ionicons {:name "md-map" :size 26}]
        [:> React/Text ""]
-       [:> React/Text (:city/name (:user/city @info))]
-       [:> React/Text {:style {:color "gray"}}
-        (str (:city/region (:user/city @info)) ", "
-             (:city/country (:user/city @info)))]
+       [:> React/Text (:area/name (:user/area @user))]
+       [:> React/Text {:style {:color "gray"}} ""]
        [:> assets/Ionicons {:name "ios-checkmark" :size 26}]]]]))
 
 ;; NOTE: here we use the entity and not the uid because the sign in

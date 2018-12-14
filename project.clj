@@ -8,7 +8,6 @@
                  ;; [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojurescript "1.10.339"]
                  [react-native-externs "0.2.0"]
-                 [org.clojure/core.async "0.3.465"]
                  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
                  [hiposfer/gtfs.edn "0.2.0"]
@@ -21,10 +20,7 @@
   :aliases {"figwheel"   ["run" "-m" "user" "--figwheel"]
             "simple-release" ["do" ["clean"]
                                    ["run" "-m" "user" "--prepare-release"]
-                                   ["cljsbuild" "once" "simple"]]
-            "advanced-release" ["do" ["clean"]
-                                     ["run" "-m" "user" "--prepare-release"]
-                                     ["cljsbuild" "once" "release"]]}
+                                   ["cljsbuild" "once" "simple"]]}
   :profiles {:dev {:dependencies [[expound "0.7.0"]
                                   [figwheel-sidecar "0.5.14"]
                                   [com.cemerick/piggieback "0.2.1"]
@@ -53,18 +49,4 @@
                                        :optimize-constants true
                                        :target             :nodejs
                                        :optimizations      :simple
-                                       :closure-defines    {"goog.DEBUG" false}}}
-
-                       {:id           "release"
-                        :source-paths ["src"]
-                        :compiler     {:output-to          "main.js"
-                                       :main               "env.expo.main"
-                                       :static-fns         true
-                                       :fn-invoke-direct   true
-                                       :externs            ["js/externs.js"]
-                                       :infer-externs      true
-                                       :parallel-build     true
-                                       :optimize-constants true
-                                       :target             :nodejs
-                                       :optimizations      :advanced
                                        :closure-defines    {"goog.DEBUG" false}}}]})

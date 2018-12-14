@@ -8,6 +8,7 @@
             [hive.services.sqlite :as sqlite]
             [hive.state.queries :as queries]
             [hive.utils.miscelaneous :as misc]
+            [hive.utils.promises :as promise]
             [hive.screens.home.core :as home]
             [hive.screens.home.gtfs :as gtfs]
             [hive.screens.errors :as errors]
@@ -16,7 +17,7 @@
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.screens.home.route :as route]
-            [hive.services.secure-store :as secure]))
+            [hive.services.kamal :as kamal]))
 
 (defn- MessageTray
   [props]
@@ -87,6 +88,27 @@
     (if-not connected
         (state/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
 
+(defn- init-areas
+  "When we start hive for the first time, we dont have any data on the supported
+  areas. We need to download it and link it to the user"
+  [areas-or-error db]
+  (let [areas (data/q queries/kamal-areas db)
+        user  (data/q queries/user-entity db)]
+    (cond
+      ;; we dont have any data we failed to fetch it
+      (and (misc/error? areas-or-error) (empty? areas))
+      [{:error/id :init/failed :error/info areas-or-error}]
+
+      ;; for simplicity, choose the first area
+      (and (not (misc/error? areas-or-error)) (empty? areas))
+      (concat areas-or-error
+              [{:db/id user
+                :user/area [:area/id (:area/id (first areas-or-error))]}])
+
+      ;; we received data from the server, simply overwrite the current one
+      (not (misc/error? areas-or-error))
+      areas-or-error)))
+
 (defn init!
   "register the main UI component in React Native"
   []
@@ -99,12 +121,13 @@
       (then state/transact!)
       ;; listen only AFTER restoration
       (then #(sqlite/listen! state/conn))
-      (then #(state/transact! (state/init-data (state/db))))
-      (then #(secure/load! [:user/password]))
-      (then #(merge {:user/uid (data/q queries/user-id (state/db))} %))
-      (then #(state/transact! [%]))
-      (then #(firebase/sign-in! (state/db)))
-      (then state/transact!))
+      ;; create a user/id placeholder if it doesnt exists
+      (then #(state/transact! [{:user/uid (or (data/q queries/user-id (state/db)) "")}]))
+      ;; execute only after we are sure that we have a user id
+      (then #(state/transact! [[promise/finally [kamal/get-areas!]
+                                                [init-areas (state/db)]]
+                               ;; todo: I guess firebase should handle this?
+                               [firebase/sign-in! (state/db)]])))
   ;; start listening for events ..................
   (Expo/registerRootComponent (r/reactify-component RootUi))
   ;; handles Android BackButton
@@ -113,7 +136,5 @@
   (React/NetInfo.isConnected.addEventListener "connectionChange"
                                               internet-connection-listener))
 
-;(. (sqlite/read!) (then cljs.pprint/pprint))
-;(. (sqlite/CLEAR!!) (then cljs.pprint/pprint))
-
-;(. (secure/load! [:user/password]) (then cljs.pprint/pprint))
+;(. (sqlite/init!) (then cljs.pprint/pprint))
+;(. (sqlite/clear!) (then cljs.pprint/pprint))
