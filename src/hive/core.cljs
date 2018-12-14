@@ -16,7 +16,7 @@
             [hive.screens.settings.core :as settings]
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.screens.home.route :as route]
+            [hive.screens.home.directions :as route]
             [hive.services.kamal :as kamal]))
 
 (defn- MessageTray

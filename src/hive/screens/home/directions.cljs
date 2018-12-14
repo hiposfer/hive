@@ -1,4 +1,4 @@
-(ns hive.screens.home.route
+(ns hive.screens.home.directions
   (:require [hive.utils.miscelaneous :as tool]
             [hive.screens.symbols :as symbols]
             [react-native :as React]
@@ -171,14 +171,14 @@
                                             [_      :user/goal ?target]
                                             [?target :place/text ?goal]])]
     [:> React/View props
-     [:> React/View {:flexDirection "row" :paddingLeft "1.5%"}
-      [Transfers route-id]
-      [:> React/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
-                              :paddingLeft "10%"}}
-       (when (some? duration)
-         (duration/format (* 1000 duration)))]]
-     [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
-                    goal]]))
+      [:> React/View {:flexDirection "row" :paddingLeft "1.5%"}
+        [Transfers route-id]
+        [:> React/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
+                                :paddingLeft "10%"}}
+          (when (some? duration)
+            (duration/format (* 1000 duration)))]]
+      [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
+                     goal]]))
 
 (defn- paths
   [uid]
