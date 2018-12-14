@@ -1,4 +1,4 @@
-(ns hive.screens.errors
+(ns hive.screens.components.errors
   (:require [react-native :as React]
             [expo :as Expo]
             [hive.assets :as fl]
