@@ -21,9 +21,6 @@
             "simple-release" ["do" ["clean"]
                                    ["run" "-m" "user" "--prepare-release"]
                                    ["cljsbuild" "once" "simple"]]}
-            ;"advanced-release" ["do" ["clean"]
-            ;                         ["run" "-m" "user" "--prepare-release"]
-            ;                         ["cljsbuild" "once" "release"]]}
   :profiles {:dev {:dependencies [[expound "0.7.0"]
                                   [figwheel-sidecar "0.5.14"]
                                   [com.cemerick/piggieback "0.2.1"]
@@ -53,16 +50,3 @@
                                        :target             :nodejs
                                        :optimizations      :simple
                                        :closure-defines    {"goog.DEBUG" false}}}]})
-                       ;{:id           "release"
-                       ; :source-paths ["src"]
-                       ; :compiler     {:output-to          "main.js"
-                       ;                :main               "env.expo.main"
-                       ;                :static-fns         true
-                       ;                :fn-invoke-direct   true
-                       ;                :externs            ["js/externs.js"]
-                       ;                :infer-externs      true
-                       ;                :parallel-build     true
-                       ;                :optimize-constants true
-                       ;                :target             :nodejs
-                       ;                :optimizations      :advanced
-                       ;                :closure-defines    {"goog.DEBUG" false}}}]})

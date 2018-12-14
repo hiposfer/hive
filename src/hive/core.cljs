@@ -8,6 +8,7 @@
             [hive.services.sqlite :as sqlite]
             [hive.state.queries :as queries]
             [hive.utils.miscelaneous :as misc]
+            [hive.utils.promises :as promise]
             [hive.screens.home.core :as home]
             [hive.screens.home.gtfs :as gtfs]
             [hive.screens.errors :as errors]
@@ -123,8 +124,8 @@
       ;; create a user/id placeholder if it doesnt exists
       (then #(state/transact! [{:user/uid (or (data/q queries/user-id (state/db)) "")}]))
       ;; execute only after we are sure that we have a user id
-      (then #(state/transact! [[misc/finally [kamal/get-areas!]
-                                             [init-areas (state/db)]]
+      (then #(state/transact! [[promise/finally [kamal/get-areas!]
+                                                [init-areas (state/db)]]
                                ;; todo: I guess firebase should handle this?
                                [firebase/sign-in! (state/db)]])))
   ;; start listening for events ..................
