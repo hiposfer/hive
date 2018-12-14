@@ -4,12 +4,12 @@
 ;; that once and later on just pull or entity attributes out of it
 
 ;; get name geometry and bbox of each city in the db
-(def cities '[:find [(pull ?entity [*]) ...]
-              :where [?entity :city/name ?name]])
+(def kamal-areas '[:find [?area] :where [?area :area/id]])
 
 ;; not safe to use since the user might change uid on sign in/up
 ;; the uid change break pull patterns based on [:user/uid v]
-(def ^:deprecated user-id ;; prefer user-entity
+;; DEPRECATED - prefer user-entity
+(def user-id
   '[:find ?uid .
     :where [_ :user/uid ?uid]])
 
@@ -28,10 +28,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def session '[:find ?session .
                :where [_ :session/uuid ?session]])
-
-;(state/q '{:find [(pull ?city [*]) .]
-;          :where [[?id :user/id]
-;                  [?id :user/city ?city]]})
 
 (def routes-ids '[:find [?routes ...]
                   :where [_ :directions/uuid ?routes]])

@@ -1,8 +1,6 @@
 (ns hive.screens.symbols
   (:require [react-native :as React]
-            [hive.utils.geometry :as geometry]
             [expo :as Expo]
-            [hive.assets :as assets]
             [hiposfer.geojson.specs :as geojson]
             [hive.state.core :as state]))
 
@@ -33,24 +31,23 @@
 
 (def space 0.005)
 
-;; TODO: take into account the user position
 (defn- region
   [children default-center]
-  (let [lines (eduction (filter map?)
-                        (filter :coordinates)
-                        (map :coordinates)
-                        (map linestring)
-                        (tree-seq coll? seq children))
-        points (eduction (filter map?)
-                         (filter :coordinate)
-                         (map :coordinate)
-                         (map point)
-                         (tree-seq coll? seq children))
-        coll {:type "GeometryCollection"
-              :geometries (concat lines points [(point default-center)])}
+  (let [lines  (for [child (tree-seq coll? seq children)
+                     :when (and (map? child) (contains? child :coordinates))
+                     :let [coords (:coordinates child)]]
+                 (linestring coords))
+        points (for [child (tree-seq coll? seq children)
+                     :when (and (map? child) (contains? child :coordinate))
+                     :let [coords (:coordinate child)]]
+                 (point coords))
+        coll   {:type       "GeometryCollection"
+                :geometries (concat lines points [default-center])}
         [minx, miny, maxx, maxy] (geojson/bbox coll)]
     (if (= 1 (count (:geometries coll))) ;; more than just the default
-      (merge {:latitudeDelta 0.02 :longitudeDelta 0.02} default-center)
+      {:latitudeDelta 0.02 :longitudeDelta 0.02
+       :latitude (second (:coordinates default-center))
+       :longitude (first (:coordinates default-center))}
       {:latitude (/ (+ miny maxy) 2)
        :longitude (/ (+ maxx minx) 2)
        :latitudeDelta (Math/abs (- miny maxy))
@@ -59,12 +56,15 @@
 (defn CityMap
   "a React Native MapView component which will only re-render on user-city change"
   [children]
-  (let [geometry @(state/q! '[:find ?geometry .
-                              :where [?id :user/uid]
-                                     [?id :user/city ?city]
-                                     [?city :city/geometry ?geometry]])
-        area      (region children (geometry/latlng (:coordinates geometry)))]
-    (if (nil? (:coordinates geometry))
+  (let [bbox   @(state/q! '[:find ?bbox .
+                            :where [?id :user/uid]
+                                   [?id :user/area ?area]
+                                   [?area :area/bbox ?bbox]])
+        [minx, miny, maxx, maxy] bbox
+        center (point {:latitude  (/ (+ miny maxy) 2)
+                       :longitude (/ (+ maxx minx) 2)})
+        area   (region children center)]
+    (if (nil? bbox)
       [:> React/View {:flex 1 :alignItems "center" :justifyContent "center"}
         [:> React/ActivityIndicator {:color "blue" :size "large"}]]
       [:> Expo/MapView {:region                area

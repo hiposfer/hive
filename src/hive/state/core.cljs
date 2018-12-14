@@ -14,8 +14,6 @@
   - the app must use reagent. As described in reagent.tx, we dont want to recreate
     all the functionality that they have so reagent will serve us as rendering model
     and as reactive data framework
-  - the app should use Clojure's core.async to handle complex asynchronous
-    operations
 
   Since the app is represented as a single Datascript atom. All state changes
   can be represented by Datascript transaction, which means that the functions
@@ -29,10 +27,10 @@
   However no app can survive only with state changes. You always need to perform
   server synchronization, api calls, read/write from local storage, among others.
   Those *intended-effects* (as opposed to side-effects) are inevitable. This
-  framework doesnt try to avoid them nor to mark them as evil, instead it accepts
-  them as a necessary evil. We encourage the logic of side effect to be encapsulated
-  in frameworks intended for it, like Promises or core.async channels. However we
-  prefer for functions to *declare* their intended-effects instead of performing them.
+  framework doesnt try to avoid them nor to mark them as evil, instead we understand
+  that they are necessary. We encourage the logic of side effect to be encapsulated
+  in frameworks intended for it, like Promises. However we prefer for functions to
+  *declare* their intended-effects instead of performing them.
   This is meant to ease testing. It is much more easy to test a function that returns
   a sequence of vector with values inside than it is to test a function which returns
   nothing but performs some effects inside.
@@ -40,19 +38,16 @@
   (state/transact [http/json url options])
   (state/transact (delay (hide-keyboard))
 
-  Last but not least is error handling. Core.async promotes queues as data transfer
-  mechanism. This also implies that both errors and success would flow through the
-  same channel. We propose the inclusion of errors as data values as opposed to their
-  classical view of 'anomalous or exceptional conditions requiring special
-  processing – often changing the normal flow of program execution'
-  Therefore we separate between expected errors like, no internet connection, malformed
-  json response or unauthorized app permissions from those arising from incorrect code
-  a.k.a bugs"
+  Last but not least is error handling. We propose the inclusion of errors as
+  data values as opposed to their classical view of 'anomalous or exceptional
+  conditions requiring special processing – often changing the normal flow of
+  program execution'. Therefore we separate between expected errors like, no
+  internet connection, malformed json response or unauthorized app permissions
+  from those arising from incorrect code a.k.a bugs"
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
-            [hive.state.queries :as queries]
-            [cljs.core.async :as async]
+            #_[cljs.core.async :as async]
             [hiposfer.gtfs.edn :as gtfs]))
 
 (def gtfs-data (js->clj (js/require "./resources/gtfs.json")
@@ -107,10 +102,6 @@
               (tool/keywordize
                 (js/require "./resources/config.json"))))
 
-;;FIXME: this should come from the server, not being hardcoded
-(def cities (js->clj (js/require "./resources/cities.json")
-                     :keywordize-keys true))
-
 (def schema (merge-with into
               ;; GTFS entities
               (gtfs-schema)
@@ -118,15 +109,13 @@
               {:user/uid              {:db.unique    :db.unique/identity
                                        :hive.storage :sqlite/store}
                :user/password         {:hive.storage :sqlite/ignore}
-               :user/city             {:db.valueType   :db.type/ref
+               :user/area             {:db.valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                :user/goal             {:db.valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                :user/directions       {:db.valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                ;; server support data
-               :city/name             {:db.unique    :db.unique/identity
-                                       :hive.storage :sqlite/store}
                :area/id               {:db.unique    :db.unique/identity
                                        :hive.storage :sqlite/store}
                ;; mapbox data
@@ -143,19 +132,8 @@
                                        :db.cardinality :db.cardinality/one}
                ;; needed to tell datascript to keep only 1 of these
                :react.navigation/name {:db.unique :db.unique/identity}
-               ;; provide a way for user input ERRORS to be registered
-               :input/error           {:db.unique :db.unique/identity}
-               ;; provide a way for remote request ERRORS to be registered
-               :request/error         {:db.unique :db.unique/identity}}))
-
-;; needs to be an array of maps. This will be used for data/transact!
-(defn init-data
-  [db]
-  (let [uid    (data/q queries/user-id db)
-        result (map #(tool/with-ns "city" %) cities)]
-    (when (nil? uid) ;; we dont have a user - create a placeholder for it
-      (concat result [{:user/uid  ""  ;; dummy
-                       :user/city [:city/name "Frankfurt am Main"]}]))))
+               ;; provide a way for ERRORS to be registered
+               :error/id              {:db.unique :db.unique/identity}}))
 
 (defonce conn (rata/listen! (data/create-conn schema)))
 
@@ -180,9 +158,8 @@
 (defn- execute!
   [result value]
   ;; async transaction - transact each element
-  (when (tool/chan? value)
-    (async/reduce (fn [_ v] (transact! v)) nil value))
-
+  #_(when (tool/chan? value)
+      (async/reduce (fn [_ v] (transact! v)) nil value))
   ;; JS promise - wait for its value then transact it
   (when (tool/promise? value)
     (. value (then transact!)))

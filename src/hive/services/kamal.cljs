@@ -14,11 +14,12 @@
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
+(def server "http://try.hiposfer.com")
 (def urls
-  {:area/directions "http://192.168.0.45:3000/area/frankfurt/directions?coordinates={coordinates}&departure={departure}"
-   :area/entity     "http://192.168.0.45:3000/area/frankfurt/{entity}/{id}"
-   :area/meta       "http://192.168.0.45:3000/area/frankfurt"
-   :kamal/areas     "http://192.168.0.45:3000/area"})
+  {:area/directions "{server}/area/frankfurt/directions?coordinates={coordinates}&departure={departure}"
+   :area/entity     "{server}/area/frankfurt/{entity}/{id}"
+   :area/meta       "{server}/area/frankfurt"
+   :kamal/areas     "{server}/area"})
 
 (defn- fill-out
   "fills out the entries in the provided string, using the keys as match"
@@ -36,7 +37,8 @@
   [ref]
   (let [[k v] (first ref)
         url   (fill-out (:area/entity urls) {"{entity}" (namespace k)
-                                             "{id}"     v})]
+                                             "{id}"     v
+                                             "{server}" server})]
     [url {:method  "GET"
           :headers {:Accept "application/edn"}}]))
 
@@ -90,7 +92,8 @@
   (let [ztime (js/encodeURIComponent (zoned-time departure))
         url   (fill-out (:area/directions urls)
                         {"{coordinates}" coordinates
-                         "{departure}"   ztime})] ;; "2018-05-07T10:15:30+01:00"))]
+                         "{departure}"   ztime
+                         "{server}" server})] ;; "2018-05-07T10:15:30+01:00"))]
     [url {:method  "GET"
           :headers {:Accept "application/edn"}}]))
 
@@ -115,6 +118,6 @@
 (defn get-areas!
   "fetches the supported areas from kamal"
   []
-  (.. (js/fetch (:kamal/areas urls))
+  (.. (js/fetch (fill-out (:kamal/areas urls) {"{server}" server}))
       (then read-text)
       (then parse-edn)))

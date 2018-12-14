@@ -82,12 +82,12 @@
   (when (not (empty? text))
     (let [navigate (:navigate (:navigation props))
           user     (data/q queries/user-id db)
-          data     (data/pull db [:user/position {:user/city [:city/bbox]}]
+          data     (data/pull db [:user/position {:user/area [:area/bbox]}]
                                  [:user/uid user])
           args {:query        text
                 :proximity    (:user/position data)
                 :access_token (:ENV/MAPBOX state/tokens)
-                :bbox         (:city/bbox (:user/city data))}
+                :bbox         (:area/bbox (:user/area data))}
           validated (tool/validate ::mapbox/request args ::invalid-input)]
       (if (tool/error? validated)
         [[navigate "location-error" validated]
