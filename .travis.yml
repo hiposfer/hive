@@ -7,4 +7,5 @@ install: npm --version && npm install -g npm@6 && npm install
 
 script:
   - lein do clean, compile, check, simple-release
-  - npm run appr
+  - npx expo login -u ${EXP_USERNAME} -p ${EXP_PASSWORD} --non-interactive
+  - npx expo build:android publish --release-channel ${TRAVIS_PULL_REQUEST_BRANCH}
