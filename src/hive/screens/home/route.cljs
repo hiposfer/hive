@@ -38,7 +38,7 @@
   [route]
   (or (:route/color route)
       (when (some? route)
-        (color (or (:route/short_name route) (:route/long_name route))))
+        (color (str (or (:route/short_name route) (:route/long_name route)))))
       default-color))
 
 (defn- TransitLine
@@ -183,8 +183,12 @@
 (defn- paths
   [uid]
   (let [route @(state/pull! [{:directions/steps
-                              [:step/geometry :step/mode
-                               {:step/trip [{:trip/route [:route/color :route/long_name]}]}]}]
+                              [:step/geometry
+                               :step/mode
+                               {:step/trip
+                                [{:trip/route [:route/color
+                                               :route/long_name
+                                               :route/short_name]}]}]}]
                             [:directions/uuid uid])]
     (for [steps (partition-by :step/mode (:directions/steps route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
