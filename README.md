@@ -14,7 +14,7 @@ Your go-to public transport routing app
 npm install
 
 # signup using exp CLI
-npm run exp signup
+npx expo-cli signup
 
 # start the figwheel server and cljs repl 
 lein figwheel
@@ -23,7 +23,7 @@ lein figwheel
 in another terminal
 ``` shell
 ## Start exponent server
-npm run exp start
+npx expo-cli start
 ```
 
 Once you have a figwheel and exp server running. Open the

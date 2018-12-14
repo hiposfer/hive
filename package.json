@@ -5,9 +5,6 @@
   "author": "Camilo Roca",
   "private": true,
   "main": "main.js",
-  "scripts": {
-    "expo": "expo"
-  },
   "dependencies": {
     "create-react-class": "15.6.3",
     "expo": "^26.0.0",
