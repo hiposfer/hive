@@ -57,17 +57,32 @@
     (str "walk " (misc/convert distance :from "meters" :to "km")
          " km (around " duration ").")))
 
+(defn- SectionIcon
+  [steps]
+  (if (= "walking" (:step/mode (first steps)))
+    [:> assets/Ionicons {:name "ios-walk" :size 32}]
+    (case (:route/type (:trip/route (:step/trip (first steps))))
+      0 [:> assets/Ionicons {:name "ios-train" :size 32}]
+      1 [:> assets/Ionicons {:name "ios-subway" :size 32}]
+      2 [:> assets/Ionicons {:name "md-train" :size 32}]
+      3 [:> assets/Ionicons {:name "ios-bus" :size 32}]
+      ;; default
+      [:> React/ActivityIndicator])))
+
 (defn- StepOverviewMsg
   [props steps]
   [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}}
     [:> React/View {:flex-direction "row" :alignItems "center"}
-      [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
-                           :size 22 :color "gray"}]
-      [:> React/Text {:style {:color "gray" :paddingRight 7}}
+      [:> React/View {:paddingRight 10 :with 32}
+        [SectionIcon steps]]
+      [:> React/Text {:style {:color "gray" :paddingRight 7 :flex 3}}
         (if (= "walking" (:step/mode (first steps)))
           (walk-message steps)
           (-> (:maneuver/instruction (:step/maneuver (first steps)))
-              (str/replace "[Dummy]" "")))]]])
+              (str/replace "[Dummy]" "")
+              (subs 0 60)))]
+      [:> assets/Ionicons {:name "ios-arrow-forward" :size 22
+                           :color "gray" :style {:paddingRight 20}}]]])
 
 (defn- StepOverview
   [props steps]
@@ -123,24 +138,13 @@
                                  :step/distance
                                  {:step/trip [{:trip/route [:route/long_name
                                                             :route/short_name
+                                                            :route/type
                                                             :route/color]}]}]}]
                               [:directions/uuid uid])]
     [:> React/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))]
         ^{:key (:step/arrive (first steps))}
         [RouteSection props steps])]))
-
-(defn- SectionIcon
-  [steps]
-  (if (= "walking" (:step/mode (first steps)))
-    [:> assets/Ionicons {:name "ios-walk" :size 32}]
-    (case (:route/type (:trip/route (:step/trip (first steps))))
-      0 [:> assets/Ionicons {:name "ios-train" :size 32}]
-      1 [:> assets/Ionicons {:name "ios-subway" :size 32}]
-      2 [:> assets/Ionicons {:name "md-train" :size 32}]
-      3 [:> assets/Ionicons {:name "ios-bus" :size 32}]
-      ;; default
-      [:> React/ActivityIndicator])))
 
 (defn- Transfers
   [route-id]
