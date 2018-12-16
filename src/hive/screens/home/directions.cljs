@@ -35,12 +35,18 @@
                             (symbols/circle big-circle))]]))
 
 (defn- WalkingDots
-  []
-  (let [style (merge (symbols/circle micro-circle)
-                     {:backgroundColor "slategray"})]
-    (into [:> React/View {:width 20 :alignItems "center"
-                          :justifyContent "space-around"}]
-          (repeat 10 [:> React/View style]))))
+  [steps]
+  (let [style      (merge (symbols/circle micro-circle)
+                          {:backgroundColor "slategray"})]
+    [:> React/View {:width 20 :alignItems "center"
+                    :justifyContent "space-around"}
+      (when (= "depart" (:maneuver/type (:step/maneuver (first steps))))
+        [:> React/View (merge (symbols/circle big-circle)
+                              {:backgroundColor "slategray"})])
+      (for [i (range 10)] ^{:key i} [:> React/View style])
+      (when (= "arrive" (:maneuver/type (:step/maneuver (last steps))))
+        [:> React/View (merge (symbols/circle big-circle)
+                              {:backgroundColor "slategray"})])]))
 
 (defn- walk-message
   [steps]
@@ -54,14 +60,14 @@
 (defn- StepOverviewMsg
   [props steps]
   [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
-   [:> React/View {:flex-direction "row"}
-    [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
-                         :size 22 :color "gray"}]
-    [:> React/Text {:style {:color "gray" :paddingRight 7}}
-     (if (= "walking" (:step/mode (first steps)))
-       (walk-message steps)
-       (-> (:maneuver/instruction (:step/maneuver (first steps)))
-           (str/replace "[Dummy]" "")))]]])
+    [:> React/View {:flex-direction "row" :alignItems "center"}
+      [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
+                           :size 22 :color "gray"}]
+      [:> React/Text {:style {:color "gray" :paddingRight 7}}
+       (if (= "walking" (:step/mode (first steps)))
+         (walk-message steps)
+         (-> (:maneuver/instruction (:step/maneuver (first steps)))
+             (str/replace "[Dummy]" "")))]]])
 
 (defn- StepOverview
   [props steps]
@@ -102,7 +108,7 @@
     [:> React/View {:height height :flexDirection "row"}
       [RouteSectionTimes props steps]
       (if (= "walking" (:step/mode (first steps)))
-        [WalkingDots]
+        [WalkingDots steps]
         [TransitLine steps])
       [StepOverview props steps]]))
 
