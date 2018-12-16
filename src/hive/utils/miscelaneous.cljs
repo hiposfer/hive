@@ -60,7 +60,7 @@
   "converts value from a measurement unit to another. Returns
   the scalar value in the final unit scale."
   [value & {:keys [from to precision]}]
-  (.. (quantity value  from)
+  (.. (quantity value from)
       (to to)
       (toPrec (or precision 0.1))
       -scalar))

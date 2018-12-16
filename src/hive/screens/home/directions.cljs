@@ -48,10 +48,9 @@
   (let [distance (apply + (map :step/distance steps))
         departs  (:step/arrive (first steps))
         arrive   (:step/arrive (last steps))
-        duration (misc/convert (- arrive departs)
-                               :from "seconds" :to "minutes" :precision 1)]
+        duration (duration/format (* 1000 (- arrive departs)))]
     (str "walk " (misc/convert distance :from "meters" :to "km")
-         " km (around " duration " minutes).")))
+         " km (around " duration ").")))
 
 (defn- StepOverviewMsg
   [props steps]
@@ -80,8 +79,11 @@
                      (:step/name (last steps))])])
 
 (defn- RouteSection
-  [props steps human-time]
-  (let [height (get section-height (:step/mode (first steps)))]
+  [props steps]
+  (let [arrives  (:step/arrive (first steps))
+        iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
+        human-time (subs iso-time 0 5)
+        height (get section-height (:step/mode (first steps)))]
     [:> React/View {:height height :flexDirection "row"}
       [:> React/Text {:style {:width 40 :textAlign "right"
                               :color "gray" :fontSize 12}}
@@ -105,12 +107,9 @@
                                                             :route/color]}]}]}]
                               [:directions/uuid uid])]
     [:> React/View {:flex 1}
-      (for [steps (partition-by :step/mode (:directions/steps route))
-            :let [arrives  (:step/arrive (first steps))
-                  iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
-                  human-time (subs iso-time 0 5)]]
-        ^{:key arrives}
-        [RouteSection props steps human-time])]))
+      (for [steps (partition-by :step/mode (:directions/steps route))]
+        ^{:key (:step/arrive (first steps))}
+        [RouteSection props steps])]))
 
 (defn- SectionIcon
   [steps]
