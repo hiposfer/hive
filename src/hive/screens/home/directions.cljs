@@ -26,12 +26,11 @@
 
 (defn- TransitLine
   [steps]
-  (let [line-height "80%"
-        stroke      (route-color (:trip/route (:step/trip (first steps))))]
+  (let [stroke      (route-color (:trip/route (:step/trip (first steps))))]
     [:> React/View {:width 20 :alignItems "center"}
       [:> React/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
-      [:> React/View {:backgroundColor stroke :width "15%" :height line-height}]
+      [:> React/View {:backgroundColor stroke :width "15%" :flex 1}]
       [:> React/View (merge {:backgroundColor stroke :borderColor "transparent"}
                             (symbols/circle big-circle))]]))
 
@@ -54,7 +53,6 @@
 
 (defn- StepOverviewMsg
   [props steps]
-  (cljs.pprint/pprint steps)
   [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
    [:> React/View {:flex-direction "row"}
     [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
@@ -78,16 +76,31 @@
       [:> React/Text {:style {:height 20}}
                      (:step/name (last steps))])])
 
+(def time-style {:textAlign "center" :color "gray" :fontSize 12})
+
+(defn- RouteSectionTimes
+  [props steps]
+  (let [departs      (:step/arrive (first steps))
+        arrives      (:step/arrive (last steps))
+        departs-time (.toLocaleTimeString (new js/Date (* 1000 departs))
+                                          "de-De")
+        arrives-time (.toLocaleTimeString (new js/Date (* 1000 arrives))
+                                          "de-De")]
+    [:> React/View {:width 40 :justifyContent "space-between"}
+      [:> React/Text {:style time-style}
+        (when (or (= "transit" (:step/mode (first steps)))
+                  (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
+          (subs departs-time 0 5))]
+      (when (or (= "transit" (:step/mode (last steps)))
+                (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
+        [:> React/Text {:style time-style}
+                       (subs arrives-time 0 5)])]))
+
 (defn- RouteSection
   [props steps]
-  (let [arrives  (:step/arrive (first steps))
-        iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
-        human-time (subs iso-time 0 5)
-        height (get section-height (:step/mode (first steps)))]
+  (let [height     (get section-height (:step/mode (first steps)))]
     [:> React/View {:height height :flexDirection "row"}
-      [:> React/Text {:style {:width 40 :textAlign "right"
-                              :color "gray" :fontSize 12}}
-                     human-time]
+      [RouteSectionTimes props steps]
       (if (= "walking" (:step/mode (first steps)))
         [WalkingDots]
         [TransitLine steps])
