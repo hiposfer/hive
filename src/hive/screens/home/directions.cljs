@@ -44,9 +44,10 @@
           (repeat 10 [:> React/View style]))))
 
 (defn- StepOverview
-  [props steps departs]
+  [props steps]
   [:> React/View {:flex 1 :justifyContent "space-between"}
-    (when (= "depart" (:maneuver/type (:step/maneuver (first steps))))
+    (when (or (= "transit" (:step/mode (first steps)))
+              (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
       [:> React/Text {:style {:height 20}}
                      (some :step/name (butlast steps))])
     [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
@@ -64,7 +65,7 @@
                      (:step/name (last steps))])])
 
 (defn- RouteSection
-  [props steps human-time departs]
+  [props steps human-time]
   (let [height (get section-height (:step/mode (first steps)))]
     [:> React/View {:height height :flexDirection "row"}
       [:> React/Text {:style {:width 40 :textAlign "right"
@@ -73,7 +74,7 @@
       (if (= "walking" (:step/mode (first steps)))
         [WalkingDots]
         [TransitLine steps])
-      [StepOverview props steps departs]]))
+      [StepOverview props steps]]))
 
 (defn- Route
   [props uid]
@@ -92,11 +93,9 @@
       (for [steps (partition-by :step/mode (:directions/steps route))
             :let [arrives  (:step/arrive (first steps))
                   iso-time (.toLocaleTimeString (new js/Date (* 1000 arrives)) "de-De")
-                  human-time (subs iso-time 0 5)
-                  departs    (= (first (:directions/steps route))
-                                (first steps))]]
+                  human-time (subs iso-time 0 5)]]
         ^{:key arrives}
-        [RouteSection props steps human-time departs])]))
+        [RouteSection props steps human-time])]))
 
 (defn- SectionIcon
   [steps]
