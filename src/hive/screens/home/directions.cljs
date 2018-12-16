@@ -64,10 +64,10 @@
       [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
                            :size 22 :color "gray"}]
       [:> React/Text {:style {:color "gray" :paddingRight 7}}
-       (if (= "walking" (:step/mode (first steps)))
-         (walk-message steps)
-         (-> (:maneuver/instruction (:step/maneuver (first steps)))
-             (str/replace "[Dummy]" "")))]]])
+        (if (= "walking" (:step/mode (first steps)))
+          (walk-message steps)
+          (-> (:maneuver/instruction (:step/maneuver (first steps)))
+              (str/replace "[Dummy]" "")))]]])
 
 (defn- StepOverview
   [props steps]
