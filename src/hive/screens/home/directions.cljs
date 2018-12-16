@@ -43,6 +43,29 @@
                           :justifyContent "space-around"}]
           (repeat 10 [:> React/View style]))))
 
+(defn- walk-message
+  [steps]
+  (let [distance (apply + (map :step/distance steps))
+        departs  (:step/arrive (first steps))
+        arrive   (:step/arrive (last steps))
+        duration (misc/convert (- arrive departs)
+                               :from "seconds" :to "minutes" :precision 1)]
+    (str "walk " (misc/convert distance :from "meters" :to "km")
+         " km (around " duration " minutes).")))
+
+(defn- StepOverviewMsg
+  [props steps]
+  (cljs.pprint/pprint steps)
+  [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
+   [:> React/View {:flex-direction "row"}
+    [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
+                         :size 22 :color "gray"}]
+    [:> React/Text {:style {:color "gray" :paddingRight 7}}
+     (if (= "walking" (:step/mode (first steps)))
+       (walk-message steps)
+       (-> (:maneuver/instruction (:step/maneuver (first steps)))
+           (str/replace "[Dummy]" "")))]]])
+
 (defn- StepOverview
   [props steps]
   [:> React/View {:flex 1 :justifyContent "space-between"}
@@ -50,15 +73,7 @@
               (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
       [:> React/Text {:style {:height 20}}
                      (some :step/name (butlast steps))])
-    [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
-      [:> React/View {:flex-direction "row"}
-        [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
-                             :size 22 :color "gray"}]
-        [:> React/Text {:style {:color "gray" :paddingRight 7}}
-                       (-> (first steps)
-                           (:step/maneuver)
-                           (:maneuver/instruction)
-                           (str/replace "[Dummy]" ""))]]]
+    [StepOverviewMsg props steps]
     (when (or (= "transit" (:step/mode (first steps)))
               (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
       [:> React/Text {:style {:height 20}}

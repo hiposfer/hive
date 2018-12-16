@@ -1,6 +1,7 @@
 (ns hive.utils.miscelaneous
   "a namespace for functions that have not found a home :'("
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [js-quantities :as quantity]))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?
@@ -54,3 +55,12 @@
                             (substr -2)))))
             "#"
             (range 3))))
+
+(defn convert
+  "converts value from a measurement unit to another. Returns
+  the scalar value in the final unit scale."
+  [value & {:keys [from to precision]}]
+  (.. (quantity value  from)
+      (to to)
+      (toPrec (or precision 0.1))
+      -scalar))

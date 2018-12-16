@@ -11,10 +11,10 @@ Your go-to public transport routing app
 
 ``` shell
 # install js modules
-npm install
+yarn install
 
 # signup using exp CLI
-npx expo signup
+yarn run expo signup
 
 # start the figwheel server and cljs repl 
 lein figwheel
@@ -23,7 +23,7 @@ lein figwheel
 in another terminal
 ``` shell
 ## Start exponent server
-npx expo start
+yarn run expo start
 ```
 
 Once you have a figwheel and exp server running. Open the
