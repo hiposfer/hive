@@ -59,7 +59,7 @@
 
 (defn- StepOverviewMsg
   [props steps]
-  [:> React/TouchableOpacity {:style {:height 60 :justifyContent "center"}}
+  [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}}
     [:> React/View {:flex-direction "row" :alignItems "center"}
       [:> assets/Ionicons {:name "ios-arrow-forward" :style {:paddingRight 10}
                            :size 22 :color "gray"}]
