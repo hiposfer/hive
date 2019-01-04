@@ -16,7 +16,7 @@
             [hive.screens.settings.core :as settings]
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
-            [hive.screens.home.route :as route]
+            [hive.screens.home.directions :as route]
             [hive.services.kamal :as kamal]))
 
 (defn- MessageTray
@@ -34,13 +34,12 @@
           (:session/alert alert)]])))
 
 (defn- screenify
-  [component props]
+  [component]
   (rn-nav/stack-screen
     (fn [props]
       [:> React/View {:flex 1 :alignItems "stretch"}
         [component props]
-        [MessageTray props]])
-    props))
+        [MessageTray props]])))
 
 (defn RootUi []
   "Each Screen will receive two props:
@@ -52,12 +51,12 @@
       :navigate  - most common way to navigate to the next screen
       :setParams - used to change the params for the current screen}"
   (let [Navigator (rn-nav/stack-navigator
-                    {:home           {:screen (screenify home/Home {:title "map"})}
-                     :directions     {:screen (screenify route/Instructions {:title "directions"})}
-                     :gtfs           {:screen (screenify gtfs/Data {:title "gtfs"})}
-                     :settings       {:screen (screenify settings/Settings {:title "settings"})}
-                     :select-city    {:screen (screenify city-picker/Selector {:title "Select City"})}
-                     :location-error {:screen (screenify errors/UserLocation {:title "location-error"})}}
+                    {:home           {:screen (screenify home/Home)}
+                     :directions     {:screen (screenify route/Instructions)}
+                     :gtfs           {:screen (screenify gtfs/Data)}
+                     :settings       {:screen (screenify settings/Settings)}
+                     :select-city    {:screen (screenify city-picker/Selector)}
+                     :location-error {:screen (screenify errors/UserLocation)}}
                     {:headerMode "none"})]
     [router/Router {:root Navigator :init "home"}]))
 

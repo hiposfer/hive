@@ -1,6 +1,7 @@
 (ns hive.utils.miscelaneous
   "a namespace for functions that have not found a home :'("
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [js-quantities :as quantity]))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?
@@ -38,3 +39,28 @@
   "reject a promise if its value is an error"
   [v]
   (if (error? v) (throw v) v))
+
+;; adapted from
+;; https://stackoverflow.com/a/16348977
+(defn color
+  [text]
+  (let [h (reduce (fn [res i] (+ (. text (charCodeAt i))
+                                 (- (bit-shift-left res 5)
+                                    res)))
+                  0
+                  (range (count text)))]
+    (reduce (fn [res i]
+              (let [v (bit-and (bit-shift-right h (* i 8)) 0xFF)]
+                (str res (. (str "00" (. v (toString 16)))
+                            (substr -2)))))
+            "#"
+            (range 3))))
+
+(defn convert
+  "converts value from a measurement unit to another. Returns
+  the scalar value in the final unit scale."
+  [value & {:keys [from to precision]}]
+  (.. (quantity value from)
+      (to to)
+      (toPrec (or precision 0.1))
+      -scalar))
