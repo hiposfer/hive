@@ -124,12 +124,12 @@
   "attempts to retrieve the ip on linux OS"
   []
   (try
-    (-> (Runtime/getRuntime)
-        (.exec "ip route get 8.8.8.8 | head -n 1 | tr -s ' ' | cut -d ' ' -f 7")
-        (.getInputStream)
-        (slurp)
-        (str/trim-newline)
-        (re-matches ip-validator))
+    (let [command-result (-> (Runtime/getRuntime)
+                             (.exec "ip route get 8.8.8.8")
+                             (.getInputStream)
+                             (slurp))
+          system-ips    (re-seq ip-validator command-result)]
+      (last system-ips))
     (catch Exception _
       nil)))
 
@@ -207,8 +207,7 @@
 (defn write-env-index!
   "prebuild the set of files that the metro packager requires in advance"
   [m]
-  (let [devHost     (get-expo-ip)
-        modules     (concat (flatten (vals m))
+  (let [modules     (concat (flatten (vals m))
                             ["react" "react-native" "expo" "create-react-class"])
         modules-map (into {}
                       (for [module modules]
@@ -222,7 +221,7 @@
       (spit-clojure (get-in dev-env [:index :cljs])
                     (walk/postwalk-replace {:tag/js      (symbol "#js")
                                             :tag/modules modules-map
-                                            :tag/ip      devHost}
+                                            :tag/ip      (get-expo-ip)}
                                            (read-edn-seq (get-in dev-env [:index :edn]))))
       (catch Exception e
         (println "Error: " e)))))

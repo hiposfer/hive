@@ -3,7 +3,6 @@
             [react-native :as React]
             [expo :as Expo]
             [hive.state.queries :as queries]
-            [hive.state.queries :as queries]
             [datascript.core :as data]))
 
 ;; todo: should altitude be inside the point coordinates?
