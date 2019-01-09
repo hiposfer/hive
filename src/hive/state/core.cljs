@@ -166,9 +166,6 @@
                            (and (vector? v) (fn? (first v)))
                            (into [(.-name (first v))] (rest v))
 
-                           (tool/error? v)
-                           (ex-message v)
-
                            :else v))
                        args)))
 

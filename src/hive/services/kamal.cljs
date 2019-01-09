@@ -14,7 +14,7 @@
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
-(def server "https://kamal-germany.herokuapp.com")
+(def server "https://kamal-live.herokuapp.com")
 (def urls
   {:area/directions "{server}/area/frankfurt/directions?coordinates={coordinates}&departure={departure}"
    :area/entity     "{server}/area/frankfurt/{entity}/{id}"
