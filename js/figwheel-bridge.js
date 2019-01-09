@@ -220,7 +220,7 @@ function loadApp(platform, devHost, onLoadCb) {
     };
 
     if (typeof goog === "undefined") {
-        console.log(`--------- DEBUGGING LOGS: ${debugEnabled === true ? "enabled" : "disabled"}`)
+        console.log(`--------- FIGWHEEL BRIDGE LOGS: ${debugEnabled === true ? "enabled" : "disabled"}`)
         logDebug('Loading Closure base.');
         interceptRequire();
 
