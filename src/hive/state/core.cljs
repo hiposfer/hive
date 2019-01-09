@@ -178,10 +178,11 @@
     (tool/promise? value)
     (let [id (data/squuid)]
       (js/console.table "awaiting promise -" (pr-str id))
-      (. value (then (fn [result]
-                       (js/console.log "promise" (pr-str id) "resolved")
-                       (log! result)
-                       (identity result)))))
+      (.. value (then (fn [result]
+                        (js/console.log "promise" (pr-str id) "resolved")
+                        (log! result)
+                        (identity result)))
+                (catch (fn [error] (js/console.warn "promise" (pr-str id) "error UNHANDLED" error)))))
 
     ;; functional side effect declaration
     ;; Execute it and try to execute its result
