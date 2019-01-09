@@ -47,25 +47,8 @@
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
-            #_[cljs.core.async :as async]
+            [clojure.walk :as walk]
             [hiposfer.gtfs.edn :as gtfs]))
-
-(def gtfs-data (js->clj (js/require "./resources/gtfs.json")
-                        :keywordize-keys true))
-
-;; General Transfer Feed Specification - entities
-;; identities
-(defn- gtfs-schema
-  []
-  (let [identifiers (gtfs/identifiers gtfs-data)]
-    (into (sorted-map) (remove nil?)
-      (for [field (gtfs/fields gtfs-data)]
-        (cond
-          (:unique field)
-          [(field :keyword) {:db.unique :db.unique/identity}]
-
-          (gtfs/reference? identifiers field)
-          [(field :keyword) {:db/type :db.type/ref}])))))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -97,6 +80,23 @@
 
 ;; rework tries to combine the strengths of both while mitigating its weaknesses
 ;; with an extra goal of trying not to reinvent the wheel
+
+(def gtfs-data (js->clj (js/require "./resources/gtfs.json")
+                        :keywordize-keys true))
+
+;; General Transfer Feed Specification - entities
+;; identities
+(defn- gtfs-schema
+  []
+  (let [identifiers (gtfs/identifiers gtfs-data)]
+    (into (sorted-map) (remove nil?)
+          (for [field (gtfs/fields gtfs-data)]
+            (cond
+              (:unique field)
+              [(field :keyword) {:db.unique :db.unique/identity}]
+
+              (gtfs/reference? identifiers field)
+              [(field :keyword) {:db/type :db.type/ref}])))))
 
 (def tokens (tool/with-ns "ENV"
               (tool/keywordize
@@ -155,33 +155,76 @@
 
 (declare transact!)
 
-(defn- execute!
-  [result value]
-  ;; async transaction - transact each element
-  #_(when (tool/chan? value)
-      (async/reduce (fn [_ v] (transact! v)) nil value))
-  ;; JS promise - wait for its value then transact it
-  (when (tool/promise? value)
-    (. value (then transact!)))
+(defn- demunge-effect
+  [[f & args]]
+  (into [(.-name f)]
+        (walk/postwalk (fn [v]
+                         (cond
+                           (data/db? v)
+                           "#DB{...}"
 
+                           (and (vector? v) (fn? (first v)))
+                           (into [(.-name (first v))] (rest v))
+
+                           (tool/error? v)
+                           (ex-message v)
+
+                           :else v))
+                       args)))
+
+(defn- log!
+  [value]
   (cond
+    ;; do nothing in production
+    (false? js/__DEV__) nil
+    ;; JS promise - wait for its value then transact it
+    (tool/promise? value)
+    (let [id (data/squuid)]
+      (js/console.table "awaiting promise -" (pr-str id))
+      (. value (then (fn [result]
+                       (js/console.log "promise" (pr-str id) "resolved")
+                       (log! result)
+                       (identity result)))))
+
+    ;; functional side effect declaration
+    ;; Execute it and try to execute its result
+    (and (vector? value) (fn? (first value)))
+    (js/console.log "effect - " (pr-str (demunge-effect value)))
+
+    ;; side effect declaration wrapped with delay to allow testing
+    ;; Force it and try to execute its result
+    (delay? value)
+    (js/console.log "native effect - " (pr-str value))
+
+    ;; simple datascript transaction
+    (or (vector? value) (data/datom? value) (map? value))
+    (js/console.log "tx - " (pr-str value))))
+
+(defn- execute!
+  [transaction value]
+  (log! value)
+  (cond
+    ;; JS promise - wait for its value then transact it
+    (tool/promise? value)
+    (. value (then transact!))
+
     ;; functional side effect declaration
     ;; Execute it and try to execute its result
     (and (vector? value) (fn? (first value)))
     (do (execute! [] (apply (first value) (rest value)))
-        (identity result))
+        (identity transaction))
 
     ;; side effect declaration wrapped with delay to allow testing
     ;; Force it and try to execute its result
     (delay? value)
     (do (execute! [] (deref value))
-        (identity result))
+        (identity transaction))
 
     ;; simple datascript transaction
     (or (map? value) (vector? value) (data/datom? value))
-    (conj result value)
+    (conj transaction value)
     ;; otherwise just keep reducing
-    :else result))
+    :else transaction))
 
 (defn transact!
   "Single entry point for 'updating' the app state. The behaviour of
