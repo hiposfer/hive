@@ -47,7 +47,7 @@
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
-            [hive.state.logger :as log]
+            [hive.state.middleware.logger :as log]
             [hive.state.schema :as schema]))
 
 ;; Before creating this mini-framework I tried re-frame and
@@ -107,43 +107,48 @@
 
 (declare transact!)
 
-(defn- execute!
-  [request-id transaction value]
-  ;; do nothing in production
-  (when (true? js/__DEV__)
-    (js/console.log (clj->js (log/object request-id value))))
+(def ^:private nullify (constantly nil))
 
-  (cond
-    ;; JS promise - wait for its value then transact it
-    (tool/promise? value)
-    (. value (then transact!))
+(defn- executor
+  [rf]
+  (fn [db transaction]
+    ;; replaces non-Datascript transaction elements with nil
+    (rf db (for [item transaction]
+             (cond
+               ;; JS promise - wait for its value then transact it
+               (tool/promise? item)
+               (nullify (. item (then transact!)))
 
-    ;; functional side effect declaration
-    ;; Execute it and try to execute its result
-    (and (vector? value) (fn? (first value)))
-    (do (execute! request-id [] (apply (first value) (rest value)))
-        (identity transaction))
+               ;; functional effect declaration
+               ;; Execute it and try to execute its result
+               (and (vector? item) (fn? (first item)))
+               (let [result (apply (first item) (rest item))]
+                 ;; effects are async by nature; since any other type handled here
+                 ;; could have been directly added to the transaction instead of through
+                 ;; the functional effect declaration
+                 (nullify (transact! [result])))
 
-    ;; side effect declaration wrapped with delay to allow testing
-    ;; Force it and try to execute its result
-    (delay? value)
-    (do (execute! request-id [] (deref value))
-        (identity transaction))
+               ;; side effect declaration wrapped with delay to allow testing
+               ;; Force it and try to execute its result
+               (delay? item)
+               (let [result (deref item)]
+                 (nullify (transact! [result])))
 
-    ;; simple datascript transaction
-    (or (map? value) (vector? value) (data/datom? value))
-    (conj transaction value)
-    ;; otherwise just keep reducing
-    :else transaction))
+               ;; simple datascript transaction
+               (or (map? item) (vector? item) (data/datom? item))
+               (identity item))))))
+
+(defn- transactor [db transaction] (remove nil? transaction))
+
+(def ^:private processor (log/logger (executor transactor)))
 
 (defn transact!
   "Single entry point for 'updating' the app state. The behaviour of
   transact! depends on the arguments.
 
-   data can be:
+   transaction can be:
    - a standard Datascript transaction. See Datomic's API documentation for more
     information. http://docs.datomic.com/transactions.html
-   - a channel yielding one or more transactions
    - a vector whose first element is a function and the rest are its argument.
      The function will be executed and its return value is used in-place of
      the original one. Useful for keeping functions side-effect free
@@ -152,11 +157,10 @@
    - a Js Promise yielding a single transaction. Useful for doing
      asynchronous Js calls without converting them to a async channel
 
-   Not supported data types are ignored"
-  ([data]
-   (transact! data nil))
-  ([data tx-meta]
-   (when (sequential? data)
-     (let [id (data/squuid)
-           tx (reduce #(execute! id %1 %2) [] data)]
+   Not supported transaction types are ignored"
+  ([transaction]
+   (transact! transaction nil))
+  ([transaction tx-meta]
+   (when (sequential? transaction)
+     (let [tx (transactor (db) transaction)]
        (data/transact! conn tx tx-meta)))))
