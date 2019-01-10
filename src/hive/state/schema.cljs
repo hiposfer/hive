@@ -1,6 +1,5 @@
 (ns hive.state.schema
-  (:require [hive.utils.miscelaneous :as tool]
-            [hiposfer.gtfs.edn :as gtfs]))
+  (:require [hiposfer.gtfs.edn :as gtfs]))
 
 (def gtfs-data (js->clj (js/require "./resources/gtfs.json")
                         :keywordize-keys true))
