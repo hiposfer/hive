@@ -47,8 +47,8 @@
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
-            [clojure.walk :as walk]
-            [hiposfer.gtfs.edn :as gtfs]))
+            [hive.state.logger :as log]
+            [hive.state.schema :as schema]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -81,61 +81,13 @@
 ;; rework tries to combine the strengths of both while mitigating its weaknesses
 ;; with an extra goal of trying not to reinvent the wheel
 
-(def gtfs-data (js->clj (js/require "./resources/gtfs.json")
-                        :keywordize-keys true))
 
-;; General Transfer Feed Specification - entities
-;; identities
-(defn- gtfs-schema
-  []
-  (let [identifiers (gtfs/identifiers gtfs-data)]
-    (into (sorted-map) (remove nil?)
-          (for [field (gtfs/fields gtfs-data)]
-            (cond
-              (:unique field)
-              [(field :keyword) {:db.unique :db.unique/identity}]
 
-              (gtfs/reference? identifiers field)
-              [(field :keyword) {:db/type :db.type/ref}])))))
+(defonce conn (rata/listen! (data/create-conn schema/schema)))
 
 (def tokens (tool/with-ns "ENV"
-              (tool/keywordize
-                (js/require "./resources/config.json"))))
-
-(def schema (merge-with into
-              ;; GTFS entities
-              (gtfs-schema)
-              ;; hive schema
-              {:user/uid              {:db.unique    :db.unique/identity
-                                       :hive.storage :sqlite/store}
-               :user/password         {:hive.storage :sqlite/ignore}
-               :user/area             {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               :user/goal             {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               :user/directions       {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               ;; server support data
-               :area/id               {:db.unique    :db.unique/identity
-                                       :hive.storage :sqlite/store}
-               ;; mapbox data
-               :place/id              {:db.unique :db.unique/identity}
-               ;; ephemeral data
-               :session/uuid          {:db.unique :db.unique/identity}
-               ;; server response data
-               :directions/uuid       {:db.unique :db.unique/identity}
-               :directions/steps      {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/many}
-               :step/maneuver         {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               :step/trip             {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               ;; needed to tell datascript to keep only 1 of these
-               :react.navigation/name {:db.unique :db.unique/identity}
-               ;; provide a way for ERRORS to be registered
-               :error/id              {:db.unique :db.unique/identity}}))
-
-(defonce conn (rata/listen! (data/create-conn schema)))
+                          (tool/keywordize
+                            (js/require "./resources/config.json"))))
 
 (defn pull!
   "same as datascript/pull but returns a ratom which will be updated
@@ -155,56 +107,11 @@
 
 (declare transact!)
 
-(defn- demunge-effect
-  [[f & args]]
-  (into [(.-name f)]
-        (walk/postwalk (fn [v]
-                         (cond
-                           (data/db? v)
-                           "#DB{...}"
-
-                           (and (vector? v) (fn? (first v)))
-                           (into [(.-name (first v))] (rest v))
-
-                           :else v))
-                       args)))
-
-(defn- log-object
-  [value]
-  (cond
-    ;; JS promise - wait for its value then transact it
-    (tool/promise? value)
-    (let [id (data/squuid)]
-      (.. value (then (fn [result]
-                        (js/console.log #js {:type "promise" :status "resolved" :id (pr-str id)
-                                             :value (clj->js (log-object result))})
-                        (identity result)))
-                (catch (fn [error] (js/console.warn #js {:type "promise" :id (pr-str id) :status "rejected"
-                                                         :error error}))))
-      {:type "promise" :status "pending" :id (pr-str id)})
-
-    ;; functional side effect declaration
-    ;; Execute it and try to execute its result
-    (and (vector? value) (fn? (first value)))
-    {:type "effect" :value (pr-str (demunge-effect value))}
-
-    ;; side effect declaration wrapped with delay to allow testing
-    ;; Force it and try to execute its result
-    (delay? value)
-    {:type "native effect" :value (pr-str value)}
-
-    ;; transaction item
-    (or (vector? value) (data/datom? value) (map? value))
-    {:type "tx" :value (pr-str value)}
-
-    ;; datascript transaction
-    (seq? value) {:type "transaction" :value (pr-str value)}))
-
 (defn- execute!
-  [transaction value]
+  [request-id transaction value]
   ;; do nothing in production
   (when (true? js/__DEV__)
-    (js/console.log (clj->js (log-object value))))
+    (js/console.log (clj->js (log/object request-id value))))
 
   (cond
     ;; JS promise - wait for its value then transact it
@@ -214,13 +121,13 @@
     ;; functional side effect declaration
     ;; Execute it and try to execute its result
     (and (vector? value) (fn? (first value)))
-    (do (execute! [] (apply (first value) (rest value)))
+    (do (execute! request-id [] (apply (first value) (rest value)))
         (identity transaction))
 
     ;; side effect declaration wrapped with delay to allow testing
     ;; Force it and try to execute its result
     (delay? value)
-    (do (execute! [] (deref value))
+    (do (execute! request-id [] (deref value))
         (identity transaction))
 
     ;; simple datascript transaction
@@ -250,5 +157,6 @@
    (transact! data nil))
   ([data tx-meta]
    (when (sequential? data)
-     (let [tx (reduce execute! [] data)]
+     (let [id (data/squuid)
+           tx (reduce #(execute! id %1 %2) [] data)]
        (data/transact! conn tx tx-meta)))))
