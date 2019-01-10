@@ -169,38 +169,43 @@
                            :else v))
                        args)))
 
-(defn- log!
+(defn- log-object
   [value]
   (cond
-    ;; do nothing in production
-    (false? js/__DEV__) nil
     ;; JS promise - wait for its value then transact it
     (tool/promise? value)
     (let [id (data/squuid)]
-      (js/console.table "awaiting promise -" (pr-str id))
       (.. value (then (fn [result]
-                        (js/console.log "promise" (pr-str id) "resolved")
-                        (log! result)
+                        (js/console.log #js {:type "promise" :status "resolved" :id (pr-str id)
+                                             :value (clj->js (log-object result))})
                         (identity result)))
-                (catch (fn [error] (js/console.warn "promise" (pr-str id) "error UNHANDLED" error)))))
+                (catch (fn [error] (js/console.warn #js {:type "promise" :id (pr-str id) :status "rejected"
+                                                         :error error}))))
+      {:type "promise" :status "pending" :id (pr-str id)})
 
     ;; functional side effect declaration
     ;; Execute it and try to execute its result
     (and (vector? value) (fn? (first value)))
-    (js/console.log "effect - " (pr-str (demunge-effect value)))
+    {:type "effect" :value (pr-str (demunge-effect value))}
 
     ;; side effect declaration wrapped with delay to allow testing
     ;; Force it and try to execute its result
     (delay? value)
-    (js/console.log "native effect - " (pr-str value))
+    {:type "native effect" :value (pr-str value)}
 
-    ;; simple datascript transaction
+    ;; transaction item
     (or (vector? value) (data/datom? value) (map? value))
-    (js/console.log "tx - " (pr-str value))))
+    {:type "tx" :value (pr-str value)}
+
+    ;; datascript transaction
+    (seq? value) {:type "transaction" :value (pr-str value)}))
 
 (defn- execute!
   [transaction value]
-  (log! value)
+  ;; do nothing in production
+  (when (true? js/__DEV__)
+    (js/console.log (clj->js (log-object value))))
+
   (cond
     ;; JS promise - wait for its value then transact it
     (tool/promise? value)
