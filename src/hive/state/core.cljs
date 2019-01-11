@@ -107,6 +107,9 @@
 
 (declare transact!)
 
+(defn- tx-part? [item] (and (or (map? item) (vector? item) (data/datom? item))
+                            (not (record? item))))
+
 (defn- executor
   "Executes side effects in place. Returns the result of each item"
   [rf]
@@ -122,7 +125,7 @@
                (force item)
 
                ;; simple datascript transaction
-               (or (map? item) (vector? item) (data/datom? item))
+               (tx-part? item)
                (identity item))))))
 
 ;; middleware chain - a middleware is a function of (db, transaction) -> transaction
@@ -148,15 +151,13 @@
    (transact! transaction nil))
   ([transaction tx-meta]
    (when (sequential? transaction)
-     (let [transaction (processor (db) transaction)]
+     (let [tx-data (processor (db) transaction)]
        ;; schedule the transaction after the middleware chain to avoid
        ;; getting the result of transact! instead of the result of the
        ;; promise
-       (doseq [item transaction
+       (doseq [item tx-data
                :when (tool/promise? item)]
          (. item (then transact!)))
        (data/transact! conn
-                       (eduction (remove nil?)
-                                 (remove tool/promise?)
-                                 transaction)
+                       (filter tx-part? tx-data)
                        tx-meta)))))
