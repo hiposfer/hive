@@ -157,9 +157,9 @@ function importJs(src, success, error) {
 
 function interceptRequire() {
     var oldRequire = window.require;
-    console.info("Shimming require");
+    logDebug("Shimming require");
     window.require = function (id) {
-        console.info("Requiring: " + id);
+        logDebug("Requiring: " + id);
         if (externalModules[id]) {
             return externalModules[id];
         }
@@ -220,7 +220,8 @@ function loadApp(platform, devHost, onLoadCb) {
     };
 
     if (typeof goog === "undefined") {
-        console.info('Loading Closure base.');
+        console.log(`--------- FIGWHEEL BRIDGE LOGS: ${debugEnabled === true ? "enabled" : "disabled"}`)
+        logDebug('Loading Closure base.');
         interceptRequire();
 
         // need to know base path here
@@ -252,7 +253,7 @@ function figwheelImportScript(uri, callback) {
 
 // Goog fixes
 function shimBaseGoog(basePath) {
-    console.info('Shimming goog functions.');
+    logDebug('Shimming goog functions.');
     goog.basePath = basePath + '/' + config.googBasePath;
     goog.global.FIGWHEEL_WEBSOCKET_CLASS = WebSocket;
     goog.global.FIGWHEEL_IMPORT_SCRIPT = figwheelImportScript;

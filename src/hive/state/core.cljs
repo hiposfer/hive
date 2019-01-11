@@ -47,25 +47,8 @@
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
-            #_[cljs.core.async :as async]
-            [hiposfer.gtfs.edn :as gtfs]))
-
-(def gtfs-data (js->clj (js/require "./resources/gtfs.json")
-                        :keywordize-keys true))
-
-;; General Transfer Feed Specification - entities
-;; identities
-(defn- gtfs-schema
-  []
-  (let [identifiers (gtfs/identifiers gtfs-data)]
-    (into (sorted-map) (remove nil?)
-      (for [field (gtfs/fields gtfs-data)]
-        (cond
-          (:unique field)
-          [(field :keyword) {:db.unique :db.unique/identity}]
-
-          (gtfs/reference? identifiers field)
-          [(field :keyword) {:db/type :db.type/ref}])))))
+            [hive.state.middleware.logger :as log]
+            [hive.state.schema :as schema]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -98,44 +81,13 @@
 ;; rework tries to combine the strengths of both while mitigating its weaknesses
 ;; with an extra goal of trying not to reinvent the wheel
 
+
+
+(defonce conn (rata/listen! (data/create-conn schema/schema)))
+
 (def tokens (tool/with-ns "ENV"
-              (tool/keywordize
-                (js/require "./resources/config.json"))))
-
-(def schema (merge-with into
-              ;; GTFS entities
-              (gtfs-schema)
-              ;; hive schema
-              {:user/uid              {:db.unique    :db.unique/identity
-                                       :hive.storage :sqlite/store}
-               :user/password         {:hive.storage :sqlite/ignore}
-               :user/area             {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               :user/goal             {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               :user/directions       {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               ;; server support data
-               :area/id               {:db.unique    :db.unique/identity
-                                       :hive.storage :sqlite/store}
-               ;; mapbox data
-               :place/id              {:db.unique :db.unique/identity}
-               ;; ephemeral data
-               :session/uuid          {:db.unique :db.unique/identity}
-               ;; server response data
-               :directions/uuid       {:db.unique :db.unique/identity}
-               :directions/steps      {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/many}
-               :step/maneuver         {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               :step/trip             {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/one}
-               ;; needed to tell datascript to keep only 1 of these
-               :react.navigation/name {:db.unique :db.unique/identity}
-               ;; provide a way for ERRORS to be registered
-               :error/id              {:db.unique :db.unique/identity}}))
-
-(defonce conn (rata/listen! (data/create-conn schema)))
+                          (tool/keywordize
+                            (js/require "./resources/config.json"))))
 
 (defn pull!
   "same as datascript/pull but returns a ratom which will be updated
@@ -155,42 +107,34 @@
 
 (declare transact!)
 
-(defn- execute!
-  [result value]
-  ;; async transaction - transact each element
-  #_(when (tool/chan? value)
-      (async/reduce (fn [_ v] (transact! v)) nil value))
-  ;; JS promise - wait for its value then transact it
-  (when (tool/promise? value)
-    (. value (then transact!)))
+(defn- executor
+  "Executes side effects in place. Returns the result of each item"
+  [rf]
+  (fn [db transaction]
+    (rf db (for [item transaction]
+             (cond
+               ;; functional effect declaration
+               (and (vector? item) (fn? (first item)))
+               (apply (first item) (rest item))
 
-  (cond
-    ;; functional side effect declaration
-    ;; Execute it and try to execute its result
-    (and (vector? value) (fn? (first value)))
-    (do (execute! [] (apply (first value) (rest value)))
-        (identity result))
+               ;; side effect declaration wrapped with delay to allow testing
+               (delay? item)
+               (force item)
 
-    ;; side effect declaration wrapped with delay to allow testing
-    ;; Force it and try to execute its result
-    (delay? value)
-    (do (execute! [] (deref value))
-        (identity result))
+               ;; simple datascript transaction
+               (or (map? item) (vector? item) (data/datom? item))
+               (identity item))))))
 
-    ;; simple datascript transaction
-    (or (map? value) (vector? value) (data/datom? value))
-    (conj result value)
-    ;; otherwise just keep reducing
-    :else result))
+;; middleware chain - a middleware is a function of (db, transaction) -> transaction
+(def ^:private processor (log/logger (executor (fn [db tx] tx))))
 
 (defn transact!
   "Single entry point for 'updating' the app state. The behaviour of
   transact! depends on the arguments.
 
-   data can be:
+   transaction can be:
    - a standard Datascript transaction. See Datomic's API documentation for more
     information. http://docs.datomic.com/transactions.html
-   - a channel yielding one or more transactions
    - a vector whose first element is a function and the rest are its argument.
      The function will be executed and its return value is used in-place of
      the original one. Useful for keeping functions side-effect free
@@ -199,10 +143,20 @@
    - a Js Promise yielding a single transaction. Useful for doing
      asynchronous Js calls without converting them to a async channel
 
-   Not supported data types are ignored"
-  ([data]
-   (transact! data nil))
-  ([data tx-meta]
-   (when (sequential? data)
-     (let [tx (reduce execute! [] data)]
-       (data/transact! conn tx tx-meta)))))
+   Not supported transaction types are ignored"
+  ([transaction]
+   (transact! transaction nil))
+  ([transaction tx-meta]
+   (when (sequential? transaction)
+     (let [transaction (processor (db) transaction)]
+       ;; schedule the transaction after the middleware chain to avoid
+       ;; getting the result of transact! instead of the result of the
+       ;; promise
+       (doseq [item transaction
+               :when (tool/promise? item)]
+         (. item (then transact!)))
+       (data/transact! conn
+                       (eduction (remove nil?)
+                                 (remove tool/promise?)
+                                 transaction)
+                       tx-meta)))))
