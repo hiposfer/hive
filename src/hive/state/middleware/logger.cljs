@@ -19,6 +19,12 @@
     (fn? value)
     (.-name value)
 
+    (keyword? value)
+    (str value)
+
+    (uuid? value)
+    (str value)
+
     :else value))
 
 (defn- link-promise!
@@ -29,15 +35,13 @@
       (then (fn [result]
               (let [textable (walk/postwalk #(munge-transaction origin-id %)
                                             result)]
-                (js/console.log #js {:type   "promise"
-                                     :status "resolved"
-                                     :id     origin-id
-                                     :value  (pr-str textable)}))
+                (js/console.log (str origin-id) #js {:type   "promise"
+                                                     :status "resolved"
+                                                     :value  (pr-str textable)}))
               (identity result)))
-      (catch (fn [error] (js/console.warn #js {:type   "promise"
-                                               :id     origin-id
-                                               :status "rejected"
-                                               :error  error})))))
+      (catch (fn [error] (js/console.warn (str origin-id) #js {:type   "promise"
+                                                               :status "rejected"
+                                                               :error  error})))))
 
 (defn logger
   "returns a reducing function that will call rf after logging its arguments"
@@ -48,7 +52,7 @@
       ;; with informative placeholders
       (let [id    (data/squuid)
             items (walk/postwalk #(munge-transaction id %) transaction)]
-        (js/console.log #js {:id id :items items})
+        (js/console.log (str id) (clj->js items))
         (doseq [item transaction
                 :when (tool/promise? item)]
           (link-promise! id item))))

@@ -138,9 +138,9 @@
                (or (map? item) (vector? item) (data/datom? item))
                (identity item))))))
 
-(defn- transactor [db transaction] (remove nil? transaction))
+(defn- cleaner [db transaction] (remove nil? transaction))
 
-(def ^:private processor (log/logger (executor transactor)))
+(def ^:private processor (log/logger (executor cleaner)))
 
 (defn transact!
   "Single entry point for 'updating' the app state. The behaviour of
@@ -162,5 +162,5 @@
    (transact! transaction nil))
   ([transaction tx-meta]
    (when (sequential? transaction)
-     (let [tx (transactor (db) transaction)]
+     (let [tx (processor (db) transaction)]
        (data/transact! conn tx tx-meta)))))

@@ -4,7 +4,8 @@
   (:require [expo :as Expo]
             [cljs.reader :as edn]
             [datascript.core :as data]
-            [hive.state.core :as state]))
+            [hive.state.core :as state]
+            [hive.state.schema :as schema]))
 
 (def SQLite ^js/Expo.SQLite Expo/SQLite)
 
@@ -36,7 +37,7 @@
                           (some? (get entity k)))
                  (reduced true)))
              nil
-             state/schema))
+             schema/schema))
 
 (defn- sync?
   "a datom is persisted if the db schema has an entity with :sqlite/store
@@ -47,8 +48,8 @@
   [datom tx-report]
   (let [db      (:db-after tx-report)
         entity  (data/entity db (:e datom))
-        storage (get-in state/schema [(:a datom) :hive.storage])
-        _type   (get-in state/schema [(:a datom) :db.valueType])]
+        storage (get-in schema/schema [(:a datom) :hive.storage])
+        _type   (get-in schema/schema [(:a datom) :db.valueType])]
     (cond
       ;; attribute explicitly marked as ignore - do not sync
       (= :sqlite/ignore storage)
