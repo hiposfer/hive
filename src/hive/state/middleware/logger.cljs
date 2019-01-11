@@ -5,16 +5,16 @@
 
 (defn munge-transaction
   "replaces not printable objects with custom ones for better debugging"
-  [request-id value]
+  [value]
   (cond
     (tool/promise? value)
-    {:type "promise" :status "pending" :id request-id}
+    {:type "promise" :status "pending"}
 
     (data/db? value)
     "#DB{...}"
 
     (delay? value)
-    {:type "delayed effect" :value (pr-str value) :id request-id}
+    {:type "delayed effect" :value (pr-str value)}
 
     (fn? value)
     (.-name value)
@@ -25,6 +25,9 @@
     (uuid? value)
     (str value)
 
+    (data/datom? value)
+    (pr-str value)
+
     :else value))
 
 (defn- link-promise!
@@ -33,8 +36,7 @@
   [origin-id promise]
   (.. promise
       (then (fn [result]
-              (let [textable (walk/postwalk #(munge-transaction origin-id %)
-                                            result)]
+              (let [textable (walk/postwalk munge-transaction result)]
                 (js/console.log (str origin-id) #js {:type   "promise"
                                                      :status "resolved"
                                                      :value  (pr-str textable)}))
@@ -51,8 +53,8 @@
       ;; build a loggable Javascript object by replacing not printable object
       ;; with informative placeholders
       (let [id    (data/squuid)
-            items (walk/postwalk #(munge-transaction id %) transaction)]
-        (js/console.log (str id) (clj->js items))
+            items (walk/postwalk munge-transaction transaction)]
+        (apply js/console.log (str id) (clj->js items))
         (doseq [item transaction
                 :when (tool/promise? item)]
           (link-promise! id item))))
