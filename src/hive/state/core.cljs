@@ -125,6 +125,7 @@
                (or (map? item) (vector? item) (data/datom? item))
                (identity item))))))
 
+;; middleware chain - a middleware is a function of (db, transaction) -> transaction
 (def ^:private processor (log/logger (executor (fn [db tx] tx))))
 
 (defn transact!
