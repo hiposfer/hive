@@ -13,6 +13,10 @@
   '[:find ?uid .
     :where [_ :user/uid ?uid]])
 
+(def user-area-id '[:find ?area-id . :where [?user :user/uid]
+                                           [?user :user/area ?area]
+                                           [?area :area/id ?area-id]])
+
 (def user-entity '[:find ?e . :where [?e :user/uid]])
 
 (def user-position '[:find ?position . :where [_ :user/position ?position]])
@@ -31,3 +35,4 @@
 
 (def routes-ids '[:find [?routes ...]
                   :where [_ :directions/uuid ?routes]])
+

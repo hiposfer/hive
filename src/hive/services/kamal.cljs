@@ -1,6 +1,8 @@
 (ns hive.services.kamal
   (:require [clojure.string :as str]
-            [cljs.tools.reader.edn :as edn])
+            [cljs.tools.reader.edn :as edn]
+            [hive.state.queries :as queries]
+            [datascript.core :as data])
   (:import (goog.date DateTime Interval)))
 
 (def readers {'uuid uuid})
@@ -16,9 +18,9 @@
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
 (def server "https://kamal-live.herokuapp.com")
 (def urls
-  {:area/directions "{server}/area/frankfurt/directions?coordinates={coordinates}&departure={departure}"
-   :area/entity     "{server}/area/frankfurt/{entity}/{id}"
-   :area/meta       "{server}/area/frankfurt"
+  {:area/directions "{server}/area/{area-id}/directions?coordinates={coordinates}&departure={departure}"
+   :area/entity     "{server}/area/{area-id}/{entity}/{id}"
+   :area/meta       "{server}/area/{area-id}"
    :kamal/areas     "{server}/area"})
 
 (defn- fill-out
@@ -34,11 +36,13 @@
 
 (defn entity
   "ref is a map with a single key value pair of the form {:trip/id 2}"
-  [ref]
-  (let [[k v] (first ref)
-        url   (fill-out (:area/entity urls) {"{entity}" (namespace k)
-                                             "{id}"     v
-                                             "{server}" server})]
+  [db ref]
+  (let [[k v]   (first ref)
+        area-id (data/q queries/user-area-id db)
+        url     (fill-out (:area/entity urls) {"{entity}"  (namespace k)
+                                               "{id}"      v
+                                               "{area-id}" area-id
+                                               "{server}"  server})]
     [url {:method  "GET"
           :headers {:Accept "application/edn"}}]))
 
@@ -46,11 +50,10 @@
   "executes the result of entity with js/fetch.
 
   Returns a promise that will resolve to a transaction with the
-  requested entity
-  "
-  [ref]
+  requested entity"
+  [db ref]
   ;; TODO: dont request if entity already exists in db
-  (let [[url opts] (entity ref)]
+  (let [[url opts] (entity db ref)]
     (.. (js/fetch url (clj->js opts))
         (then (fn [^js/Response response] (. response (text))))
         (then #(edn/read-string {:readers readers} %))
@@ -63,15 +66,16 @@
 
   For example: fetch the trip/id 123 and then the :trip/route that it
   points to"
-  [trip-ref k]
-  (.. (get-entity! trip-ref)
-      (then (fn [[trip]] [trip [get-entity! (k trip)]]))))
+  [db trip-ref k]
+  (.. (get-entity! db trip-ref)
+      (then (fn [[trip]] [trip [get-entity! db (k trip)]]))))
 
-(defn process-directions
+(defn- process-directions
   "takes a kamal directions response and attaches it to the current user.
   Further trip information is also retrieved"
-  [path user]
-  (let [base [path
+  [db path]
+  (let [user (data/q queries/user-id db)
+        base [path
               {:user/uid        user
                :user/directions [:directions/uuid (:directions/uuid path)]}]]
     (concat base
@@ -80,7 +84,7 @@
               :when (= (:step/mode step) "transit")
               ;; check just in case ;)
               :when (some? (:step/trip step))]
-          [chain! (:step/trip step) :trip/route])))))
+          [chain! db (:step/trip step) :trip/route])))))
 
 
 (defn directions
@@ -88,12 +92,14 @@
    the Mapbox URL template. Returns the full url to use with an http service
 
    https://www.mapbox.com/api-documentation/#request-format"
-  [coordinates departure]
-  (let [ztime (js/encodeURIComponent (zoned-time departure))
-        url   (fill-out (:area/directions urls)
-                        {"{coordinates}" coordinates
-                         "{departure}"   ztime
-                         "{server}" server})] ;; "2018-05-07T10:15:30+01:00"))]
+  [db coordinates departure]
+  (let [ztime   (js/encodeURIComponent (zoned-time departure))
+        area-id (data/q queries/user-area-id db)
+        url     (fill-out (:area/directions urls)
+                          {"{coordinates}" coordinates
+                           "{departure}"   ztime
+                           "{area-id}"     area-id
+                           "{server}"      server})] ;; "2018-05-07T10:15:30+01:00"))]
     [url {:method  "GET"
           :headers {:Accept "application/edn"}}]))
 
@@ -105,15 +111,14 @@
 
   All gtfs trips and route are also requested"
   ^js/Promise
-  ([coordinates user departure]
-   (let [[url opts] (directions coordinates departure)]
+  ([db coordinates departure]
+   (let [[url opts] (directions db coordinates departure)]
      (.. (js/fetch url (clj->js opts))
          (then (fn [^js/Response response] (. response (text))))
          (then #(edn/read-string {:readers readers} %))
-         (then #(process-directions % user)))))
-  ;; TODO: error handling
-  ([coordinates user]
-   (get-directions! coordinates user (new DateTime))))
+         (then #(process-directions db %)))))
+  ([db coordinates]
+   (get-directions! db coordinates (new DateTime))))
 
 (defn get-areas!
   "fetches the supported areas from kamal"

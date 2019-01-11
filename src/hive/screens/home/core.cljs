@@ -12,7 +12,8 @@
             [hive.screens.symbols :as symbols]
             [datascript.core :as data]
             [hive.state.core :as state]
-            [hive.assets :as assets]))
+            [hive.assets :as assets]
+            [hive.utils.promises :as promise]))
 
 ; NOTE: this is the way to remove all routes ... not sure where to do this
 ;(for [r (data/q queries/routes-ids (state/db))]
@@ -27,7 +28,8 @@
         end      (:coordinates (:place/geometry target))]
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
-     [kamal/get-directions! [start end] user]
+     [promise/guard [kamal/get-directions! db [start end]]
+                    :kamal/directions]
      [React/Keyboard.dismiss]
      [navigate "directions"]]))
 
