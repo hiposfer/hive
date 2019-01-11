@@ -4,7 +4,6 @@
   (:require [expo :as Expo]
             [cljs.reader :as edn]
             [datascript.core :as data]
-            [hive.state.core :as state]
             [hive.state.schema :as schema]))
 
 (def SQLite ^js/Expo.SQLite Expo/SQLite)
@@ -23,7 +22,7 @@
 
 (def insert-datom (str "insert into datoms (e, a, v, tx) values (?, ?, ?, ?);"))
 
-(def delete-datom (str "delete from datoms where e = ? and a = ? and v = ?;"))
+(def delete-datom (str "delete from datoms where e = ? and a = ? and v = ? and tx = ?;"))
 
 (def get-all-datoms "select * from datoms;")
 
@@ -74,6 +73,7 @@
       ;; ignore by default
       :else false)))
 
+;; TODO: should this be using state/transact! ?
 (defn- transact!
   "executes a sequence of transactions to sync sqlite with datascript"
   [transaction tx-report]
@@ -83,15 +83,17 @@
                 statement (if (:added d)
                             insert-datom
                             delete-datom)]]
-    #_(println d)
-    (. transaction (executeSql statement (clj->js values)))))
+    ;(println d)
+    (if (true? js/__DEV__)
+      (. transaction (executeSql statement (clj->js values)
+                                           (constantly nil)
+                                           js/console.warn))
+      (. transaction (executeSql statement (clj->js values))))))
 
 (defn listen!
   "listen for datascript changes and synchronize them"
   [conn]
   (let [db (.. SQLite (openDatabase "sync"))]
-    (. db (transaction (fn [transaction]
-                         (. transaction (executeSql create-table)))))
     (data/listen! conn
                   ::sync
                  (fn [tx-report] (. db (transaction #(transact! % tx-report)))))))
@@ -144,5 +146,4 @@
 ;    (then println)
 ;    (catch println))
 
-#_(.. (init!)
-      (then println))
+;(.. (init!) (then cljs.pprint/pprint))
