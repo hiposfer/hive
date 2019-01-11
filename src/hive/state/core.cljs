@@ -107,40 +107,25 @@
 
 (declare transact!)
 
-(def ^:private nullify (constantly nil))
-
 (defn- executor
+  "Executes side effects in place. Returns the result of each item"
   [rf]
   (fn [db transaction]
-    ;; replaces non-Datascript transaction elements with nil
     (rf db (for [item transaction]
              (cond
-               ;; JS promise - wait for its value then transact it
-               (tool/promise? item)
-               (nullify (. item (then transact!)))
-
                ;; functional effect declaration
-               ;; Execute it and try to execute its result
                (and (vector? item) (fn? (first item)))
-               (let [result (apply (first item) (rest item))]
-                 ;; effects are async by nature; since any other type handled here
-                 ;; could have been directly added to the transaction instead of through
-                 ;; the functional effect declaration
-                 (nullify (transact! [result])))
+               (apply (first item) (rest item))
 
                ;; side effect declaration wrapped with delay to allow testing
-               ;; Force it and try to execute its result
                (delay? item)
-               (let [result (deref item)]
-                 (nullify (transact! [result])))
+               (force item)
 
                ;; simple datascript transaction
                (or (map? item) (vector? item) (data/datom? item))
                (identity item))))))
 
-(defn- cleaner [db transaction] (remove nil? transaction))
-
-(def ^:private processor (log/logger (executor cleaner)))
+(def ^:private processor (log/logger (executor (fn [db tx] tx))))
 
 (defn transact!
   "Single entry point for 'updating' the app state. The behaviour of
@@ -162,5 +147,15 @@
    (transact! transaction nil))
   ([transaction tx-meta]
    (when (sequential? transaction)
-     (let [tx (processor (db) transaction)]
-       (data/transact! conn tx tx-meta)))))
+     (let [transaction (processor (db) transaction)]
+       ;; schedule the transaction after the middleware chain to avoid
+       ;; getting the result of transact! instead of the result of the
+       ;; promise
+       (doseq [item transaction
+               :when (tool/promise? item)]
+         (. item (then transact!)))
+       (data/transact! conn
+                       (eduction (remove nil?)
+                                 (remove tool/promise?)
+                                 transaction)
+                       tx-meta)))))

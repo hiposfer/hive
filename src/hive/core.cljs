@@ -68,24 +68,27 @@
   this listener and subscribe your own for the lifecycle of the UI component.
   See `with-let` https://reagent-project.github.io/news/news060-alpha.html"
   []
-  (let [r  (data/q router/data-query (state/db))
-        tx (delay (router/goBack r))]
+  (let [result      (data/q router/data-query (state/db))
+        transaction (router/goBack result)]
     (cond
-      (nil? (second r))
-      false ;; no router initialized, Exit
+      ;; no router initialized, Exit
+      (nil? (second result))
+      false
 
-      (= (misc/keywordize (first r))
-         (misc/keywordize (:react.navigation/state (first @tx))))
-      false ;; nothing to go back to, Exit
+      ;; nothing to go back to, Exit
+      (= (misc/keywordize (first result))
+         (misc/keywordize (:react.navigation/state (first transaction))))
+      false
 
-      :else (some? (state/transact! @tx))))) ;; always returns true
+      ;; always returns true to prevent native side handling of back button
+      :else (some? (state/transact! transaction)))))
 
 (defn- internet-connection-listener
   "Listens to connection changes mainly for internet access."
   [connected]
   (let [sid @(state/q! queries/session)]
     (if-not connected
-        (state/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
+      (state/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
 
 (defn- init-areas
   "When we start hive for the first time, we dont have any data on the supported

@@ -7,9 +7,6 @@
   "replaces not printable objects with custom ones for better debugging"
   [value]
   (cond
-    (tool/promise? value)
-    {:type "promise" :status "pending"}
-
     (data/db? value)
     "#DB{...}"
 
@@ -53,9 +50,10 @@
       ;; build a loggable Javascript object by replacing not printable object
       ;; with informative placeholders
       (let [id    (data/squuid)
-            items (walk/postwalk munge-transaction transaction)]
+            items (walk/postwalk munge-transaction transaction)
+            tx    (rf db transaction)]
         (apply js/console.log (str id) (clj->js items))
-        (doseq [item transaction
+        (doseq [item tx
                 :when (tool/promise? item)]
-          (link-promise! id item))))
-    (rf db transaction)))
+          (link-promise! id item))
+        (identity tx)))))
