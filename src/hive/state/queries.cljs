@@ -14,12 +14,17 @@
     :where [_ :user/uid ?uid]])
 
 (def user-area-id '[:find ?area-id . :where [?user :user/uid]
-                                           [?user :user/area ?area]
-                                           [?area :area/id ?area-id]])
+                                            [?user :user/area ?area]
+                                            [?area :area/id ?area-id]])
+
+(def user-area-bbox '[:find ?bbox . :where [?id :user/uid]
+                                           [?id :user/area ?area]
+                                           [?area :area/bbox ?bbox]])
 
 (def user-entity '[:find ?e . :where [?e :user/uid]])
 
-(def user-position '[:find ?position . :where [_ :user/position ?position]])
+(def user-position '[:find ?position . :where [?user :user/uid]
+                                              [?user :user/position ?position]])
 
 (def places-id '[:find [?id ...] :where [?id :place/id]])
 

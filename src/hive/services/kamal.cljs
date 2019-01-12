@@ -2,7 +2,8 @@
   (:require [clojure.string :as str]
             [cljs.tools.reader.edn :as edn]
             [hive.state.queries :as queries]
-            [datascript.core :as data])
+            [datascript.core :as data]
+            [lambdaisland.uri :as uri])
   (:import (goog.date DateTime Interval)))
 
 (def readers {'uuid uuid})
@@ -16,19 +17,22 @@
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
-(def server "https://kamal-live.herokuapp.com")
-(def urls
-  {:area/directions "{server}/area/{area-id}/directions?coordinates={coordinates}&departure={departure}"
-   :area/entity     "{server}/area/{area-id}/{entity}/{id}"
-   :area/meta       "{server}/area/{area-id}"
-   :kamal/areas     "{server}/area"})
+(def server (uri/uri "https://kamal-live.herokuapp.com/"))
+(def templates
+  {:area/directions ["area" ::area "/directions"] ;?coordinates={coordinates}&departure={departure}
+   :area/entity     ["area" ::area ::entity ::id]
+   :area/meta       ["area" ::area]
+   :kamal/areas     ["area"]})
 
-(defn- fill-out
-  "fills out the entries in the provided string, using the keys as match"
-  [template entries]
-  (reduce-kv (fn [res k v] (str/replace res k v))
-             template
-             entries))
+(defn- query-string
+  [m]
+  (let [escaped (for [[k v] m] (str k "=" (js/encodeURIComponent (str v))))]
+    (str/join "&" escaped)))
+
+(defn- path
+  [values k]
+  (let [template (get templates k)]
+    (str "/" (str/join "/" (replace values template)))))
 
 (defn- read-text [^js/Response response] (. response (text)))
 
@@ -37,14 +41,15 @@
 (defn entity
   "ref is a map with a single key value pair of the form {:trip/id 2}"
   [db ref]
-  (let [[k v]   (first ref)
-        area-id (data/q queries/user-area-id db)
-        url     (fill-out (:area/entity urls) {"{entity}"  (namespace k)
-                                               "{id}"      v
-                                               "{area-id}" area-id
-                                               "{server}"  server})]
-    [url {:method  "GET"
-          :headers {:Accept "application/edn"}}]))
+  (let [[k v]      (first ref)
+        area-id    (data/q queries/user-area-id db)
+        components (path {::entity (namespace k)
+                          ::id     v
+                          ::area   area-id}
+                         :area/entity)
+        url        (assoc server :path components)]
+    [(str url) {:method  "GET"
+                :headers {:Accept "application/edn"}}]))
 
 (defn get-entity!
   "executes the result of entity with js/fetch.
@@ -93,15 +98,14 @@
 
    https://www.mapbox.com/api-documentation/#request-format"
   [db coordinates departure]
-  (let [ztime   (js/encodeURIComponent (zoned-time departure))
-        area-id (data/q queries/user-area-id db)
-        url     (fill-out (:area/directions urls)
-                          {"{coordinates}" coordinates
-                           "{departure}"   ztime
-                           "{area-id}"     area-id
-                           "{server}"      server})] ;; "2018-05-07T10:15:30+01:00"))]
-    [url {:method  "GET"
-          :headers {:Accept "application/edn"}}]))
+  (let [area-id    (data/q queries/user-area-id db)
+        query      (query-string {"coordinates" coordinates
+                                  "departure"   (zoned-time departure)}) ;; "2018-05-07T10:15:30+01:00"
+        url        (assoc server :path (path {::area area-id}
+                                             :area/directions)
+                                 :query query)]
+    [(str url) {:method  "GET"
+                :headers {:Accept "application/edn"}}]))
 
 (defn get-directions!
   "executes the result of directions with js/fetch.
@@ -123,6 +127,6 @@
 (defn get-areas!
   "fetches the supported areas from kamal"
   []
-  (.. (js/fetch (fill-out (:kamal/areas urls) {"{server}" server}))
+  (.. (js/fetch (str server (str/join "/" (:kamal/areas templates))))
       (then read-text)
       (then parse-edn)))

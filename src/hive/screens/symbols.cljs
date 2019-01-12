@@ -2,7 +2,8 @@
   (:require [react-native :as React]
             [expo :as Expo]
             [hiposfer.geojson.specs :as geojson]
-            [hive.state.core :as state]))
+            [hive.state.core :as state]
+            [hive.state.queries :as queries]))
 
 (defn PointOfInterest
   "Components for displaying location related items. Usually used inside a List"
@@ -29,7 +30,7 @@
   {:type "Point"
    :coordinates (coordinate obj)})
 
-(def space 0.005)
+(def map-padding 0.005)
 
 (defn- region
   [children default-center]
@@ -51,15 +52,12 @@
       {:latitude (/ (+ miny maxy) 2)
        :longitude (/ (+ maxx minx) 2)
        :latitudeDelta (Math/abs (- miny maxy))
-       :longitudeDelta (+ (Math/abs (- maxx minx)) space)})))
+       :longitudeDelta (+ (Math/abs (- maxx minx)) map-padding)})))
 
 (defn CityMap
   "a React Native MapView component which will only re-render on user-city change"
   [children]
-  (let [bbox   @(state/q! '[:find ?bbox .
-                            :where [?id :user/uid]
-                                   [?id :user/area ?area]
-                                   [?area :area/bbox ?bbox]])
+  (let [bbox   @(state/q! queries/user-area-bbox)
         [minx, miny, maxx, maxy] bbox
         center (point {:latitude  (/ (+ miny maxy) 2)
                        :longitude (/ (+ maxx minx) 2)})
