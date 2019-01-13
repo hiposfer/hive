@@ -17,21 +17,6 @@
               [{:error/id error-id :error/info (ex-info (ex-message error)
                                                         error)}]))))))
 
-(defn bypass
-  "same as guard but does nothing on error"
-  [effect error-id]
-  (let [[f & args] effect]
-    (.. (apply f args)
-        (catch (constantly nil)))))
-
-(defn chain
-  "chains the execution of f to the result of effect; prepending it
-  to the arguments"
-  [effect [f & args]]
-  (let [[fe & fe-args] effect]
-    (.. (apply fe fe-args)
-        (then (fn [result] (apply f (cons result args)))))))
-
 (defn finally
   "regardless of the success or result of effect, passes it to f;
    prepending it to the arguments"
