@@ -26,8 +26,7 @@
 
 (defn- query-string
   [m]
-  (let [escaped (for [[k v] m] (str k "=" (js/encodeURIComponent (str v))))]
-    (str/join "&" escaped)))
+  (str/join "&" (for [[k v] m] (str k "=" (js/encodeURIComponent v)))))
 
 (defn- path
   [values k]
@@ -127,6 +126,6 @@
 (defn get-areas!
   "fetches the supported areas from kamal"
   []
-  (.. (js/fetch (str server (str/join "/" (:kamal/areas templates))))
+  (.. (js/fetch (path {} :kamal/areas))
       (then read-text)
       (then parse-edn)))
