@@ -126,6 +126,8 @@
 (defn get-areas!
   "fetches the supported areas from kamal"
   []
-  (.. (js/fetch (path {} :kamal/areas))
-      (then read-text)
-      (then parse-edn)))
+  (let [resource (path {} :kamal/areas)
+        uri      (str (assoc server :path resource))]
+    (.. (js/fetch uri)
+        (then read-text)
+        (then parse-edn))))
