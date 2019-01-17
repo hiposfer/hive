@@ -1,4 +1,5 @@
-(ns hive.utils.geometry)
+(ns hive.utils.geometry
+  (:require [hiposfer.geojson.specs :as geojson]))
 
 ;; Note in these scripts, I generally use
 ;; - latitude, longitude in degrees
@@ -30,3 +31,31 @@
 (defn latlng
   [coordinates]
   {:latitude (second coordinates) :longitude (first coordinates)})
+
+(def coordinate (juxt :longitude :latitude))
+
+(def map-padding 0.005)
+
+(defn- geo-objects
+  [mapview-children]
+  (for [child (tree-seq coll? seq mapview-children)
+        :when (map? child)
+        :when (some #{:coordinates :coordinate} (keys child))]
+    (if (some? (:coordinates child))
+      {:type "LineString" :coordinates (map coordinate child)}
+      {:type "Point" :coordinates (coordinate child)})))
+
+(defn mapview-region
+  [{:keys [children bbox position]}]
+  (let [children-geometries (geo-objects children)
+        geometries (concat children-geometries
+                           (when (some? position)
+                             [(:geometry position)]))
+        coll       (merge {:type       "GeometryCollection"
+                           :geometries geometries}
+                          (when (some? bbox) {:bbox bbox}))
+        [minx, miny, maxx, maxy] (geojson/bbox coll)]
+    {:latitude (/ (+ miny maxy) 2)
+     :longitude (/ (+ maxx minx) 2)
+     :latitudeDelta (/ (Math/abs (- miny maxy)) 4)
+     :longitudeDelta (/ (Math/abs (- maxx minx)) 4)}))
