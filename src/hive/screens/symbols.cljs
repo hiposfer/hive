@@ -19,7 +19,9 @@
       (when (some? right-icon) right-icon)]])
 
 (defn CityMap
-  "a React Native MapView component which will only re-render on user-city change"
+  "a React Native MapView component which will only re-render on user-city change
+
+  DEPRECATED !!!"
   [children]
   (let [bbox   @(state/q! queries/user-area-bbox)
         position @(state/q! queries/user-position)

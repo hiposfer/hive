@@ -8,7 +8,8 @@
             [clojure.string :as str]
             [hive.assets :as assets]
             [hive.state.core :as state]
-            [hive.utils.miscelaneous :as misc]))
+            [hive.utils.miscelaneous :as misc]
+            [hive.state.queries :as queries]))
 
 (def big-circle 16)
 (def micro-circle 3)
@@ -206,15 +207,22 @@
 
    Async, some data might be missing when rendered !!"
   [props]
-  (let [window (tool/keywordize (React/Dimensions.get "window"))
-        uid   @(state/q! '[:find ?uid .
-                           :where [_      :user/directions ?route]
-                                  [?route :directions/uuid ?uid]])]
+  (let [window    (tool/keywordize (React/Dimensions.get "window"))
+        uid      @(state/q! '[:find ?uid .
+                              :where [_ :user/directions ?route]
+                                     [?route :directions/uuid ?uid]])
+        bbox     @(state/q! queries/user-area-bbox)
+        position @(state/q! queries/user-position)]
     [:> React/ScrollView {:flex 1}
       [:> React/View {:height (* 0.9 (:height window))}
-        [symbols/CityMap
-          (when (some? uid)
-            (paths uid))]]
+        (let [children (when (some? uid) {:children (paths uid)})
+              area     (geometry/mapview-region (merge children {:bbox     bbox
+                                                                 :position position}))]
+          [:> Expo/MapView {:region                area
+                            :showsUserLocation     true
+                            :style                 {:flex 1}
+                            :showsMyLocationButton true}
+            (:children children)])]
       [:> React/View {:flex 1 :backgroundColor "white"}
         (when (some? uid)
           [Info {:flex 1 :paddingTop "1%"} uid])
