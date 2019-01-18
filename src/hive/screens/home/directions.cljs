@@ -182,7 +182,19 @@
           (when (some? duration)
             (duration/format (* 1000 duration)))]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
-                     goal]]))
+                     goal]
+      [:> React/View {:flexDirection "row" :justifyContent "space-between"}
+        [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
+          [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
+                               :style {:paddingRight 5}}]
+          [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
+                         "previous"]]
+        [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
+          [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
+                         "next"]
+          [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "#3bb2d0"
+                               :style {:paddingLeft 5}}]]]]))
+
 
 (defn- paths
   [uid]
@@ -223,15 +235,12 @@
                             :style                 {:flex 1}
                             :showsMyLocationButton true}
             (:children children)])]
-      [:> React/View {:flex 1 :backgroundColor "white"}
+      [:> React/View {:flex 1 :backgroundColor "white" :elevation 25
+                      :shadowColor "#000000" :shadowRadius 25 :shadowOpacity 1.0}
         (when (some? uid)
           [Info {:flex 1 :paddingTop "1%"} uid])
         (when (some? uid)
-          [Route props uid])]
-      [:> React/View (merge (symbols/circle 52) symbols/shadow
-                            {:position "absolute" :right "10%"
-                             :top (* 0.88 (:height window))})
-        [:> assets/Ionicons {:name "ios-navigate" :size 62 :color "blue"}]]]))
+          [Route props uid])]]))
 
 ;hive.rework.state/conn
 ;(into {} (state/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
