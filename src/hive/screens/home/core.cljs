@@ -118,16 +118,24 @@
                           :underlineColorAndroid "transparent"
                           :onChangeText #(state/transact! (autocomplete % (state/db) props))}]]))
 
+(defn- on-location-updated [position]
+  (state/transact! (location/set-location (state/db) position)))
+
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (r/with-let [callback #(state/transact! (location/set-location (state/db) %))
-               tracker  (location/watch! (location/defaults callback))
+  (r/with-let [tracker  (location/watch! (location/defaults on-location-updated))
                navigate (:navigate (:navigation props))
-               pids     (state/q! queries/places-id)]
+               pids     (state/q! queries/places-id)
+               bbox     (state/q! queries/user-area-bbox)
+               position (state/q! queries/user-position)]
     [:> React/View {:flex 1}
       (if (empty? @pids)
-        [symbols/CityMap]
+        [:> Expo/MapView {:region (geometry/mapview-region {:bbox @bbox
+                                                            :position @position})
+                          :showsUserLocation     true
+                          :style                 {:flex 1}
+                          :showsMyLocationButton true}]
         [Places props])
       [:> React/View {:position "absolute" :width "95%" :height 44 :top 35
                       :left "2.5%" :right "2.5%"}

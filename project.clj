@@ -7,13 +7,18 @@
                  ;; https://github.com/bhauman/lein-figwheel/issues/715
                  ;; [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojurescript "1.10.339"]
+                 ;; for advanced compilation
                  [react-native-externs "0.2.0"]
                  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server cljsjs/create-react-class]]
                  [datascript "0.16.6"]
-                 [hiposfer/gtfs.edn "0.2.0"]
+                 ;; wrapper around react navigation
                  [cljs-react-navigation "0.1.1"]
-                 [hiposfer/geojson.specs "0.2.0"]
-                 [hiposfer/rata "0.2.0"]]
+                 [lambdaisland/uri "1.1.0"]
+                 ;; reactive UI components
+                 [hiposfer/rata "0.2.0"]
+                 ;; gtfs specification
+                 [hiposfer/gtfs.edn "0.2.0"]
+                 [hiposfer/geojson.specs "0.2.0"]]
   :plugins [[lein-cljsbuild "1.1.4"]
             [lein-figwheel "0.5.14"]]
   :clean-targets ["target/" "main.js"]

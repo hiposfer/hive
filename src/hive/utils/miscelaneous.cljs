@@ -64,3 +64,13 @@
       (to to)
       (toPrec (or precision 0.1))
       -scalar))
+
+(defn roundtrip
+  "takes an custom Js Object, stringifies through JSON and reads
+  it back as a clojure map.
+
+  Useful for cases where js->clj doesnt work"
+  [object]
+  (let [text (js/JSON.stringify object)
+        parsed (js/JSON.parse text)]
+    (js->clj parsed :keywordize-keys true)))

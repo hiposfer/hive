@@ -33,27 +33,31 @@
   [origin-id promise]
   (.. promise
       (then (fn [result]
-              (let [textable (walk/postwalk munge-transaction result)]
-                (js/console.log (str origin-id) #js {:type   "promise"
-                                                     :status "resolved"
-                                                     :value  (pr-str textable)}))
+              (let [tx (walk/postwalk munge-transaction result)]
+                (js/console.log (str origin-id)
+                                #js {:type   "promise"
+                                     :status "resolved"
+                                     :value  (pr-str tx)}))
               (identity result)))
-      (catch (fn [error] (js/console.warn (str origin-id) #js {:type   "promise"
-                                                               :status "rejected"
-                                                               :error  error})))))
+      (catch (fn [error] (js/console.warn (str origin-id)
+                                          #js {:type   "promise"
+                                               :status "rejected"
+                                               :error  error})))))
 
 (defn logger
-  "returns a reducing function that will call rf after logging its arguments"
+  "returns a middleware that will call rf after logging its arguments"
   [rf]
   (fn [db transaction]
     (when (true? js/__DEV__)
       ;; build a loggable Javascript object by replacing not printable object
       ;; with informative placeholders
-      (let [id    (data/squuid)
-            items (walk/postwalk munge-transaction transaction)
-            tx    (rf db transaction)]
+      (let [id     (data/squuid)
+            items  (walk/postwalk munge-transaction transaction)
+            result (rf db transaction)]
+        ;; log transaction and effects
         (apply js/console.log (str id) (clj->js items))
-        (doseq [item tx
-                :when (tool/promise? item)]
+        ;; link promises to future logs
+        (doseq [item result :when (tool/promise? item)]
           (link-promise! id item))
-        (identity tx)))))
+        ;; return transaction
+        (identity result)))))

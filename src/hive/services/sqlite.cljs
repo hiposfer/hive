@@ -22,7 +22,7 @@
 
 (def insert-datom (str "insert into datoms (e, a, v, tx) values (?, ?, ?, ?);"))
 
-(def delete-datom (str "delete from datoms where e = ? and a = ? and v = ? and tx = ?;"))
+(def delete-datom (str "delete from datoms where e = ? and a = ? and v = ?;"))
 
 (def get-all-datoms "select * from datoms;")
 
@@ -79,16 +79,14 @@
   [transaction tx-report]
   (doseq [d (:tx-data tx-report)
           :when (sync? d tx-report)
-          :let [values    [(:e d) (pr-str (:a d)) (pr-str (:v d)) (:tx d)]
-                statement (if (:added d)
-                            insert-datom
-                            delete-datom)]]
-    ;(println d)
-    (if (true? js/__DEV__)
-      (. transaction (executeSql statement (clj->js values)
-                                           (constantly nil)
-                                           js/console.warn))
-      (. transaction (executeSql statement (clj->js values))))))
+          :let [values [(:e d) (pr-str (:a d)) (pr-str (:v d)) (:tx d)]]]
+    (if (:added d)
+      (. transaction (executeSql insert-datom (clj->js values)))
+                                 ;js/console.log
+                                 ;js/console.warn))
+      (. transaction (executeSql delete-datom (clj->js (drop-last values)))))))
+                                 ;js/console.log
+                                 ;js/console.warn)))))
 
 (defn listen!
   "listen for datascript changes and synchronize them"
