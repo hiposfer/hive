@@ -55,8 +55,7 @@
                      :directions     {:screen (screenify route/Instructions)}
                      :gtfs           {:screen (screenify gtfs/Data)}
                      :settings       {:screen (screenify settings/Settings)}
-                     :select-city    {:screen (screenify city-picker/Selector)}
-                     :location-error {:screen (screenify errors/UserLocation)}}
+                     :select-city    {:screen (screenify city-picker/Selector)}}
                     {:headerMode "none"})]
     [router/Router {:root Navigator :init "home"}]))
 
