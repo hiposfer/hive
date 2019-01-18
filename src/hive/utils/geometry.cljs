@@ -53,7 +53,8 @@
                              [(:geometry position)]))
         coll       (merge {:type       "GeometryCollection"
                            :geometries geometries}
-                          (when (some? bbox) {:bbox bbox}))
+                          (when (and (some? bbox) (empty? children))
+                            {:bbox bbox}))
         [minx, miny, maxx, maxy] (geojson/bbox coll)]
     {:latitude (/ (+ miny maxy) 2)
      :longitude (/ (+ maxx minx) 2)
