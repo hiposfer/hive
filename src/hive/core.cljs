@@ -11,35 +11,12 @@
             [hive.utils.promises :as promise]
             [hive.screens.home.core :as home]
             [hive.screens.home.gtfs :as gtfs]
-            [hive.screens.errors :as errors]
             [hive.screens.router :as router]
             [hive.screens.settings.core :as settings]
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.screens.home.directions :as route]
             [hive.services.kamal :as kamal]))
-
-(defn- MessageTray
-  [props]
-  (let [id      @(state/q! queries/session)
-        alert   @(state/pull! [:session/alert]
-                             [:session/uuid id])]
-    (when-not (empty? (:session/alert alert))
-      [:> React/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
-                      :bottom 0 :width "100%" :height "5%" :position "absolute"}
-        [:> React/Text
-          {:style {:width "100%" :height "100%" :textAlign "center"
-                   :backgroundColor "grey" :color "white"}
-           :onPress #(state/transact! [{:session/uuid id :session/alert {}}])}
-          (:session/alert alert)]])))
-
-(defn- screenify
-  [component]
-  (rn-nav/stack-screen
-    (fn [props]
-      [:> React/View {:flex 1 :alignItems "stretch"}
-        [component props]
-        [MessageTray props]])))
 
 (defn RootUi []
   "Each Screen will receive two props:
@@ -51,11 +28,11 @@
       :navigate  - most common way to navigate to the next screen
       :setParams - used to change the params for the current screen}"
   (let [Navigator (rn-nav/stack-navigator
-                    {:home           {:screen (screenify home/Home)}
-                     :directions     {:screen (screenify route/Instructions)}
-                     :gtfs           {:screen (screenify gtfs/Data)}
-                     :settings       {:screen (screenify settings/Settings)}
-                     :select-city    {:screen (screenify city-picker/Selector)}}
+                    {:home           {:screen (rn-nav/stack-screen home/Home)}
+                     :directions     {:screen (rn-nav/stack-screen route/Instructions)}
+                     :gtfs           {:screen (rn-nav/stack-screen gtfs/Data)}
+                     :settings       {:screen (rn-nav/stack-screen settings/Settings)}
+                     :select-city    {:screen (rn-nav/stack-screen city-picker/Selector)}}
                     {:headerMode "none"})]
     [router/Router {:root Navigator :init "home"}]))
 
@@ -84,10 +61,12 @@
 
 (defn- internet-connection-listener
   "Listens to connection changes mainly for internet access."
-  [connected]
-  (let [sid @(state/q! queries/session)]
-    (if-not connected
-      (state/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
+  [ConnectionType db]
+  (let [session         (data/q queries/session db)
+        connection-type (js->clj ConnectionType
+                                 :keywordize-keys true)]
+    (state/transact! [(merge {:session/uuid session}
+                             (misc/with-ns "connection" connection-type))])))
 
 (defn- init-areas
   "When we start hive for the first time, we dont have any data on the supported
@@ -128,14 +107,14 @@
       (then #(state/transact! [[promise/finally [kamal/get-areas!]
                                                 [init-areas (state/db)]]
                                ;; todo: I guess firebase should handle this?
-                               [firebase/sign-in! (state/db)]])))
+                               [firebase/sign-in! (state/db)]
+                               [promise/finally [React/NetInfo.getConnectionInfo]
+                                                [internet-connection-listener (state/db)]]])))
   ;; start listening for events ..................
   (Expo/registerRootComponent (r/reactify-component RootUi))
   ;; handles Android BackButton
-  (React/BackHandler.addEventListener "hardwareBackPress"
-                                      back-listener!)
-  (React/NetInfo.isConnected.addEventListener "connectionChange"
-                                              internet-connection-listener))
+  (React/BackHandler.addEventListener "hardwareBackPress" back-listener!)
+  (React/NetInfo.addEventListener "connectionChange" #(internet-connection-listener % (state/db))))
 
 ;(. (sqlite/init!) (then cljs.pprint/pprint))
 ;(. (sqlite/clear!) (then cljs.pprint/pprint))
