@@ -118,15 +118,13 @@
                           :underlineColorAndroid "transparent"
                           :onChangeText #(state/transact! (autocomplete % (state/db) props))}]]))
 
-(def on-location-updated
-  (let [callback (fn [position] (-> (location/set-location (state/db) position)
-                                    (state/transact!)))]
-    (location/defaults callback)))
+(defn- on-location-updated [position]
+  (state/transact! (location/set-location (state/db) position)))
 
 (defn Home
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (r/with-let [tracker  (location/watch! on-location-updated)
+  (r/with-let [tracker  (location/watch! (location/defaults on-location-updated))
                navigate (:navigate (:navigation props))
                pids     (state/q! queries/places-id)
                bbox     (state/q! queries/user-area-bbox)
