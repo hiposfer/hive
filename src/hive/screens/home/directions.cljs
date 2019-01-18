@@ -155,8 +155,8 @@
                                {:step/trip [{:trip/route [:route/type]}]}]}]
                             [:directions/uuid route-id])
         sections (partition-by :step/mode (:directions/steps route))]
-    [:> React/View {:flex 4 :flexDirection "row" :justifyContent "space-around"
-                    :top "0.5%" :alignItems "center"}
+    [:> React/View {:width 100 :flexDirection "row" :justifyContent "flex-start"
+                    :alignItems "center" :padding 5}
       (butlast ;; drop last arrow icon
         (interleave
           (for [steps sections]
@@ -164,7 +164,8 @@
             [SectionIcon steps])
           (for [i (range (count sections))]
             ^{:key i}
-            [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"}])))]))
+            [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"
+                                 :style {:paddingHorizontal 10}}])))]))
 
 
 (defn- Info
@@ -175,10 +176,10 @@
                                             [_      :user/goal ?target]
                                             [?target :place/text ?goal]])]
     [:> React/View props
-      [:> React/View {:flexDirection "row" :paddingLeft "1.5%"}
+      [:> React/View {:flexDirection "row" :paddingLeft "1.5%" :justifyContent "space-between"}
         [Transfers route-id]
-        [:> React/Text {:style {:flex 5 :color "gray" :paddingTop "2.5%"
-                                :paddingLeft "10%"}}
+        [:> React/Text {:style {:color "gray" :paddingTop "2.5%" :paddingLeft "10%"
+                                :paddingRight 25}}
           (when (some? duration)
             (duration/format (* 1000 duration)))]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
