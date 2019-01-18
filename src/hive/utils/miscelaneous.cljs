@@ -1,7 +1,8 @@
 (ns hive.utils.miscelaneous
   "a namespace for functions that have not found a home :'("
   (:require [clojure.spec.alpha :as s]
-            [js-quantities :as quantity]))
+            [js-quantities :as quantity]
+            [cljs.reader :as edn]))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?
@@ -74,3 +75,11 @@
   (let [text (js/JSON.stringify object)
         parsed (js/JSON.parse text)]
     (js->clj parsed :keywordize-keys true)))
+
+(defn- on-fetch-response
+  [^js/Response response]
+  (if (.-ok response)
+    (. response (text))
+    (.. (. response (text))
+        (then #(throw (ex-info (str "Error fetching directions." %)
+                               (roundtrip response)))))))

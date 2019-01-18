@@ -63,34 +63,16 @@
         (then (fn [^js/Response response] (. response (text))))
         (then #(edn/read-string {:readers readers} %))
         (then vector))))
-;; TODO: error handling)
 
 (defn- chain!
-  "request an remote entity and also fetches the entity under keyword k
-  when it arrives.
+  "request a remote entity and also fetches the UNIQUE entity under
+  keyword attribute.
 
   For example: fetch the trip/id 123 and then the :trip/route that it
   points to"
-  [db trip-ref k]
+  [db trip-ref attribute]
   (.. (get-entity! db trip-ref)
-      (then (fn [[trip]] [trip [get-entity! db (k trip)]]))))
-
-(defn- process-directions
-  "takes a kamal directions response and attaches it to the current user.
-  Further trip information is also retrieved"
-  [db path]
-  (let [user (data/q queries/user-id db)
-        base [path
-              {:user/uid        user
-               :user/directions [:directions/uuid (:directions/uuid path)]}]]
-    (concat base
-      (distinct
-        (for [step (:directions/steps path)
-              :when (= (:step/mode step) "transit")
-              ;; check just in case ;)
-              :when (some? (:step/trip step))]
-          [chain! db (:step/trip step) :trip/route])))))
-
+      (then (fn [[trip]] [trip [get-entity! db (get trip attribute)]]))))
 
 (defn directions
   "takes a map with the items required by ::request and replaces their values into
@@ -108,14 +90,6 @@
     [(str url) {:method  "GET"
                 :headers {:Accept "application/edn"}}]))
 
-(defn- on-directions-response
-  [^js/Response response]
-  (if (.-ok response)
-    (. response (text))
-    (.. (. response (text))
-        (then #(throw (ex-info (str "Error fetching directions." %)
-                               (misc/roundtrip response)))))))
-
 (defn get-directions!
   "executes the result of directions with js/fetch.
 
@@ -127,9 +101,8 @@
   ([db coordinates departure]
    (let [[url opts] (directions db coordinates departure)]
      (.. (js/fetch url (clj->js opts))
-         (then on-directions-response)
-         (then #(edn/read-string {:readers readers} %))
-         (then #(process-directions db %)))))
+         (then misc/on-fetch-response)
+         (then #(edn/read-string {:readers readers} %)))))
   ([db coordinates]
    (get-directions! db coordinates (new DateTime))))
 
