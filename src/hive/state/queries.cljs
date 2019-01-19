@@ -8,8 +8,7 @@
 
 ;; not safe to use since the user might change uid on sign in/up
 ;; the uid change break pull patterns based on [:user/uid v]
-;; DEPRECATED - prefer user-entity
-(def user-id
+(def user-id "DEPRECATED - prefer user-entity"
   '[:find ?uid .
     :where [_ :user/uid ?uid]])
 

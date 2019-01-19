@@ -82,10 +82,9 @@
 (defn- reset-places
   "transact the geocoding result under the user id"
   ([db]
-   (for [id (data/q '[:find [?id ...] :where [?id :place/id]]
-                    db)]
+   (for [id (data/q queries/places-id db)]
      [:db.fn/retractEntity id]))
-  ([db data]
+  ([data db]
    (concat (reset-places db)
            (for [f (:features data)]
              (tool/with-ns "place" f)))))
@@ -93,22 +92,33 @@
 (defn- autocomplete
   "request an autocomplete geocoding result from mapbox and adds its result to the
    app state"
-  [text db props]
-  (when (not (empty? text))
-    (let [navigate (:navigate (:navigation props))
-          user     (data/q queries/user-id db)
-          data     (data/pull db [:user/position {:user/area [:area/bbox]}]
-                                 [:user/uid user])
-          args {:query        text
-                :proximity    (:user/position data)
-                :access_token (:ENV/MAPBOX state/tokens)
-                :bbox         (:area/bbox (:user/area data))}
-          validated (tool/validate ::mapbox/request args ::invalid-input)]
-      (if (tool/error? validated)
-        [[navigate "location-error" validated]
-         [React/Keyboard.dismiss]]
-        [(delay (.. (mapbox/geocoding! args)
-                    (then #(reset-places (state/db) %))))]))))
+  [text db]
+  (let [user-id  (data/q queries/user-entity db)
+        network  (data/q '[:find ?connection .
+                           :where [?session :session/uuid]
+                           [?session :connection/type ?connection]])
+        user     (data/entity db user-id)
+        args     {:query        text
+                  :proximity    (:user/position user)
+                  :access_token (:ENV/MAPBOX state/tokens)
+                  :bbox         (:area/bbox (:user/area user))}]
+    (cond
+      (empty? text) nil
+
+      ;; note - we assume that no position means no GPS enabled ...
+      (not (some? (:user/position user)))
+      [{:error/id :home/search
+        :error/type :location/unknown}
+       [React/Keyboard.dismiss]]
+
+      (= "none" network)
+      [{:error/id :home/search
+        :error/type :internet/missing}
+       [React/Keyboard.dismiss]]
+
+      :else
+      [[promise/finally [mapbox/geocoding! args]
+                        [reset-places db]]])))
 
 (defn- ErrorModal
   [props]
@@ -143,7 +153,7 @@
       [:> React/TextInput {:placeholder "Where would you like to go?"
                            :ref #(vreset! ref %) :style {:flex 0.9}
                            :underlineColorAndroid "transparent"
-                           :onChangeText #(state/transact! (autocomplete % (state/db) props))}]]))
+                           :onChangeText #(state/transact! (autocomplete % (state/db)))}]]))
 
 (defn- on-location-updated [position]
   (state/transact! (location/set-location (state/db) position)))
