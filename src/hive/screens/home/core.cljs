@@ -13,6 +13,7 @@
             [datascript.core :as data]
             [hive.state.core :as state]
             [hive.assets :as assets]
+            [hive.screens.errors :as errors]
             [hive.utils.promises :as promise]))
 
 ; NOTE: this is the way to remove all routes ... not sure where to do this
@@ -61,26 +62,22 @@
   destination"
   [props]
   (let [navigate  (:navigate (:navigation props))
-        places   @(state/q! '[:find [(pull ?id [:place/id :place/geometry
-                                                :place/text :place/context]) ...]
-                              :where [?id :place/id]])
-        position @(state/q! queries/user-position)
-        height    (* 80 (count places))]
-    [:> React/View {:height height :paddingTop 100 :paddingLeft 10}
-     (for [target places
-           :let [distance (geometry/haversine (:coordinates (:geometry position))
+        position  @(state/q! queries/user-position)]
+    [:> React/View {:flex 1 :paddingTop 100 :paddingLeft 10}
+     (for [id @(state/q! queries/places-id)
+           :let [target   (data/entity (state/db) id)
+                 distance (geometry/haversine (:coordinates (:geometry position))
                                               (:coordinates (:place/geometry target)))]]
        ^{:key (:place/id target)}
        [:> React/TouchableOpacity
-         {:style    {:flex 1 :flexDirection "row"}
+         {:style    {:height 60 :flexDirection "row"}
           :onPress #(state/transact! (set-target (state/db) navigate target))}
-         [:> React/View {:flex 0.2 :alignItems "center" :justifyContent "flex-end"}
+         [symbols/PointOfInterest
            [:> assets/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-           [:> React/Text (humanize-distance distance)]]
-         [:> React/View {:flex 0.8 :justifyContent "flex-end"}
+           [:> React/Text (humanize-distance distance)]
            [:> React/Text {:numberOfLines 1} (:place/text target)]
-           [:> React/Text {:note true :style {:color "gray"} :numberOfLines 1}
-            (str/join ", " (map :text (:place/context target)))]]])]))
+           [:> React/Text {:style {:color "gray"} :numberOfLines 1}
+                          (str/join ", " (map :text (:place/context target)))]]])]))
 
 (defn- reset-places
   "transact the geocoding result under the user id"
@@ -113,6 +110,19 @@
         [(delay (.. (mapbox/geocoding! args)
                     (then #(reset-places (state/db) %))))]))))
 
+(defn- ErrorModal
+  [props]
+  (let [error-type @(state/q! '[:find ?error-type .
+                                :where [?error :error/id :home/search]
+                                       [?error :error/type ?error-type]])]
+    (when (some? error-type)
+      [:> React/Modal {:animationType "slide" :presentationStyle "overFullScreen"
+                       :transparent false :visible (some? error-type)
+                       :onRequestClose #(state/transact! [[:db/retractEntity [:error/id :home/search]]])}
+        (case error-type
+          :internet/missing [errors/InternetMissing]
+          :location/unknown [errors/LocationUnknown])])))
+
 (defn- SearchBar
   [props]
   (let [pids @(state/q! queries/places-id)
@@ -121,18 +131,19 @@
                     :elevation 5 :borderRadius 5 :shadowColor "#000000"
                     :shadowRadius 5 :shadowOffset {:width 0 :height 3}
                     :shadowOpacity 1.0}
-     [:> React/View {:height 30 :width 30 :padding 8 :flex 0.1}
-       (if (empty? pids)
-         [:> assets/Ionicons {:name "ios-search" :size 26}]
-         [:> React/TouchableWithoutFeedback
-           {:onPress #(when (some? @ref)
-                        (. @ref clear)
-                        (state/transact! (reset-places (state/db))))}
-           [:> assets/Ionicons {:name "ios-close-circle" :size 26}]])]
-     [:> React/TextInput {:placeholder "Where would you like to go?"
-                          :ref #(vreset! ref %) :style {:flex 0.9}
-                          :underlineColorAndroid "transparent"
-                          :onChangeText #(state/transact! (autocomplete % (state/db) props))}]]))
+      [ErrorModal props]
+      [:> React/View {:height 30 :width 30 :padding 8 :flex 0.1}
+        (if (empty? pids)
+          [:> assets/Ionicons {:name "ios-search" :size 26}]
+          [:> React/TouchableWithoutFeedback
+            {:onPress #(when (some? @ref)
+                         (. @ref clear)
+                         (state/transact! (reset-places (state/db))))}
+            [:> assets/Ionicons {:name "ios-close-circle" :size 26}]])]
+      [:> React/TextInput {:placeholder "Where would you like to go?"
+                           :ref #(vreset! ref %) :style {:flex 0.9}
+                           :underlineColorAndroid "transparent"
+                           :onChangeText #(state/transact! (autocomplete % (state/db) props))}]]))
 
 (defn- on-location-updated [position]
   (state/transact! (location/set-location (state/db) position)))
@@ -145,7 +156,7 @@
                pids     (state/q! queries/places-id)
                bbox     (state/q! queries/user-area-bbox)
                position (state/q! queries/user-position)]
-    [:> React/View {:flex 1}
+    [:> React/View {:flex 1 :backgroundColor "white"}
       (if (empty? @pids)
         [:> Expo/MapView {:region (geometry/mapview-region {:bbox @bbox
                                                             :position @position})

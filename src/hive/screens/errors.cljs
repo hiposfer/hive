@@ -13,7 +13,7 @@
       [[Expo/IntentLauncherAndroid.startActivityAsync settings]
        [goBack]])))
 
-(defn UserLocation
+(defn LocationUnknown
   [props]
   (let [dims   (misc/keywordize (React/Dimensions.get "window"))
         goBack (:goBack (:navigation props))]
