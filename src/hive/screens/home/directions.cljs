@@ -131,7 +131,7 @@
       [StepOverview props steps]]))
 
 (defn- Route
-  [props uid]
+  [props user-route]
   (let [route   @(state/pull! [{:directions/steps
                                 [:step/arrive
                                  :step/mode
@@ -143,19 +143,19 @@
                                                             :route/short_name
                                                             :route/type
                                                             :route/color]}]}]}]
-                              [:directions/uuid uid])]
+                              user-route)]
     [:> React/View {:flex 1}
       (for [steps (partition-by :step/mode (:directions/steps route))]
         ^{:key (:step/arrive (first steps))}
         [RouteSection props steps])]))
 
 (defn- Transfers
-  [route-id]
+  [user-route]
   (let [route @(state/pull! [{:directions/steps
                               [:step/arrive
                                :step/mode
                                {:step/trip [{:trip/route [:route/type]}]}]}]
-                            [:directions/uuid route-id])
+                            user-route)
         sections (partition-by :step/mode (:directions/steps route))]
     [:> React/View {:width 100 :flexDirection "row" :justifyContent "flex-start"
                     :alignItems "center" :padding 5}
@@ -171,7 +171,7 @@
 
 
 (defn- Info
-  [props route-id]
+  [props user-route]
   (let [[duration goal] @(state/q! '[:find [?duration ?goal]
                                      :where [_      :user/directions ?route]
                                             [?route :directions/duration ?duration]
@@ -179,11 +179,11 @@
                                             [?target :place/text ?goal]])]
     [:> React/View props
       [:> React/View {:flexDirection "row" :paddingLeft "1.5%" :justifyContent "space-between"}
-        [Transfers route-id]
-        [:> React/Text {:style {:color "gray" :paddingTop "2.5%" :paddingLeft "10%"
-                                :paddingRight 25}}
-          (when (some? duration)
-            (duration/format (* 1000 duration)))]]
+       [Transfers user-route]
+       [:> React/Text {:style {:color        "gray" :paddingTop "2.5%" :paddingLeft "10%"
+                               :paddingRight 25}}
+        (when (some? duration)
+          (duration/format (* 1000 duration)))]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
                      goal]
       [:> React/View {:flexDirection "row" :justifyContent "space-between"}
@@ -199,8 +199,8 @@
                                :style {:paddingLeft 5}}]]]]))
 
 
-(defn- paths
-  [uid]
+(defn- MapLines
+  [user-route]
   (let [route @(state/pull! [{:directions/steps
                               [:step/geometry
                                :step/mode
@@ -208,7 +208,7 @@
                                 [{:trip/route [:route/color
                                                :route/long_name
                                                :route/short_name]}]}]}]
-                            [:directions/uuid uid])]
+                            user-route)]
     (for [steps (partition-by :step/mode (:directions/steps route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
                 stroke (route-color (:trip/route (:step/trip (first steps))))]]
@@ -228,17 +228,16 @@
    Async, some data might be missing when rendered !!"
   [props]
   (r/with-let [window        (tool/keywordize (React/Dimensions.get "window"))
-               uid           (state/q! '[:find ?uid .
-                                         :where [_ :user/directions ?route]
-                                         [?route :directions/uuid ?uid]])
+               route         (state/q! '[:find ?route .
+                                         :where [_ :user/directions ?route]])
                bbox          (state/q! queries/user-area-bbox)
                position      (state/q! queries/user-position)
                back-handler  (React/BackHandler.addEventListener
                                "hardwareBackPress"
-                               #(state/transact! (clean-directions (state/db))))]
+                               #(misc/nullify (state/transact! (clean-directions (state/db)))))]
     [:> React/ScrollView {:flex 1}
       [:> React/View {:height (* 0.9 (:height window))}
-        (let [children (when (some? @uid) {:children (paths @uid)})
+        (let [children (when (some? @route) {:children (MapLines @route)})
               area     (geometry/mapview-region (merge children {:bbox     @bbox
                                                                  :position @position}))]
           [:> Expo/MapView {:region                area
@@ -248,13 +247,12 @@
             (:children children)])]
       [:> React/View {:flex 1 :backgroundColor "white" :elevation 25
                       :shadowColor "#000000" :shadowRadius 25 :shadowOpacity 1.0}
-        (when (some? @uid)
-          [Info {:flex 1 :paddingTop "1%"} @uid])
-        (when (some? @uid)
-          [Route props @uid])]]
+        (when (some? @route)
+          [Info {:flex 1 :paddingTop "1%"} @route])
+        (when (some? @route)
+          [Route props @route])]]
     (finally (. back-handler (remove)))))
 
-;hive.rework.state/conn
 ;(into {} (state/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
 ;(state/q queries/routes-ids)
 

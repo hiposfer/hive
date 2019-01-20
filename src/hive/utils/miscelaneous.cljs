@@ -83,3 +83,5 @@
     (.. (. response (text))
         (then #(throw (ex-info (str "Error fetching directions." %)
                                (roundtrip response)))))))
+
+(def nullify (constantly nil))
