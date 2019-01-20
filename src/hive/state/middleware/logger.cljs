@@ -27,6 +27,8 @@
 
     :else value))
 
+;; TODO: link second stage promises - those promises that
+;; are created as a result of a previous promise
 (defn- link-promise!
   "takes a promise and the id of the transaction that created it and
   logs its result on success/failure together with its id"

@@ -172,20 +172,18 @@
 
 (defn- Info
   [props user-route]
-  (let [[duration goal] @(state/q! '[:find [?duration ?goal]
-                                     :where [_      :user/directions ?route]
-                                            [?route :directions/duration ?duration]
-                                            [_      :user/goal ?target]
-                                            [?target :place/text ?goal]])]
+  (let [route @(state/pull! [:directions/duration] user-route)
+        goal  @(state/q! '[:find ?goal .
+                           :where [_ :user/goal ?target]
+                                  [?target :place/text ?goal]])]
     [:> React/View props
       [:> React/View {:flexDirection "row" :paddingLeft "1.5%" :justifyContent "space-between"}
        [Transfers user-route]
        [:> React/Text {:style {:color        "gray" :paddingTop "2.5%" :paddingLeft "10%"
                                :paddingRight 25}}
-        (when (some? duration)
-          (duration/format (* 1000 duration)))]]
-      [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}}
-                     goal]
+        (when (some? route)
+          (duration/format (* 1000 (:directions/duration route))))]]
+      [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} goal]
       [:> React/View {:flexDirection "row" :justifyContent "space-between"}
         [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
           [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
