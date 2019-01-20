@@ -5,16 +5,17 @@
             [datascript.core :as data]
             [lambdaisland.uri :as uri]
             [hive.utils.miscelaneous :as misc])
-  (:import (goog.date DateTime Interval)))
+  (:import (goog.date DateTime)))
 
 (def readers {'uuid uuid})
 
-(defn- zoned-time
+(defn zoned-time
   "returns a compatible Java LocalDateTime string representation"
   ([]
-   (zoned-time (new DateTime)))
-  ([^js/DateTime now]
-   (let [gtime (. now (toIsoString true true))]
+   (zoned-time (js/Date.now)))
+  ([millistamp]
+   (let [dtime (new DateTime.fromTimestamp millistamp)
+         gtime (. dtime (toIsoString true true))]
      (str/replace gtime " " "T"))))
 
 ;(def template "https://hive-6c54a.appspot.com/directions/v5")
@@ -99,12 +100,12 @@
   All gtfs trips and route are also requested"
   ^js/Promise
   ([db coordinates departure]
-   (let [[url opts] (directions db coordinates departure)]
+   (let [[url opts] (directions db coordinates (zoned-time departure))]
      (.. (js/fetch url (clj->js opts))
          (then misc/on-fetch-response)
          (then #(edn/read-string {:readers readers} %)))))
   ([db coordinates]
-   (get-directions! db coordinates (new DateTime))))
+   (get-directions! db coordinates (js/Date.now))))
 
 (defn get-areas!
   "fetches the supported areas from kamal"

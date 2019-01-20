@@ -22,6 +22,9 @@
 
 (def user-entity '[:find ?e . :where [?e :user/uid]])
 
+(def user-goal '[:find ?e . :where [?user :user/uid]
+                                   [?user :user/goal ?e]])
+
 (def user-position '[:find ?position . :where [?user :user/uid]
                                               [?user :user/position ?position]])
 

@@ -20,7 +20,7 @@
 ;(for [r (data/q queries/routes-ids (state/db))]
 ;  [:db.fn/retractEntity [:route/uuid r]])
 
-(defn- on-directions-response
+(defn on-directions-response
   "takes a kamal directions response and attaches it to the current user.
   Further trip information is also retrieved"
   [directions db]

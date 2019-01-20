@@ -11,7 +11,11 @@
             [hive.state.core :as state]
             [hive.utils.miscelaneous :as misc]
             [hive.state.queries :as queries]
-            [datascript.core :as data]))
+            [datascript.core :as data]
+            [hive.utils.promises :as promise]
+            [hive.services.kamal :as kamal]
+            [hive.screens.home.core :as home])
+  (:import (goog.date DateTime)))
 
 (def big-circle 16)
 (def micro-circle 3)
@@ -169,19 +173,38 @@
             [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"
                                  :style {:paddingHorizontal 10}}])))]))
 
+(defn- on-next-pressed
+  [db]
+  (let [user-id  (data/q queries/user-entity db)
+        user     (data/entity db user-id)
+        start    (:coordinates (:geometry (:user/position user)))
+        end      (:coordinates (:place/geometry (:user/goal user)))
+        steps    (eduction (map :step/wait)
+                           (remove nil?)
+                           (:directions/steps (:user/directions user)))
+        can-wait (first steps)
+        departs  (+ (js/Date.now) (* 1000 can-wait) 1000)
+        next     (data/q '[:find ?uuid .
+                           :where [_ :user/directions _ ?current]
+                                  [_ :directions/uuid ?uuid ?other]
+                                  [(< ?current ?other)]])]
+    (if (some? next)
+      [{:user/uid (:user/uid user)
+        :user/directions [:directions/uuid next]}]
+      [[promise/finally [kamal/get-directions! db [start end] departs]
+                        [home/on-directions-response db]]])))
 
 (defn- Info
   [props user-route]
   (let [route    @(state/pull! [:directions/duration] user-route)
         ;; check if there are any previous directions that we can go back to
         previous @(state/q! '[:find ?direction .
-                              :where [_ :user/directions _ ?tx]
-                                     [?direction :directions/uuid _ ?tx2]
-                                     [(< ?tx ?tx2)]])
+                              :where [_          :user/directions _ ?current]
+                                     [?direction :directions/uuid _ ?other]
+                                     [(< ?other ?current)]])
         alignment (if (some? previous) "space-between" "flex-end")
-        goal     @(state/q! '[:find ?goal .
-                              :where [_       :user/goal ?target]
-                                     [?target :place/text ?goal]])]
+        ;; goal - cannot change during this component lifetime
+        goal      (data/entity (state/db) (data/q queries/user-goal (state/db)))]
     [:> React/View props
       [:> React/View {:flexDirection "row" :paddingLeft "1.5%" :justifyContent "space-between"}
        [Transfers user-route]
@@ -189,15 +212,17 @@
                                :paddingRight 25}}
         (when (some? route)
           (duration/format (* 1000 (:directions/duration route))))]]
-      [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} goal]
+      [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} (:place/text goal)]
       [:> React/View {:flexDirection "row" :justifyContent alignment}
         (when (some? previous)
-          [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
+          [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5 :alignItems "center"}}
             [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
                                  :style {:paddingRight 5}}]
             [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
                            "previous"]])
-        [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
+        [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5
+                                            :alignItems "center" :paddingLeft 40}
+                                    :onPress #(state/transact! (on-next-pressed (state/db)))}
           [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
                          "next"]
           [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "#3bb2d0"
@@ -257,10 +282,3 @@
         (when (some? @route)
           [Route props @route])]]
     (finally (. back-handler (remove)))))
-
-;(into {} (state/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
-;(state/q queries/routes-ids)
-
-;(let [id      (data/q queries/user-id (state/db))]
-;  (:steps (:route/route (:user/route @(state/pull! [{:user/route [:route/route]}]
-;                                                  [:user/id id])))))
