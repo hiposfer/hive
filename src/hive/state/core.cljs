@@ -112,24 +112,46 @@
 
 (defn- executor
   "Executes side effects in place. Returns the result of each item"
-  [rf]
+  [middleware]
   (fn [db transaction]
-    (rf db (for [item transaction]
-             (cond
-               ;; functional effect declaration
-               (and (vector? item) (fn? (first item)))
-               (apply (first item) (rest item))
+    (middleware db
+      (for [item transaction]
+        (cond
+          ;; functional effect declaration
+          (and (vector? item) (fn? (first item)))
+          (apply (first item) (rest item))
 
-               ;; side effect declaration wrapped with delay to allow testing
-               (delay? item)
-               (force item)
+          ;; side effect declaration wrapped with delay to allow testing
+          (delay? item)
+          (force item)
 
-               ;; simple datascript transaction
-               (tx-part? item)
-               (identity item))))))
+          ;; simple datascript transaction
+          (tx-part? item)
+          (identity item))))))
+
+;; schedule the transaction after the middleware chain to avoid
+;; getting the result of transact! instead of the result of the
+;; promise
+(defn- scheduler
+  "Returns a middleware that will schedule transaction on Js Promises on
+  success"
+  [middleware]
+  (fn [db transaction]
+    (middleware db
+      (for [item transaction]
+        (if (tool/promise? item)
+          (. item (then transact!))
+          (identity item))))))
+
+(defn- mutator
+  "Returns a middleware that removes all non-datascript elements from
+  the transaction"
+  [middleware]
+  (fn [db transaction]
+    (filter tx-part? (middleware db transaction))))
 
 ;; middleware chain - a middleware is a function of (db, transaction) -> transaction
-(def ^:private processor (log/logger (executor (fn [db tx] tx))))
+(def middleware (mutator (scheduler (log/logger (executor (fn [db tx] tx))))))
 
 (defn transact!
   "Single entry point for 'updating' the app state. The behaviour of
@@ -151,13 +173,4 @@
    (transact! transaction nil))
   ([transaction tx-meta]
    (when (sequential? transaction)
-     (let [tx-data (processor (db) transaction)]
-       ;; schedule the transaction after the middleware chain to avoid
-       ;; getting the result of transact! instead of the result of the
-       ;; promise
-       (doseq [item tx-data
-               :when (tool/promise? item)]
-         (. item (then transact!)))
-       (data/transact! conn
-                       (filter tx-part? tx-data)
-                       tx-meta)))))
+     (data/transact! conn (middleware (db) transaction) tx-meta))))

@@ -45,15 +45,15 @@
                                                :error  error})))))
 
 (defn logger
-  "returns a middleware that will call rf after logging its arguments"
-  [rf]
+  "returns a middleware that will call the middleware chain after logging its arguments"
+  [middleware]
   (fn [db transaction]
     (when (true? js/__DEV__)
       ;; build a loggable Javascript object by replacing not printable object
       ;; with informative placeholders
       (let [id     (data/squuid)
             items  (walk/postwalk munge-transaction transaction)
-            result (rf db transaction)]
+            result (middleware db transaction)]
         ;; log transaction and effects
         (apply js/console.log (str id) (clj->js items))
         ;; link promises to future logs
