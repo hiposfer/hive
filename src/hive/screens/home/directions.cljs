@@ -3,13 +3,15 @@
             [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
+            [reagent.core :as r]
             [hive.utils.geometry :as geometry]
             [goog.date.duration :as duration]
             [clojure.string :as str]
             [hive.assets :as assets]
             [hive.state.core :as state]
             [hive.utils.miscelaneous :as misc]
-            [hive.state.queries :as queries]))
+            [hive.state.queries :as queries]
+            [datascript.core :as data]))
 
 (def big-circle 16)
 (def micro-circle 3)
@@ -215,22 +217,30 @@
                                  :strokeColor stroke
                                  :strokeWidth 4}])))
 
+(defn- clean-directions
+  [db]
+  (for [r (data/q queries/routes-ids db)]
+    [:db.fn/retractEntity [:directions/uuid r]]))
+
 (defn Instructions
   "basic navigation directions.
 
    Async, some data might be missing when rendered !!"
   [props]
-  (let [window    (tool/keywordize (React/Dimensions.get "window"))
-        uid      @(state/q! '[:find ?uid .
-                              :where [_ :user/directions ?route]
-                                     [?route :directions/uuid ?uid]])
-        bbox     @(state/q! queries/user-area-bbox)
-        position @(state/q! queries/user-position)]
+  (r/with-let [window        (tool/keywordize (React/Dimensions.get "window"))
+               uid           (state/q! '[:find ?uid .
+                                         :where [_ :user/directions ?route]
+                                         [?route :directions/uuid ?uid]])
+               bbox          (state/q! queries/user-area-bbox)
+               position      (state/q! queries/user-position)
+               back-handler  (React/BackHandler.addEventListener
+                               "hardwareBackPress"
+                               #(state/transact! (clean-directions (state/db))))]
     [:> React/ScrollView {:flex 1}
       [:> React/View {:height (* 0.9 (:height window))}
-        (let [children (when (some? uid) {:children (paths uid)})
-              area     (geometry/mapview-region (merge children {:bbox     bbox
-                                                                 :position position}))]
+        (let [children (when (some? @uid) {:children (paths @uid)})
+              area     (geometry/mapview-region (merge children {:bbox     @bbox
+                                                                 :position @position}))]
           [:> Expo/MapView {:region                area
                             :showsUserLocation     true
                             :style                 {:flex 1}
@@ -238,10 +248,11 @@
             (:children children)])]
       [:> React/View {:flex 1 :backgroundColor "white" :elevation 25
                       :shadowColor "#000000" :shadowRadius 25 :shadowOpacity 1.0}
-        (when (some? uid)
-          [Info {:flex 1 :paddingTop "1%"} uid])
-        (when (some? uid)
-          [Route props uid])]]))
+        (when (some? @uid)
+          [Info {:flex 1 :paddingTop "1%"} @uid])
+        (when (some? @uid)
+          [Route props @uid])]]
+    (finally (. back-handler (remove)))))
 
 ;hive.rework.state/conn
 ;(into {} (state/entity [:route/uuid #uuid"5b2d247b-f8c6-47f3-940e-dee71f97d451"]))
