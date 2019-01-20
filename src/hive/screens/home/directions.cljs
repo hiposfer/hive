@@ -236,7 +236,7 @@
                                "hardwareBackPress"
                                #(misc/nullify (state/transact! (clean-directions (state/db)))))]
     [:> React/ScrollView {:flex 1}
-      [:> React/View {:height (* 0.9 (:height window))}
+      [:> React/View {:height (* 0.85 (:height window))}
         (let [children (when (some? @route) {:children (MapLines @route)})
               area     (geometry/mapview-region (merge children {:bbox     @bbox
                                                                  :position @position}))]
@@ -248,7 +248,7 @@
       [:> React/View {:flex 1 :backgroundColor "white" :elevation 25
                       :shadowColor "#000000" :shadowRadius 25 :shadowOpacity 1.0}
         (when (some? @route)
-          [Info {:flex 1 :paddingTop "1%"} @route])
+          [Info {:height (* 0.15 (:height window)) :paddingTop "1%"} @route])
         (when (some? @route)
           [Route props @route])]]
     (finally (. back-handler (remove)))))
