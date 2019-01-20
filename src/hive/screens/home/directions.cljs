@@ -172,10 +172,16 @@
 
 (defn- Info
   [props user-route]
-  (let [route @(state/pull! [:directions/duration] user-route)
-        goal  @(state/q! '[:find ?goal .
-                           :where [_ :user/goal ?target]
-                                  [?target :place/text ?goal]])]
+  (let [route    @(state/pull! [:directions/duration] user-route)
+        ;; check if there are any previous directions that we can go back to
+        previous @(state/q! '[:find ?direction .
+                              :where [_ :user/directions _ ?tx]
+                                     [?direction :directions/uuid _ ?tx2]
+                                     [(< ?tx ?tx2)]])
+        alignment (if (some? previous) "space-between" "flex-end")
+        goal     @(state/q! '[:find ?goal .
+                              :where [_       :user/goal ?target]
+                                     [?target :place/text ?goal]])]
     [:> React/View props
       [:> React/View {:flexDirection "row" :paddingLeft "1.5%" :justifyContent "space-between"}
        [Transfers user-route]
@@ -184,12 +190,13 @@
         (when (some? route)
           (duration/format (* 1000 (:directions/duration route))))]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} goal]
-      [:> React/View {:flexDirection "row" :justifyContent "space-between"}
-        [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
-          [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
-                               :style {:paddingRight 5}}]
-          [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
-                         "previous"]]
+      [:> React/View {:flexDirection "row" :justifyContent alignment}
+        (when (some? previous)
+          [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
+            [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
+                                 :style {:paddingRight 5}}]
+            [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
+                           "previous"]])
         [:> React/View {:flexDirection "row" :padding 5 :alignItems "center"}
           [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
                          "next"]
