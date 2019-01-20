@@ -137,11 +137,10 @@
   success"
   [middleware]
   (fn [db transaction]
-    (middleware db
-      (for [item transaction]
-        (if (tool/promise? item)
-          (. item (then transact!))
-          (identity item))))))
+    (for [item (middleware db transaction)]
+      (if (tool/promise? item)
+        (. item (then transact!))
+        (identity item)))))
 
 (defn- mutator
   "Returns a middleware that removes all non-datascript elements from

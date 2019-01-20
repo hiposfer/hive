@@ -184,7 +184,7 @@
             [:> assets/Ionicons {:name "md-apps" :size 26
                                  :style {:color "white"}}]]])]
     ;; remove tracker on component will unmount
-    (finally (. tracker (then #(. % remove))))))
+    (finally (. tracker (then #(. % (remove)))))))
 
 ;(state/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
 ;(data/pull (state/db) '[*] [:route/uuid "5b44dbb7-ac02-40a0-b50f-6c855c5bff14"])
