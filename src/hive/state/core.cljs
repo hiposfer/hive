@@ -11,9 +11,9 @@
   - the app state MUST be represented with a single Datascript connection. This
     way it is possible to represent the app state as a complex interconnected
     structure while being able to navigate it through its query/pull system
-  - the app must use reagent. As described in reagent.tx, we dont want to recreate
-    all the functionality that they have so reagent will serve us as rendering model
-    and as reactive data framework
+  - the app must use reagent. We dont want to recreate all the functionality
+    that they have so reagent will serve us as rendering model and as reactive
+    data framework
 
   Since the app is represented as a single Datascript atom. All state changes
   can be represented by Datascript transaction, which means that the functions
@@ -29,21 +29,14 @@
   Those *intended-effects* (as opposed to side-effects) are inevitable. This
   framework doesnt try to avoid them nor to mark them as evil, instead we understand
   that they are necessary. We encourage the logic of side effect to be encapsulated
-  in frameworks intended for it, like Promises. However we prefer for functions to
+  in frameworks intended for it, like Promises. However we prefer functions to
   *declare* their intended-effects instead of performing them.
   This is meant to ease testing. It is much more easy to test a function that returns
   a sequence of vector with values inside than it is to test a function which returns
   nothing but performs some effects inside.
   ;; example
   (state/transact [http/json url options])
-  (state/transact (delay (hide-keyboard))
-
-  Last but not least is error handling. We propose the inclusion of errors as
-  data values as opposed to their classical view of 'anomalous or exceptional
-  conditions requiring special processing – often changing the normal flow of
-  program execution'. Therefore we separate between expected errors like, no
-  internet connection, malformed json response or unauthorized app permissions
-  from those arising from incorrect code a.k.a bugs"
+  (state/transact (delay (hide-keyboard))"
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
@@ -78,16 +71,11 @@
 ;; pure functions by returning data both in the subcriptions and in the
 ;; mutations is great.
 
-;; rework tries to combine the strengths of both while mitigating its weaknesses
-;; with an extra goal of trying not to reinvent the wheel
-
-
-
 (defonce conn (rata/listen! (data/create-conn schema/schema)))
 
 (def tokens (tool/with-ns "ENV"
-                          (tool/keywordize
-                            (js/require "./resources/config.json"))))
+              (tool/keywordize
+                (js/require "./resources/config.json"))))
 
 (defn pull!
   "same as datascript/pull but returns a ratom which will be updated
