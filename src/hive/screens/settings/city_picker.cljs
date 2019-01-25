@@ -30,7 +30,7 @@
         (when (= (:area/name city) (:area/name (:user/area info)))
           [:> assets/Ionicons {:name "ios-checkmark" :size 26}])]]]))
 
-(defn Selector
+(defn Screen
   [props]
   (let [cities  @(state/q! queries/kamal-areas)
         user    @(state/q! queries/user-entity)]

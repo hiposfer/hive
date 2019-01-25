@@ -128,7 +128,7 @@
 
 ;; NOTE: here we use the entity and not the uid because the sign in
 ;; process might change it, thus breaking all pull patterns
-(defn Settings
+(defn Screen
   [props]
   (let [user (state/q! queries/user-entity)]
     [:> React/View {:flex 1}

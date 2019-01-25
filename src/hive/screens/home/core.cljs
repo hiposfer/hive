@@ -141,7 +141,7 @@
 (defn- on-location-updated [position]
   (state/transact! (location/set-location (state/db) position)))
 
-(defn Home
+(defn Screen
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
   (r/with-let [tracker  (location/watch! (location/defaults on-location-updated))

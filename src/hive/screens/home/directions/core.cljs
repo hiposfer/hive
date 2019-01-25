@@ -1,4 +1,4 @@
-(ns hive.screens.home.directions
+(ns hive.screens.home.directions.core
   (:require [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
@@ -75,18 +75,20 @@
 
 (defn- StepOverviewMsg
   [props steps]
-  [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}}
-    [:> React/View {:flex-direction "row" :alignItems "center"}
-      [:> React/View {:paddingRight 10 :with 32}
-        [SectionIcon steps]]
-      [:> React/Text {:style {:color "gray" :paddingRight 7 :flex 3}}
-        (if (= "walking" (:step/mode (first steps)))
-          (walk-message steps)
-          (-> (:maneuver/instruction (:step/maneuver (first steps)))
-              (str/replace "[Dummy]" "")
-              (subs 0 60)))]
-      [:> assets/Ionicons {:name "ios-arrow-forward" :size 22
-                           :color "gray" :style {:paddingRight 20}}]]])
+  (let [navigate (:navigate (:navigation props))]
+    [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}
+                                :onPress #(navigate "trip-overview")}
+      [:> React/View {:flex-direction "row" :alignItems "center"}
+        [:> React/View {:paddingRight 10 :with 32}
+          [SectionIcon steps]]
+        [:> React/Text {:style {:color "gray" :paddingRight 7 :flex 3}}
+          (if (= "walking" (:step/mode (first steps)))
+            (walk-message steps)
+            (-> (:maneuver/instruction (:step/maneuver (first steps)))
+                (str/replace "[Dummy]" "")
+                (subs 0 60)))]
+        [:> assets/Ionicons {:name "ios-arrow-forward" :size 22
+                             :color "gray" :style {:paddingRight 20}}]]]))
 
 (defn- StepOverview
   [props steps]
@@ -272,7 +274,7 @@
   (for [r (data/q queries/routes-ids db)]
     [:db.fn/retractEntity [:directions/uuid r]]))
 
-(defn Instructions
+(defn Screen
   "basic navigation directions.
 
    Async, some data might be missing when rendered !!"
