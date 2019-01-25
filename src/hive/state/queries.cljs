@@ -25,6 +25,9 @@
 (def user-goal '[:find ?e . :where [?user :user/uid]
                                    [?user :user/goal ?e]])
 
+(def user-route '[:find ?route .
+                  :where [_ :user/directions ?route]])
+
 (def user-position '[:find ?position . :where [?user :user/uid]
                                               [?user :user/position ?position]])
 
@@ -42,4 +45,3 @@
 
 (def routes-ids '[:find [?routes ...]
                   :where [_ :directions/uuid ?routes]])
-

@@ -12,9 +12,7 @@
             [hive.utils.miscelaneous :as misc]
             [hive.state.queries :as queries]
             [datascript.core :as data]
-            [hive.utils.promises :as promise]
-            [hive.services.kamal :as kamal]
-            [hive.screens.home.core :as home])
+            [hive.services.kamal :as kamal])
   (:import (goog.date DateTime)))
 
 (def big-circle 16)
@@ -173,18 +171,32 @@
             [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"
                                  :style {:paddingHorizontal 10}}])))]))
 
+(defn- previous-routes
+  [db]
+  (let [current-route (data/entity db (data/q queries/user-route db))]
+    (for [datom (data/datoms db :avet :directions/uuid)
+          :let [route (data/entity db (:e datom))]
+          :when (< (:directions/uuid route)
+                   (:directions/uuid current-route))]
+      route)))
+
+(defn- next-routes
+  [db]
+  (let [current-route (data/entity db (data/q queries/user-route db))]
+    (for [datom (data/datoms db :avet :directions/uuid)
+          :let [route (data/entity db (:e datom))]
+          :when (< (:directions/uuid current-route)
+                   (:directions/uuid route))]
+      route)))
+
 (defn- on-previous-pressed
   [db]
   (let [user-id  (data/q queries/user-entity db)
         user     (data/entity db user-id)
-        previous (data/q '[:find ?uuid .
-                           :where [_ :user/directions _ ?current]
-                                  [_ :directions/uuid ?uuid ?other]
-                                  [(< ?other ?current)]]
-                         db)]
-    (when (some? previous)
+        previous (previous-routes db)]
+    (when (some? (last previous))
       [{:user/uid        (:user/uid user)
-        :user/directions [:directions/uuid previous]}])))
+        :user/directions [:directions/uuid (:directions/uuid (last previous))]}])))
 
 (defn- on-next-pressed
   [db]
@@ -197,25 +209,18 @@
                            (:directions/steps (:user/directions user)))
         can-wait (first steps)
         departs  (+ (js/Date.now) (* 1000 can-wait) 1000)
-        next     (data/q '[:find ?uuid .
-                           :where [_ :user/directions _ ?current]
-                                  [_ :directions/uuid ?uuid ?other]
-                                  [(< ?current ?other)]]
-                         db)]
-    (if (some? next)
+        nexts    (next-routes db)]
+    (if (some? (first nexts))
       [{:user/uid (:user/uid user)
-        :user/directions [:directions/uuid next]}]
+        :user/directions [:directions/uuid (:directions/uuid (first nexts))]}]
       [[kamal/get-directions! db [start end] departs]])))
 
 (defn- Info
   [props user-route]
   (let [route    @(state/pull! [:directions/duration] user-route)
         ;; check if there are any previous directions that we can go back to
-        previous @(state/q! '[:find ?direction .
-                              :where [_          :user/directions _ ?current]
-                                     [?direction :directions/uuid _ ?other]
-                                     [(< ?other ?current)]])
-        alignment (if (some? previous) "space-between" "flex-end")
+        previous  (previous-routes (state/db))
+        alignment (if (not-empty previous) "space-between" "flex-end")
         ;; goal - cannot change during this component lifetime
         goal      (data/entity (state/db) (data/q queries/user-goal (state/db)))]
     [:> React/View props
@@ -228,7 +233,7 @@
           (duration/format (* 1000 (:directions/duration route))))]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} (:place/text goal)]
       [:> React/View {:flexDirection "row" :justifyContent alignment}
-        (when (some? previous)
+        (when (not-empty previous)
           [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5
                                               :alignItems "center"}
                                       :onPress #(state/transact! (on-previous-pressed (state/db)))}
@@ -273,28 +278,27 @@
 
    Async, some data might be missing when rendered !!"
   [props]
-  (r/with-let [window        (tool/keywordize (React/Dimensions.get "window"))
-               route         (state/q! '[:find ?route .
-                                         :where [_ :user/directions ?route]])
-               bbox          (state/q! queries/user-area-bbox)
-               position      (state/q! queries/user-position)
-               back-handler  (React/BackHandler.addEventListener
-                               "hardwareBackPress"
-                               #(misc/nullify (state/transact! (clean-directions (state/db)))))]
+  (r/with-let [window       (tool/keywordize (React/Dimensions.get "window"))
+               route        (state/q! queries/user-route)
+               bbox         (state/q! queries/user-area-bbox)
+               position     (state/q! queries/user-position)
+               back-handler (React/BackHandler.addEventListener
+                              "hardwareBackPress"
+                              #(misc/nullify (state/transact! (clean-directions (state/db)))))]
     [:> React/ScrollView {:flex 1}
-      [:> React/View {:height (* 0.85 (:height window))}
-        (let [children (when (some? @route) {:children (MapLines @route)})
-              area     (geometry/mapview-region (merge children {:bbox     @bbox
-                                                                 :position @position}))]
-          [:> Expo/MapView {:region                area
-                            :showsUserLocation     true
-                            :style                 {:flex 1}
-                            :showsMyLocationButton true}
-            (:children children)])]
-      [:> React/View {:flex 1 :backgroundColor "white" :elevation 25
-                      :shadowColor "#000000" :shadowRadius 25 :shadowOpacity 1.0}
-        (when (some? @route)
-          [Info {:height (* 0.15 (:height window)) :paddingTop "1%"} @route])
-        (when (some? @route)
-          [Route props @route])]]
+     [:> React/View {:height (* 0.85 (:height window))}
+      (let [children (when (some? @route) {:children (MapLines @route)})
+            area     (geometry/mapview-region (merge children {:bbox     @bbox
+                                                               :position @position}))]
+        [:> Expo/MapView {:region                area
+                          :showsUserLocation     true
+                          :style                 {:flex 1}
+                          :showsMyLocationButton true}
+         (:children children)])]
+     [:> React/View {:flex        1 :backgroundColor "white" :elevation 25
+                     :shadowColor "#000000" :shadowRadius 25 :shadowOpacity 1.0}
+      (when (some? @route)
+        [Info {:height (* 0.15 (:height window)) :paddingTop "1%"} @route])
+      (when (some? @route)
+        [Route props @route])]]
     (finally (. back-handler (remove)))))
