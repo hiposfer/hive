@@ -1,8 +1,7 @@
 (ns hive.utils.miscelaneous
   "a namespace for functions that have not found a home :'("
   (:require [clojure.spec.alpha :as s]
-            [js-quantities :as quantity]
-            [cljs.reader :as edn]))
+            [js-quantities :as quantity]))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?
@@ -85,3 +84,7 @@
                                (roundtrip response)))))))
 
 (def nullify (constantly nil))
+
+(defn channel?
+  [x]
+  (satisfies? cljs.core.async.impl.protocols/Channel x))

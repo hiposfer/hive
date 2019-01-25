@@ -41,7 +41,8 @@
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
             [hive.state.middleware.logger :as log]
-            [hive.state.schema :as schema]))
+            [hive.state.schema :as schema]
+            [cljs.core.async :as async]))
 
 ;; Before creating this mini-framework I tried re-frame and
 ;; Om.Next and I decided not to use either
@@ -126,8 +127,14 @@
   [middleware]
   (fn [db transaction]
     (for [item (middleware db transaction)]
-      (if (tool/promise? item)
+      (cond
+        (tool/promise? item)
         (. item (then transact!))
+
+        (tool/channel? item)
+        (async/map transact! [item])
+
+        :else
         (identity item)))))
 
 (defn- mutator

@@ -191,8 +191,7 @@
     (if (some? next)
       [{:user/uid (:user/uid user)
         :user/directions [:directions/uuid next]}]
-      [[promise/finally [kamal/get-directions! db [start end] departs]
-                        [home/on-directions-response db]]])))
+      [[kamal/get-directions! db [start end] departs]])))
 
 (defn- Info
   [props user-route]

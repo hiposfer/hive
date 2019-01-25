@@ -20,20 +20,6 @@
 ;(for [r (data/q queries/routes-ids (state/db))]
 ;  [:db.fn/retractEntity [:route/uuid r]])
 
-(defn on-directions-response
-  "takes a kamal directions response and attaches it to the current user.
-  Further trip information is also retrieved"
-  [directions db]
-  (let [user    (data/q queries/user-id db)]
-    (concat [directions
-             {:user/uid        user
-              :user/directions [:directions/uuid (:directions/uuid directions)]}]
-            (eduction (filter #(= "transit" (:step/mode %)))
-                      (filter #(some? (:step/trip %)))
-                      (map #(do [kamal/chain! db (:step/trip %) :trip/route]))
-                      (distinct)
-                      (:directions/steps directions)))))
-
 (defn- set-target
   "associates a target and a path to get there with the user"
   [db navigate target]
@@ -43,8 +29,7 @@
         end      (:coordinates (:place/geometry target))]
     [{:user/uid  user
       :user/goal [:place/id (:place/id target)]}
-     [promise/finally [kamal/get-directions! db [start end]]
-                      [on-directions-response db]]
+     [kamal/get-directions! db [start end]]
      [React/Keyboard.dismiss]
      [navigate "directions"]]))
 

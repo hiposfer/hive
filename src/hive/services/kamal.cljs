@@ -4,7 +4,9 @@
             [hive.state.queries :as queries]
             [datascript.core :as data]
             [lambdaisland.uri :as uri]
-            [hive.utils.miscelaneous :as misc])
+            [hive.utils.miscelaneous :as misc]
+            [cljs.core.async :as async]
+            [hive.utils.promises :as promise])
   (:import (goog.date DateTime)))
 
 (def readers {'uuid uuid})
@@ -62,18 +64,7 @@
   (let [[url opts] (entity db ref)]
     (.. (js/fetch url (clj->js opts))
         (then (fn [^js/Response response] (. response (text))))
-        (then #(edn/read-string {:readers readers} %))
-        (then vector))))
-
-(defn- chain!
-  "request a remote entity and also fetches the UNIQUE entity under
-  keyword attribute.
-
-  For example: fetch the trip/id 123 and then the :trip/route that it
-  points to"
-  [db trip-ref attribute]
-  (.. (get-entity! db trip-ref)
-      (then (fn [[trip]] [trip [get-entity! db (get trip attribute)]]))))
+        (then #(edn/read-string {:readers readers} %)))))
 
 (defn directions
   "takes a map with the items required by ::request and replaces their values into
@@ -98,14 +89,34 @@
   returned route to the current user.
 
   All gtfs trips and route are also requested"
-  ^js/Promise
-  ([db coordinates departure]
-   (let [[url opts] (directions db coordinates (zoned-time departure))]
-     (.. (js/fetch url (clj->js opts))
-         (then misc/on-fetch-response)
-         (then #(edn/read-string {:readers readers} %)))))
   ([db coordinates]
-   (get-directions! db coordinates (js/Date.now))))
+   (get-directions! db coordinates (js/Date.now)))
+  ([db coordinates departure]
+   (let [result (async/chan)]
+     (get-directions! db coordinates departure result)
+     result))
+  ([db coordinates departure chan]
+   (async/go
+     (let [[url opts] (directions db coordinates departure)
+           response   (async/<! (promise/async (js/fetch url (clj->js opts))))
+           body       (async/<! (promise/async (. response (text))))]
+       (if (not (.-ok response))
+         (async/>! chan [{:error/id ::directions
+                          :error/info (ex-info (str "Error fetching directions: " body)
+                                               (misc/roundtrip response))}])
+         (let [content (edn/read-string {:readers readers} body)
+               user    (data/q queries/user-id db)
+               trips   (for [step (:directions/steps content)
+                             :when (= "transit" (:step/mode step))
+                             :when (some? (:step/trip step))]
+                         (:step/trip step))]
+           (async/>! chan [content {:user/uid        user
+                                    :user/directions [:directions/uuid (:directions/uuid content)]}])
+           (doseq [trip-id (distinct trips)]
+             (let [trip  (async/<! (promise/async (get-entity! db trip-id)))
+                   route (promise/async (get-entity! db (get trip :trip/route)))]
+               (async/>! chan [trip])
+               (async/>! chan [(async/<! route)])))))))))
 
 (defn get-areas!
   "fetches the supported areas from kamal"
