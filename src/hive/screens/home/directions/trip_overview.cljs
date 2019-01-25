@@ -10,7 +10,8 @@
             [hive.state.queries :as queries]
             [datascript.core :as data]
             [hive.state.schema :as schema]
-            [hiposfer.gtfs.edn :as gtfs])
+            [hiposfer.gtfs.edn :as gtfs]
+            [hive.services.kamal :as kamal])
   (:import (goog.date DateTime)))
 
 (def big-circle 16)
@@ -170,13 +171,30 @@
         ^{:key (:step/arrive (first steps))}
         [RouteSection props steps])]))
 
+(def frequency-trip '[:find ?frequency ?start-time
+                      :in $ ?trip-id ?current-time
+                      :where [?trip      :trip/id ?trip-id]
+                             [?frequency :frequency/trip ?trip]
+                             [?frequency :frequency/start_time ?start-time]
+                             [?frequency :frequency/end_time ?end-time]
+                             [(< ?start-time ?current-time)]
+                             [(< ?current-time ?end-time)]])
+
+(defn- seconds-of-day
+  [^js/Date date]
+  (+ (. date (getSeconds))
+     (* 60 (+ (. date (getMinutes))
+              (* 60 (. date (getHours)))))))
+
 (defn Screen
   "basic navigation directions.
 
    Async, some data might be missing when rendered !!"
   [props]
   (let [trip-id (:trip/id (:params (:state (:navigation props))))
+        secs    (seconds-of-day (new js/Date "2018-05-07T10:15:30+01:00"))
         ;window  (misc/keywordize (React/Dimensions.get "window"))
+        ;_ (kamal/query! (state/db) frequency-trip trip-id secs)
         route   (state/q! queries/user-route)
         trip    @(state/pull! [{:trip/route [:route/type
                                              :route/long_name
