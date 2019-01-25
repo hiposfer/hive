@@ -56,11 +56,11 @@
   Returns a promise that will resolve to a transaction with the
   requested entity"
   [db ref]
-  ;; TODO: dont request if entity already exists in db
-  (let [[url opts] (entity db ref)]
-    (.. (js/fetch url (clj->js opts))
-        (then (fn [^js/Response response] (. response (text))))
-        (then #(edn/read-string {:readers readers} %)))))
+  (async/go
+    (let [[url opts] (entity db ref)
+          response (async/<! (promise/async (js/fetch url (clj->js opts))))
+          body     (async/<! (promise/async (. response (text))))]
+      (edn/read-string {:readers readers} body))))
 
 (defn directions
   "takes a map with the items required by ::request and replaces their values into
@@ -109,8 +109,8 @@
            (async/>! chan [content {:user/uid        user
                                     :user/directions [:directions/uuid (:directions/uuid content)]}])
            (doseq [trip-id (distinct trips)]
-             (let [trip  (async/<! (promise/async (get-entity! db trip-id)))
-                   route (promise/async (get-entity! db (get trip :trip/route)))]
+             (let [trip  (async/<! (get-entity! db trip-id))
+                   route (get-entity! db (get trip :trip/route))]
                (async/>! chan [trip])
                (async/>! chan [(async/<! route)])))))))))
 

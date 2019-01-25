@@ -4,7 +4,6 @@
             [cljs.core.async :as async]
             [react-native :as React]
             [hive.state.core :as state]
-            [hive.services.firebase :as firebase]
             [datascript.core :as data]
             [hive.services.sqlite :as sqlite]
             [hive.state.queries :as queries]
