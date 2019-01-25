@@ -25,6 +25,7 @@
 (def templates
   {:area/directions ["area" ::area "directions"] ;?coordinates={coordinates}&departure={departure}
    :area/entity     ["area" ::area ::entity ::id]
+   :area/gtfs       ["area" ::area "gtfs"]
    :area/meta       ["area" ::area]
    :kamal/areas     ["area"]})
 
@@ -70,8 +71,8 @@
   [db coordinates departure]
   (let [area-id    (data/q queries/user-area-id db)
         query      (query-string {"coordinates" coordinates
-                                  "departure"   (zoned-time departure)})
-                                  ;;"departure"   "2018-05-07T10:15:30+01:00"})
+                                  ;;"departure"   (zoned-time departure)})
+                                  "departure"   "2018-05-07T10:15:30+01:00"})
         url        (assoc server :path (path :area/directions
                                              {::area area-id})
                                  :query query)]
@@ -120,6 +121,23 @@
   (async/go
     (let [resource (path :kamal/areas {})
           uri      (str (assoc server :path resource))
+          ;; TODO: why doesnt fetch has EDN as mime type ?
           response (async/<! (promise/async (js/fetch uri)))
           body     (async/<! (promise/async (. response (text))))]
       (edn/read-string {:readers readers} body))))
+
+(defn query-gtfs!
+  ([db query]
+   (query-gtfs! db query {}))
+  ([db query args]
+   (async/go
+     (let [area-id  (data/q queries/user-area-id db)
+           resource (path :area/gtfs {::area area-id})
+           uri      (assoc server :path resource
+                                  :query (query-string {"q" query
+                                                        "args" args}))
+           opts     {:method  "GET"
+                     :headers {:Accept "application/edn"}}
+           response (async/<! (promise/async (js/fetch (str uri (clj->js opts)))))
+           body     (async/<! (promise/async (. response (text))))]
+       (println (edn/read-string {:readers readers} body))))))
