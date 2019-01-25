@@ -1,6 +1,7 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [expo :as Expo]
+            [cljs.core.async :as async]
             [react-native :as React]
             [hive.state.core :as state]
             [hive.services.firebase :as firebase]
@@ -65,8 +66,8 @@
   (let [session         (data/q queries/session db)
         connection-type (js->clj ConnectionType
                                  :keywordize-keys true)]
-    (state/transact! [(merge {:session/uuid session}
-                             (misc/with-ns "connection" connection-type))])))
+    [(merge {:session/uuid session}
+            (misc/with-ns "connection" connection-type))]))
 
 (defn- init-areas
   "When we start hive for the first time, we dont have any data on the supported
@@ -92,29 +93,29 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (state/transact! [{:session/uuid (data/squuid)
-                     :session/start (js/Date.now)}])
-  ;; firebase related functionality ...............
-  (firebase/init!)
-  ;; restore user data ...........................
-  (.. (sqlite/init!)
-      (then state/transact!)
-      ;; listen only AFTER restoration
-      (then #(sqlite/listen! state/conn))
-      ;; create a user/id placeholder if it doesnt exists
-      (then #(state/transact! [{:user/uid (or (data/q queries/user-id (state/db)) "")}]))
-      ;; execute only after we are sure that we have a user id
-      (then #(state/transact! [[promise/finally [kamal/get-areas!]
-                                                [init-areas (state/db)]]
-                               ;; todo: I guess firebase should handle this?
-                               [firebase/sign-in! (state/db)]
-                               [promise/finally [React/NetInfo.getConnectionInfo]
-                                                [internet-connection-listener (state/db)]]])))
   ;; start listening for events ..................
   (Expo/registerRootComponent (r/reactify-component RootUi))
   ;; handles Android BackButton
   (React/BackHandler.addEventListener "hardwareBackPress" back-listener!)
-  (React/NetInfo.addEventListener "connectionChange" #(internet-connection-listener % (state/db))))
+  (React/NetInfo.addEventListener "connectionChange"
+    #(state/transact! (internet-connection-listener % (state/db))))
 
+  (async/go
+    (state/transact! [{:session/uuid (data/squuid)
+                       :session/start (js/Date.now)}
+                      {:user/uid ""}])
+    ;; firebase related functionality ...............
+    ;; (firebase/init!)
+    ;; restore user data ...........................
+    (let [previous-data (promise/async (sqlite/init!))
+          internet?     (promise/async (React/NetInfo.getConnectionInfo))
+          areas         (kamal/get-areas!)]
+      (state/transact! (async/<! previous-data))
+      ;; listen only AFTER restoration
+      (sqlite/listen! state/conn)
+      ;; execute only after we are sure that we have a user id
+      (state/transact! (init-areas (async/<! areas) (state/db)))
+      (state/transact! (internet-connection-listener (async/<! internet?)
+                                                     (state/db))))))
 ;(. (sqlite/init!) (then cljs.pprint/pprint))
 ;(. (sqlite/clear!) (then cljs.pprint/pprint))

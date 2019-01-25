@@ -37,10 +37,6 @@
   (let [template (get templates k)]
     (str "/" (str/join "/" (replace values template)))))
 
-(defn- read-text [^js/Response response] (. response (text)))
-
-(defn- parse-edn [text] (edn/read-string {:readers readers} text))
-
 (defn entity
   "ref is a map with a single key value pair of the form {:trip/id 2}"
   [db ref]
@@ -121,8 +117,9 @@
 (defn get-areas!
   "fetches the supported areas from kamal"
   []
-  (let [resource (path :kamal/areas {})
-        uri      (str (assoc server :path resource))]
-    (.. (js/fetch uri)
-        (then read-text)
-        (then parse-edn))))
+  (async/go
+    (let [resource (path :kamal/areas {})
+          uri      (str (assoc server :path resource))
+          response (async/<! (promise/async (js/fetch uri)))
+          body     (async/<! (promise/async (. response (text))))]
+      (edn/read-string {:readers readers} body))))
