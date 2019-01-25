@@ -1,6 +1,5 @@
 (ns hive.screens.home.directions
-  (:require [hive.utils.miscelaneous :as tool]
-            [hive.screens.symbols :as symbols]
+  (:require [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
             [reagent.core :as r]
@@ -106,21 +105,15 @@
 
 (defn- RouteSectionTimes
   [props steps]
-  (let [departs      (:step/arrive (first steps))
-        arrives      (:step/arrive (last steps))
-        departs-time (.toLocaleTimeString (new js/Date (* 1000 departs))
-                                          "de-De")
-        arrives-time (.toLocaleTimeString (new js/Date (* 1000 arrives))
-                                          "de-De")]
-    [:> React/View {:width 40 :justifyContent "space-between"}
+  [:> React/View {:width 40 :justifyContent "space-between"}
+    [:> React/Text {:style time-style}
+      (when (or (= "transit" (:step/mode (first steps)))
+                (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
+        (misc/hour-minute (:step/arrive (first steps))))]
+    (when (or (= "transit" (:step/mode (last steps)))
+              (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
       [:> React/Text {:style time-style}
-        (when (or (= "transit" (:step/mode (first steps)))
-                  (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
-          (subs departs-time 0 5))]
-      (when (or (= "transit" (:step/mode (last steps)))
-                (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
-        [:> React/Text {:style time-style}
-                       (subs arrives-time 0 5)])]))
+                     (misc/hour-minute (:step/arrive (last steps)))])])
 
 (defn- RouteSection
   [props steps]
@@ -153,13 +146,14 @@
 
 (defn- Transfers
   [user-route]
-  (let [route @(state/pull! [{:directions/steps
+  (let [route @(state/pull! [:directions/duration
+                             {:directions/steps
                               [:step/arrive
                                :step/mode
                                {:step/trip [{:trip/route [:route/type]}]}]}]
                             user-route)
         sections (partition-by :step/mode (:directions/steps route))]
-    [:> React/View {:width 100 :flexDirection "row" :justifyContent "flex-start"
+    [:> React/View {:width "40%" :flexDirection "row" :justifyContent "flex-start"
                     :alignItems "center" :padding 5}
       (butlast ;; drop last arrow icon
         (interleave
@@ -169,7 +163,10 @@
           (for [i (range (count sections))]
             ^{:key i}
             [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"
-                                 :style {:paddingHorizontal 10}}])))]))
+                                 :style {:paddingHorizontal 10}}])))
+     [:> React/Text {:style {:color "gray" :paddingTop "2.5%" :paddingLeft "10%"
+                             :paddingRight 25}}
+       (duration/format (* 1000 (:directions/duration route)))]]))
 
 (defn- previous-routes
   [db]
@@ -217,8 +214,9 @@
 
 (defn- Info
   [props user-route]
-  (let [route    @(state/pull! [:directions/duration] user-route)
-        ;; check if there are any previous directions that we can go back to
+  ;; check if there are any previous directions that we can go back to
+  (let [route    @(state/pull! [{:directions/steps [:step/arrive]}]
+                               user-route)
         previous  (previous-routes (state/db))
         alignment (if (not-empty previous) "space-between" "flex-end")
         ;; goal - cannot change during this component lifetime
@@ -227,10 +225,11 @@
       [:> React/View {:flexDirection "row" :paddingLeft "1.5%"
                       :justifyContent "space-between"}
        [Transfers user-route]
-       [:> React/Text {:style {:color "gray" :paddingTop "2.5%" :paddingLeft "10%"
-                               :paddingRight 25}}
-        (when (some? route)
-          (duration/format (* 1000 (:directions/duration route))))]]
+       [:> React/View {:paddingRight 20}
+         [:> React/Text {:style {:color "gray"}}
+           (misc/hour-minute (:step/arrive (first (:directions/steps route))))]
+         [:> React/Text {:style {:color "gray"}}
+           (misc/hour-minute (:step/arrive (last (:directions/steps route))))]]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} (:place/text goal)]
       [:> React/View {:flexDirection "row" :justifyContent alignment}
         (when (not-empty previous)
@@ -278,7 +277,7 @@
 
    Async, some data might be missing when rendered !!"
   [props]
-  (r/with-let [window       (tool/keywordize (React/Dimensions.get "window"))
+  (r/with-let [window       (misc/keywordize (React/Dimensions.get "window"))
                route        (state/q! queries/user-route)
                bbox         (state/q! queries/user-area-bbox)
                position     (state/q! queries/user-position)

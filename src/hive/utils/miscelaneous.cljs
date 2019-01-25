@@ -88,3 +88,10 @@
 (defn channel?
   [x]
   (satisfies? cljs.core.async.impl.protocols/Channel x))
+
+(defn hour-minute
+  "returns the epoch-seconds time as HH:MM in the local time"
+  [epoch-seconds]
+  (let [text (.toLocaleTimeString (new js/Date (* 1000 epoch-seconds))
+                                  "de-De")]
+    (subs text 0 5)))
