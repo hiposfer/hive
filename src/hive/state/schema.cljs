@@ -44,7 +44,8 @@
                                        :db/cardinality :db.cardinality/many
                                        :db/isComponent true}
                :step/maneuver         {:db/valueType   :db.type/ref
-                                       :db/cardinality :db.cardinality/one}
+                                       :db/cardinality :db.cardinality/one
+                                       :db/isComponent true}
                :step/trip             {:db/valueType   :db.type/ref
                                        :db/cardinality :db.cardinality/one}
                ;; needed to tell datascript to keep only 1 of these
