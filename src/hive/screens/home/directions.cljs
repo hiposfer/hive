@@ -173,6 +173,19 @@
             [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "gray"
                                  :style {:paddingHorizontal 10}}])))]))
 
+(defn- on-previous-pressed
+  [db]
+  (let [user-id  (data/q queries/user-entity db)
+        user     (data/entity db user-id)
+        previous (data/q '[:find ?uuid .
+                           :where [_ :user/directions _ ?current]
+                                  [_ :directions/uuid ?uuid ?other]
+                                  [(< ?other ?current)]]
+                         db)]
+    (when (some? previous)
+      [{:user/uid        (:user/uid user)
+        :user/directions [:directions/uuid previous]}])))
+
 (defn- on-next-pressed
   [db]
   (let [user-id  (data/q queries/user-entity db)
@@ -187,7 +200,8 @@
         next     (data/q '[:find ?uuid .
                            :where [_ :user/directions _ ?current]
                                   [_ :directions/uuid ?uuid ?other]
-                                  [(< ?current ?other)]])]
+                                  [(< ?current ?other)]]
+                         db)]
     (if (some? next)
       [{:user/uid (:user/uid user)
         :user/directions [:directions/uuid next]}]
@@ -205,16 +219,19 @@
         ;; goal - cannot change during this component lifetime
         goal      (data/entity (state/db) (data/q queries/user-goal (state/db)))]
     [:> React/View props
-      [:> React/View {:flexDirection "row" :paddingLeft "1.5%" :justifyContent "space-between"}
+      [:> React/View {:flexDirection "row" :paddingLeft "1.5%"
+                      :justifyContent "space-between"}
        [Transfers user-route]
-       [:> React/Text {:style {:color        "gray" :paddingTop "2.5%" :paddingLeft "10%"
+       [:> React/Text {:style {:color "gray" :paddingTop "2.5%" :paddingLeft "10%"
                                :paddingRight 25}}
         (when (some? route)
           (duration/format (* 1000 (:directions/duration route))))]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} (:place/text goal)]
       [:> React/View {:flexDirection "row" :justifyContent alignment}
         (when (some? previous)
-          [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5 :alignItems "center"}}
+          [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5
+                                              :alignItems "center"}
+                                      :onPress #(state/transact! (on-previous-pressed (state/db)))}
             [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
                                  :style {:paddingRight 5}}]
             [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
