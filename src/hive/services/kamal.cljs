@@ -70,8 +70,8 @@
   [db coordinates departure]
   (let [area-id    (data/q queries/user-area-id db)
         query      (query-string {"coordinates" coordinates
-                                  ;;"departure"   (zoned-time departure)
-                                  "departure"   "2018-05-07T10:15:30+01:00"})
+                                  "departure"   (zoned-time departure)})
+                                  ;;"departure"   "2018-05-07T10:15:30+01:00"})
         url        (assoc server :path (path :area/directions
                                              {::area area-id})
                                  :query query)]
