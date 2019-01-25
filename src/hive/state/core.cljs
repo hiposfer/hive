@@ -132,7 +132,7 @@
         (. item (then transact!))
 
         (tool/channel? item)
-        (async/map transact! [item])
+        (async/reduce (fn [_ tx] (transact! tx)) nil item)
 
         :else
         (identity item)))))

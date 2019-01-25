@@ -1,7 +1,9 @@
 (ns hive.state.middleware.logger
   (:require [datascript.core :as data]
             [hive.utils.miscelaneous :as tool]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [cljs.core.async :as async]
+            [cljs.core.async.impl.protocols :as async-pro]))
 
 (defn munge-transaction
   "replaces not printable objects with custom ones for better debugging"
@@ -39,12 +41,24 @@
                 (js/console.log (str origin-id)
                                 #js {:type   "promise"
                                      :status "resolved"
-                                     :value  (pr-str tx)}))
-              (identity result)))
+                                     :value  (pr-str tx)})
+                (identity result))))
       (catch (fn [error] (js/console.warn (str origin-id)
                                           #js {:type   "promise"
                                                :status "rejected"
                                                :error  error})))))
+
+(defn- link-channel
+  [origin-id chan]
+  (async/map (fn [value]
+               (let [tx (walk/postwalk munge-transaction value)]
+                 (js/console.log (str origin-id)
+                                 #js {:type   "channel"
+                                      :status (if (async-pro/closed? chan)
+                                                "closed" "open")
+                                      :value  (pr-str tx)})
+                 (identity value)))
+             [chan]))
 
 (defn logger
   "returns a middleware that will call the middleware chain after logging its arguments"
@@ -62,4 +76,7 @@
         (doseq [item result :when (tool/promise? item)]
           (link-promise! id item))
         ;; return transaction
-        (identity result)))))
+        (for [item result]
+          (if (not (tool/channel? item))
+            (identity item)
+            (link-channel id item)))))))

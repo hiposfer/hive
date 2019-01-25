@@ -116,7 +116,8 @@
              (let [trip  (async/<! (promise/async (get-entity! db trip-id)))
                    route (promise/async (get-entity! db (get trip :trip/route)))]
                (async/>! chan [trip])
-               (async/>! chan [(async/<! route)])))))))))
+               (async/>! chan [(async/<! route)])
+               (async/close! chan)))))))))
 
 (defn get-areas!
   "fetches the supported areas from kamal"
