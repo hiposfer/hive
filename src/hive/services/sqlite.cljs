@@ -32,7 +32,7 @@
   [entity]
   (reduce-kv (fn [_ k v]
                (when (and (= :sqlite/store (get v :hive.storage))
-                          (= :db.unique/identity (get v :db.unique))
+                          (= :db.unique/identity (get v :db/unique))
                           (some? (get entity k)))
                  (reduced true)))
              nil
@@ -48,7 +48,7 @@
   (let [db      (:db-after tx-report)
         entity  (data/entity db (:e datom))
         storage (get-in schema/schema [(:a datom) :hive.storage])
-        _type   (get-in schema/schema [(:a datom) :db.valueType])]
+        _type   (get-in schema/schema [(:a datom) :db/valueType])]
     (cond
       ;; attribute explicitly marked as ignore - do not sync
       (= :sqlite/ignore storage)
