@@ -126,18 +126,16 @@
           body     (async/<! (promise/async (. response (text))))]
       (edn/read-string {:readers readers} body))))
 
-(defn query-gtfs!
-  ([db query]
-   (query-gtfs! db query {}))
-  ([db query args]
-   (async/go
-     (let [area-id  (data/q queries/user-area-id db)
-           resource (path :area/gtfs {::area area-id})
-           uri      (assoc server :path resource
-                                  :query (query-string {"q" query
-                                                        "args" args}))
-           opts     {:method  "GET"
-                     :headers {:Accept "application/edn"}}
-           response (async/<! (promise/async (js/fetch (str uri (clj->js opts)))))
-           body     (async/<! (promise/async (. response (text))))]
-       (println (edn/read-string {:readers readers} body))))))
+(defn query!
+  [db query & args]
+  (async/go
+    (let [area-id  (data/q queries/user-area-id db)
+          resource (path :area/gtfs {::area area-id})
+          uri      (assoc server :path resource
+                                 :query (query-string {"q" query
+                                                       "args" args}))
+          opts     {:method  "GET"
+                    :headers {:Accept "application/edn"}}
+          response (async/<! (promise/async (js/fetch (str uri (clj->js opts)))))
+          body     (async/<! (promise/async (. response (text))))]
+      (println (edn/read-string {:readers readers} body)))))
