@@ -15,6 +15,7 @@
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.screens.home.directions.core :as directions]
+            [hive.screens.home.directions.trip-overview :as trip-overview]
             [hive.services.kamal :as kamal]))
 
 (defn RootUi []
@@ -27,10 +28,11 @@
       :navigate  - most common way to navigate to the next screen
       :setParams - used to change the params for the current screen}"
   (let [Navigator (rn-nav/stack-navigator
-                    {:home        {:screen (rn-nav/stack-screen home/Screen)}
-                     :directions  {:screen (rn-nav/stack-screen directions/Screen)}
-                     :settings    {:screen (rn-nav/stack-screen settings/Screen)}
-                     :select-city {:screen (rn-nav/stack-screen city-picker/Screen)}}
+                    {:home          {:screen (rn-nav/stack-screen home/Screen)}
+                     :directions    {:screen (rn-nav/stack-screen directions/Screen)}
+                     :trip-overview {:screen (rn-nav/stack-screen trip-overview/Screen)}
+                     :settings      {:screen (rn-nav/stack-screen settings/Screen)}
+                     :select-city   {:screen (rn-nav/stack-screen city-picker/Screen)}}
                     {:headerMode "none"})]
     [router/Router {:root Navigator :init "home"}]))
 

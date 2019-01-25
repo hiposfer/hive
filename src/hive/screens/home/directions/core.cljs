@@ -75,9 +75,10 @@
 
 (defn- StepOverviewMsg
   [props steps]
-  (let [navigate (:navigate (:navigation props))]
+  (let [navigate (:navigate (:navigation props))
+        trip     (:step/trip (first steps))]
     [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}
-                                :onPress #(navigate "trip-overview")}
+                                :onPress #(navigate "trip-overview" trip)}
       [:> React/View {:flex-direction "row" :alignItems "center"}
         [:> React/View {:paddingRight 10 :with 32}
           [SectionIcon steps]]
@@ -136,7 +137,8 @@
                                  {:step/maneuver [:maneuver/instruction
                                                   :maneuver/type]}
                                  :step/distance
-                                 {:step/trip [{:trip/route [:route/long_name
+                                 {:step/trip [:trip/id
+                                              {:trip/route [:route/long_name
                                                             :route/short_name
                                                             :route/type
                                                             :route/color]}]}]}]
