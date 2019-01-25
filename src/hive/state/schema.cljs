@@ -25,11 +25,11 @@
               {:user/uid              {:db.unique    :db.unique/identity
                                        :hive.storage :sqlite/store}
                :user/password         {:hive.storage :sqlite/ignore}
-               :user/area             {:db.valueType   :db.type/ref
+               :user/area             {::db/valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
-               :user/goal             {:db.valueType   :db.type/ref
+               :user/goal             {::db/valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
-               :user/directions       {:db.valueType   :db.type/ref
+               :user/directions       {::db/valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                ;; server support data
                :area/id               {:db.unique    :db.unique/identity
@@ -40,11 +40,12 @@
                :session/uuid          {:db.unique :db.unique/identity}
                ;; server response data
                :directions/uuid       {:db.unique :db.unique/identity}
-               :directions/steps      {:db.valueType   :db.type/ref
-                                       :db.cardinality :db.cardinality/many}
-               :step/maneuver         {:db.valueType   :db.type/ref
+               :directions/steps      {:db/valueType   :db.type/ref
+                                       :db.cardinality :db.cardinality/many
+                                       :db/isComponent true}
+               :step/maneuver         {::db/valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
-               :step/trip             {:db.valueType   :db.type/ref
+               :step/trip             {::db/valueType   :db.type/ref
                                        :db.cardinality :db.cardinality/one}
                ;; needed to tell datascript to keep only 1 of these
                :react.navigation/name {:db.unique :db.unique/identity}

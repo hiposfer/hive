@@ -33,6 +33,15 @@
   [promise]
   (let [result (async/promise-chan)]
     (.. promise
+        (then (fn [value] (async/put! result value))))
+    result))
+
+(defn async!
+  "same as async but it also catches any exception thrown in the promise and
+  puts it into the channel"
+  [promise]
+  (let [result (async/promise-chan)]
+    (.. promise
         (then (fn [value] (async/put! result value)))
         (catch (fn [error] (async/put! result error))))
     result))
