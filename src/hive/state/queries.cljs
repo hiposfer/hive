@@ -8,8 +8,7 @@
 
 ;; not safe to use since the user might change uid on sign in/up
 ;; the uid change break pull patterns based on [:user/uid v]
-;; DEPRECATED - prefer user-entity
-(def user-id
+(def user-id "DEPRECATED - prefer user-entity"
   '[:find ?uid .
     :where [_ :user/uid ?uid]])
 
@@ -22,6 +21,12 @@
                                            [?area :area/bbox ?bbox]])
 
 (def user-entity '[:find ?e . :where [?e :user/uid]])
+
+(def user-goal '[:find ?e . :where [?user :user/uid]
+                                   [?user :user/goal ?e]])
+
+(def user-route '[:find ?route .
+                  :where [_ :user/directions ?route]])
 
 (def user-position '[:find ?position . :where [?user :user/uid]
                                               [?user :user/position ?position]])
@@ -40,4 +45,3 @@
 
 (def routes-ids '[:find [?routes ...]
                   :where [_ :directions/uuid ?routes]])
-

@@ -18,7 +18,8 @@
                  [hiposfer/rata "0.2.0"]
                  ;; gtfs specification
                  [hiposfer/gtfs.edn "0.2.0"]
-                 [hiposfer/geojson.specs "0.2.0"]]
+                 [hiposfer/geojson.specs "0.2.0"]
+                 [org.clojure/core.async "0.4.490"]]
   :plugins [[lein-cljsbuild "1.1.4"]
             [lein-figwheel "0.5.14"]]
   :clean-targets ["target/" "main.js"]

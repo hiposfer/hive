@@ -5,11 +5,21 @@ jdk:
 node_js: "8"
 install: yarn install
 
-script:
-  - lein do clean, compile, check, simple-release
-  - yarn run expo-cli login -u ${EXP_USERNAME} -p ${EXP_PASSWORD} --non-interactive
-  - yarn run expo-cli publish --release-channel ${TRAVIS_PULL_REQUEST_BRANCH}
-
 notifications:
   email:
-    on_success: always
+    on_success: change
+
+jobs:
+  include:
+    - stage: Tests
+      script:
+        - lein do clean, compile, check, simple-release
+        - yarn run expo-cli login -u ${EXP_USERNAME} -p ${EXP_PASSWORD} --non-interactive
+        - yarn run expo-cli publish --release-channel ${TRAVIS_PULL_REQUEST_BRANCH}
+
+    - stage: Staging
+      if: branch = master
+      script:
+        - lein simple-release
+        - yarn run expo-cli login -u ${EXP_USERNAME} -p ${EXP_PASSWORD} --non-interactive
+        - yarn run expo-cli publish

@@ -1,9 +1,9 @@
 (ns hive.core
   (:require [reagent.core :as r]
             [expo :as Expo]
+            [cljs.core.async :as async]
             [react-native :as React]
             [hive.state.core :as state]
-            [hive.services.firebase :as firebase]
             [datascript.core :as data]
             [hive.services.sqlite :as sqlite]
             [hive.state.queries :as queries]
@@ -11,35 +11,12 @@
             [hive.utils.promises :as promise]
             [hive.screens.home.core :as home]
             [hive.screens.home.gtfs :as gtfs]
-            [hive.screens.errors :as errors]
             [hive.screens.router :as router]
             [hive.screens.settings.core :as settings]
             [hive.screens.settings.city-picker :as city-picker]
             [cljs-react-navigation.reagent :as rn-nav]
             [hive.screens.home.directions :as route]
             [hive.services.kamal :as kamal]))
-
-(defn- MessageTray
-  [props]
-  (let [id      @(state/q! queries/session)
-        alert   @(state/pull! [:session/alert]
-                             [:session/uuid id])]
-    (when-not (empty? (:session/alert alert))
-      [:> React/View {:flex 1 :justifyContent "flex-end" :alignItems "center"
-                      :bottom 0 :width "100%" :height "5%" :position "absolute"}
-        [:> React/Text
-          {:style {:width "100%" :height "100%" :textAlign "center"
-                   :backgroundColor "grey" :color "white"}
-           :onPress #(state/transact! [{:session/uuid id :session/alert {}}])}
-          (:session/alert alert)]])))
-
-(defn- screenify
-  [component]
-  (rn-nav/stack-screen
-    (fn [props]
-      [:> React/View {:flex 1 :alignItems "stretch"}
-        [component props]
-        [MessageTray props]])))
 
 (defn RootUi []
   "Each Screen will receive two props:
@@ -51,12 +28,11 @@
       :navigate  - most common way to navigate to the next screen
       :setParams - used to change the params for the current screen}"
   (let [Navigator (rn-nav/stack-navigator
-                    {:home           {:screen (screenify home/Home)}
-                     :directions     {:screen (screenify route/Instructions)}
-                     :gtfs           {:screen (screenify gtfs/Data)}
-                     :settings       {:screen (screenify settings/Settings)}
-                     :select-city    {:screen (screenify city-picker/Selector)}
-                     :location-error {:screen (screenify errors/UserLocation)}}
+                    {:home           {:screen (rn-nav/stack-screen home/Home)}
+                     :directions     {:screen (rn-nav/stack-screen route/Instructions)}
+                     :gtfs           {:screen (rn-nav/stack-screen gtfs/Data)}
+                     :settings       {:screen (rn-nav/stack-screen settings/Settings)}
+                     :select-city    {:screen (rn-nav/stack-screen city-picker/Selector)}}
                     {:headerMode "none"})]
     [router/Router {:root Navigator :init "home"}]))
 
@@ -85,10 +61,12 @@
 
 (defn- internet-connection-listener
   "Listens to connection changes mainly for internet access."
-  [connected]
-  (let [sid @(state/q! queries/session)]
-    (if-not connected
-      (state/transact! [{:session/uuid sid :session/alert "You are offline."}]))))
+  [ConnectionType db]
+  (let [session         (data/q queries/session db)
+        connection-type (js->clj ConnectionType
+                                 :keywordize-keys true)]
+    [(merge {:session/uuid session}
+            (misc/with-ns "connection" connection-type))]))
 
 (defn- init-areas
   "When we start hive for the first time, we dont have any data on the supported
@@ -114,29 +92,29 @@
 (defn init!
   "register the main UI component in React Native"
   []
-  (state/transact! [{:session/uuid (data/squuid)
-                     :session/start (js/Date.now)}])
-  ;; firebase related functionality ...............
-  (firebase/init!)
-  ;; restore user data ...........................
-  (.. (sqlite/init!)
-      (then state/transact!)
-      ;; listen only AFTER restoration
-      (then #(sqlite/listen! state/conn))
-      ;; create a user/id placeholder if it doesnt exists
-      (then #(state/transact! [{:user/uid (or (data/q queries/user-id (state/db)) "")}]))
-      ;; execute only after we are sure that we have a user id
-      (then #(state/transact! [[promise/finally [kamal/get-areas!]
-                                                [init-areas (state/db)]]
-                               ;; todo: I guess firebase should handle this?
-                               [firebase/sign-in! (state/db)]])))
   ;; start listening for events ..................
   (Expo/registerRootComponent (r/reactify-component RootUi))
   ;; handles Android BackButton
-  (React/BackHandler.addEventListener "hardwareBackPress"
-                                      back-listener!)
-  (React/NetInfo.isConnected.addEventListener "connectionChange"
-                                              internet-connection-listener))
+  (React/BackHandler.addEventListener "hardwareBackPress" back-listener!)
+  (React/NetInfo.addEventListener "connectionChange"
+    #(state/transact! (internet-connection-listener % (state/db))))
 
+  (async/go
+    (state/transact! [{:session/uuid (data/squuid)
+                       :session/start (js/Date.now)}
+                      {:user/uid ""}])
+    ;; firebase related functionality ...............
+    ;; (firebase/init!)
+    ;; restore user data ...........................
+    (let [previous-data (promise/async (sqlite/init!))
+          internet?     (promise/async (React/NetInfo.getConnectionInfo))
+          areas         (kamal/get-areas!)]
+      (state/transact! (async/<! previous-data))
+      ;; listen only AFTER restoration
+      (sqlite/listen! state/conn)
+      ;; execute only after we are sure that we have a user id
+      (state/transact! (init-areas (async/<! areas) (state/db)))
+      (state/transact! (internet-connection-listener (async/<! internet?)
+                                                     (state/db))))))
 ;(. (sqlite/init!) (then cljs.pprint/pprint))
 ;(. (sqlite/clear!) (then cljs.pprint/pprint))

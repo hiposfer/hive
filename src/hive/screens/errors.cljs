@@ -1,12 +1,11 @@
 (ns hive.screens.errors
   (:require [react-native :as React]
             [expo :as Expo]
-            [hive.assets :as fl]
-            [hive.utils.miscelaneous :as tool]
-            [hive.state.core :as state]
-            [hive.assets :as assets]))
+            [hive.assets :as assets]
+            [hive.utils.miscelaneous :as misc]
+            [hive.state.core :as state]))
 
-(defn- launch-location-settings
+(defn- on-enable-gps-pressed
   "launch the android location settings hoping that the user enables the gps"
   [goBack]
   (if (= "android" React/Platform.OS)
@@ -14,49 +13,52 @@
       [[Expo/IntentLauncherAndroid.startActivityAsync settings]
        [goBack]])))
 
-(defn UserLocation
+(defn LocationUnknown
   [props]
-  (let [dims   (tool/keywordize (React/Dimensions.get "window"))
+  (let [dims   (misc/keywordize (React/Dimensions.get "window"))
         goBack (:goBack (:navigation props))]
-    [:> React/View {:flex 1 :backgroundColor "white" :paddingVertical "20%"
-                    :elevation 5 :shadowColor "#000000"
-                    :shadowRadius 5 :shadowOffset {:width 0 :height 3}
-                    :shadowOpacity 1.0}
-     [:> React/Image {:style  {:width (* (:width dims) 0.8)
-                               :height (* (:height dims) 0.5)
-                               :resizeMode "contain" :flex 1}
-                      :source fl/thumb-run}]
-     [:> React/View {:height 200 :alignItems "center"}
-      [:> React/Text {:style {:flexWrap "wrap"}}
-        "We couldn't find your current location"]
-      [:> React/Text]
-      [:> React/Text "Please enable your GPS to continue"]
-      [:> React/View {:flexDirection "row" :alignItems "flex-start" :flex 1}
-       [:> React/TouchableOpacity
-         {:style {:borderRadius 5 :backgroundColor "red" :height 40 :width 60
-                  :justifyContent "center" :alignItems "center"}
-          :on-press #(goBack)}
-         [:> assets/Ionicons {:name "ios-close-circle" :size 30}]]
-       [:> React/TouchableOpacity
-         {:on-press #(state/transact! (launch-location-settings goBack))
-          :style {:borderRadius 5 :backgroundColor "lawngreen"
-                  :height 40 :width 60 :flexDirection "row"
-                  :alignItems "center" :justifyContent "space-around"}}
-         [:> assets/Ionicons {:name "ios-checkmark-circle" :size 30}]]]]]))
+    [:> React/View {:flex 1 :alignItems "center" :justifyContent "center"}
+      [:> React/Image {:source assets/thumb-run
+                       :style  {:width (* (:width dims) 0.8)
+                                :height (* (:height dims) 0.4)
+                                :resizeMode "contain"}}]
+      [:> React/Text {:style {:width 250 :height 40 :fontSize 16
+                              :fontWeight "bold" :textAlign "center"}}
+                     "Can you please enable your GPS?"]
+      [:> React/View {:paddingTop 25}
+        [:> React/TouchableOpacity
+          {:on-press #(state/transact! (on-enable-gps-pressed goBack))
+           :style {:borderRadius 5 :backgroundColor "#64AE2F"
+                   :alignItems "center" :justifyContent "center"
+                   :height 40 :width 100}}
+         [:> React/Text {:fontSize 18 :style {:color "white"}} "OK"]]]]))
 
-;; TODO: bring this back when needed
-;(defn no-internet
-;  "display a nice little monster asking for internet connection"
-;  []
-;  (let [dims (tool/keywordize (oops/ocall fl/React "Dimensions.get" "window"))]
-;    [:> base/Container
-;     [:> base/Content {:style {:padding 10}}
-;      [:> base/Card {:style {:width (* (:width dims) 0.95)}}
-;       [:> base/CardItem {:cardBody true}
-;        [:> React/Image {:style  {:width (* (:width dims) 0.9)
-;                                  :height (* (:height dims) 0.8)
-;                                  :resizeMode "contain" :flex 1}
-;                         :source fl/thumb-sign}]]]]]))
+(defn- on-enable-internet-pressed
+  "launch the android location settings hoping that the user enables the gps"
+  [goBack]
+  (if (= "android" React/Platform.OS)
+    (let [settings Expo/IntentLauncherAndroid.ACTION_SETTINGS]
+      [[Expo/IntentLauncherAndroid.startActivityAsync settings]
+       [goBack]])))
 
 
-;hive.rework.state/conn
+(defn InternetMissing
+  "display a nice little monster asking for internet connection"
+  [props]
+  (let [dims   (misc/keywordize (React/Dimensions.get "window"))
+        goBack (:goBack (:navigation props))]
+    [:> React/View {:flex 1 :alignItems "center" :justifyContent "center"}
+       [:> React/Image {:source assets/thumb-sign
+                        :style  {:width (* (:width dims) 0.8)
+                                 :height (* (:height dims) 0.4)
+                                 :resizeMode "contain"}}]
+       [:> React/Text {:style {:width 250 :height 40 :fontSize 16 :fontWeight "bold"
+                               :textAlign "center"}}
+                      "Can you please enable your internet connection?"]
+       [:> React/View {:paddingTop 25}
+         [:> React/TouchableOpacity
+            {:on-press #(state/transact! (on-enable-internet-pressed goBack))
+             :style {:borderRadius 5 :backgroundColor "#64AE2F"
+                     :alignItems "center" :justifyContent "center"
+                     :height 40 :width 100}}
+           [:> React/Text {:fontSize 18 :style {:color "white"}} "OK"]]]]))

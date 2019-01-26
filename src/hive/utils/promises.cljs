@@ -1,5 +1,6 @@
 (ns hive.utils.promises
-  "utility functions to get better integration of promises with transact!")
+  "utility functions to get better integration of promises with transact!"
+  (:require [cljs.core.async :as async]))
 
 (defn guard
   "guards the execution of an effect promise with a catch statement that will
@@ -26,3 +27,21 @@
         (then (fn [result] (apply f (cons result args))))
         (catch (fn [error] (apply f (cons error args)))))))
 
+(defn async
+  "takes a promise and returns a promise channel that can be used for asynchronous
+  coordination with core.async"
+  [promise]
+  (let [result (async/promise-chan)]
+    (.. promise
+        (then (fn [value] (async/put! result value))))
+    result))
+
+(defn async!
+  "same as async but it also catches any exception thrown in the promise and
+  puts it into the channel"
+  [promise]
+  (let [result (async/promise-chan)]
+    (.. promise
+        (then (fn [value] (async/put! result value)))
+        (catch (fn [error] (async/put! result error))))
+    result))

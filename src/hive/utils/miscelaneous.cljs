@@ -66,11 +66,25 @@
       -scalar))
 
 (defn roundtrip
-  "takes an custom Js Object, stringifies through JSON and reads
+  "HACK: takes an instance of a Js Class, stringifies through JSON and reads
   it back as a clojure map.
 
-  Useful for cases where js->clj doesnt work"
+  Useful for cases where js->clj does't work due to the instance not being
+  a native js object"
   [object]
   (let [text (js/JSON.stringify object)
         parsed (js/JSON.parse text)]
     (js->clj parsed :keywordize-keys true)))
+
+(def nullify (constantly nil))
+
+(defn channel?
+  [x]
+  (satisfies? cljs.core.async.impl.protocols/Channel x))
+
+(defn hour-minute
+  "returns the epoch-seconds time as HH:MM in the local time"
+  [epoch-seconds]
+  (let [text (.toLocaleTimeString (new js/Date (* 1000 epoch-seconds))
+                                  "de-De")]
+    (subs text 0 5)))

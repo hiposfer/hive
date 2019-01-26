@@ -42,8 +42,8 @@
         :when (map? child)
         :when (some #{:coordinates :coordinate} (keys child))]
     (if (some? (:coordinates child))
-      {:type "LineString" :coordinates (map coordinate child)}
-      {:type "Point" :coordinates (coordinate child)})))
+      {:type "LineString" :coordinates (map coordinate (:coordinates child))}
+      {:type "Point" :coordinates (coordinate (:coordinate child))})))
 
 (defn mapview-region
   [{:keys [children bbox position]}]
@@ -53,9 +53,10 @@
                              [(:geometry position)]))
         coll       (merge {:type       "GeometryCollection"
                            :geometries geometries}
-                          (when (some? bbox) {:bbox bbox}))
+                          (when (and (some? bbox) (empty? children))
+                            {:bbox bbox}))
         [minx, miny, maxx, maxy] (geojson/bbox coll)]
     {:latitude (/ (+ miny maxy) 2)
      :longitude (/ (+ maxx minx) 2)
-     :latitudeDelta (/ (Math/abs (- miny maxy)) 4)
-     :longitudeDelta (/ (Math/abs (- maxx minx)) 4)}))
+     :latitudeDelta (+ (Math/abs (- miny maxy)) map-padding)
+     :longitudeDelta (+ (Math/abs (- maxx minx)) map-padding)}))
