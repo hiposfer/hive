@@ -19,18 +19,6 @@
   [o]
   (js->clj o :keywordize-keys true))
 
-(defn validate
-  "validates the request against the provided spec. Returns the request if valid
-  or an ex-info with cause otherwise"
-  ([spec value cause]
-   (if (s/valid? spec value) value
-     (ex-info (s/explain-str spec value)
-              (assoc (s/explain-data spec value) ::reason cause))))
-  ([spec cause]
-   (fn validate* [value] (validate spec value cause)))
-  ([spec]
-   (fn validate* [value] (validate spec value ::invalid-data))))
-
 (defn error?
   "checks if o is an instance of the Javascript base type Error"
   [o] (instance? js/Error o))
@@ -88,3 +76,26 @@
   (let [text (.toLocaleTimeString (new js/Date (* 1000 epoch-seconds))
                                   "de-De")]
     (subs text 0 5)))
+
+(def default-color "#3bb2d0")
+
+(defn route-color
+  [route]
+  (or (:route/color route)
+      (when (some? route)
+        (color (str (or (:route/long_name route)
+                        (:route/short_name route)))))
+      default-color))
+
+(defn seconds-of-day
+  [^js/Date date]
+  (+ (. date (getSeconds))
+     (* 60 (+ (. date (getMinutes))
+              (* 60 (. date (getHours)))))))
+
+(defn datoms->map
+  [datoms replacements]
+  (into {} (for [[_ a v] datoms]
+             (if (contains? replacements a)
+               [a (get replacements a)]
+               [a v]))))

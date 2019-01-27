@@ -18,19 +18,9 @@
 (def micro-circle 3)
 (def section-height {"walking" 90 "transit" 120})
 
-(def default-color "#3bb2d0")
-
-(defn- route-color
-  [route]
-  (or (:route/color route)
-      (when (some? route)
-        (misc/color (str (or (:route/long_name route)
-                             (:route/short_name route)))))
-      default-color))
-
 (defn- TransitLine
   [steps]
-  (let [stroke      (route-color (:trip/route (:step/trip (first steps))))]
+  (let [stroke      (misc/route-color (:trip/route (:step/trip (first steps))))]
     [:> React/View {:width 20 :alignItems "center"}
       [:> React/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
@@ -265,7 +255,7 @@
                             user-route)]
     (for [steps (partition-by :step/mode (:directions/steps route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
-                stroke (route-color (:trip/route (:step/trip (first steps))))]]
+                stroke (misc/route-color (:trip/route (:step/trip (first steps))))]]
       ^{:key (hash steps)}
       [:> Expo/MapView.Polyline {:coordinates (map geometry/latlng coords)
                                  :strokeColor stroke
@@ -277,9 +267,6 @@
     [:db.fn/retractEntity [:directions/uuid r]]))
 
 (defn Screen
-  "basic navigation directions.
-
-   Async, some data might be missing when rendered !!"
   [props]
   (r/with-let [window       (misc/keywordize (React/Dimensions.get "window"))
                route        (state/q! queries/user-route)
