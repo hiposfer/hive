@@ -93,6 +93,13 @@
      (* 60 (+ (. date (getMinutes))
               (* 60 (. date (getHours)))))))
 
+(defn time-since-midnight
+  [seconds]
+  (let [now (new js/Date)]
+    (doto now (.setHours 0 0 0 0)
+              (.setSeconds seconds))
+    (hour-minute (/ (. now (getTime)) 1000))))
+
 (defn datoms->map
   [datoms replacements]
   (into {} (for [[_ a v] datoms]
