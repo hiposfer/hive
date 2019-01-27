@@ -68,7 +68,10 @@
   (let [navigate (:navigate (:navigation props))
         trip     (:step/trip (first steps))]
     [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}
-                                :onPress #(navigate "trip-overview" trip)}
+                                :onPress #(state/transact! [[navigate "trip-overview" trip]
+                                                            [kamal/get-trip-details! (state/db)
+                                                                                     "2018-05-07T10:15:30+01:00"
+                                                                                     (:trip/id trip)]])}
       [:> React/View {:flex-direction "row" :alignItems "center"}
         [:> React/View {:paddingRight 10 :with 32}
           [SectionIcon steps]]

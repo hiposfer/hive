@@ -9,7 +9,18 @@
             [hive.utils.promises :as promise])
   (:import (goog.date DateTime)))
 
-(def readers {'uuid uuid})
+(def java-readers
+  {'java.time.LocalDate identity})
+
+(defn- read-java-object
+  [[package _ value :as object]]
+  (let [reader (get java-readers package)]
+    (if (not (some? reader))
+      (throw (ex-info (str "missing native reader tag: " package) object))
+      (reader value))))
+
+(def readers {'uuid uuid
+              'object read-java-object})
 
 (defn zoned-time
   "returns a compatible Java LocalDateTime string representation"
