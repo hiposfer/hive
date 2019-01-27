@@ -12,7 +12,6 @@
   (:import (goog.date DateTime)))
 
 (def big-circle 16)
-(def micro-circle 3)
 (def section-height {"walking" 90 "transit" 120})
 
 (defn- TransitLine
@@ -111,18 +110,30 @@
 
    Async, some data might be missing when rendered !!"
   [props]
-  (let [trip-id (:trip/id (:params (:state (:navigation props))))
-        route   (state/q! queries/user-route)
-        trip    @(state/pull! [:trip/headsign
-                               {:trip/route [:route/type
-                                             :route/short_name]}]
-                              [:trip/id trip-id])]
-    [:> React/ScrollView {:flex 1}
+  (let [trip-id   (:trip/id (:params (:state (:navigation props))))
+        route     (state/q! queries/user-route)
+        datoms    @(state/q! queries/frequency-trip
+                             trip-id
+                             (misc/seconds-of-day (new js/Date "2018-05-07T10:15:30+01:00")))
+        frequency (misc/datoms->map datoms {})
+        trip      @(state/pull! [:trip/headsign
+                                 {:trip/service [:service/monday
+                                                 :service/tuesday
+                                                 :service/wednesday
+                                                 :service/thursday
+                                                 :service/friday
+                                                 :service/saturday
+                                                 :service/sunday]}
+                                 ;:trip/service
+                                 {:trip/route [:route/type
+                                               :route/short_name]}]
+                                [:trip/id trip-id])]
+    [:> React/ScrollView {:flex 1 :backgroundColor "white"}
       [:> React/View {:height 60 :alignItems "center" :justifyContent "center"
                       :backgroundColor "blue"}
         [:> React/Text {:style {:color "white" :fontSize 20}}
                        "Trip Overview"]]
-     [:> React/View {:flex 1 :backgroundColor "white" :padding 15}
+     [:> React/View {:flex 1 :padding 15}
        [:> React/View {:flex 1 :flex-direction "row" :paddingBottom 20}
          [TripIcon trip]
          [:> React/View {:flex 1}
@@ -133,5 +144,18 @@
                          (str/replace (:trip/headsign trip)
                                       "[Dummy]"
                                       "")]]]
+       [:> React/View {:flex 1}
+         [:> React/Text {:style {:color "slategray"}}
+           (str "Every " (misc/convert (:frequency/headway_secs frequency)
+                                       :from "seconds" :to "minutes")
+                " minutes from "
+                (misc/time-since-midnight (:frequency/start_time frequency))
+                " to "
+                (misc/time-since-midnight (:frequency/end_time frequency)))]
+         [:> React/Text {:style {:paddingLeft 10 :color "slategray"}}
+                        (if (or (= 0 (:frequency/exact_times frequency))
+                                (nil? (:frequency/exact_times frequency)))
+                          "NOT EXACT"
+                          "EXACT")]]
        (when (some? @route)
          [Route props @route])]]))
