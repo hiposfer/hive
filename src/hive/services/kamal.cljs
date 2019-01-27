@@ -52,10 +52,7 @@
                 :headers {:Accept "application/edn"}}]))
 
 (defn get-entity!
-  "executes the result of entity with js/fetch.
-
-  Returns a promise that will resolve to a transaction with the
-  requested entity"
+  "executes the result of entity with js/fetch"
   [db ref]
   (async/go
     (let [[url opts] (entity db ref)
@@ -92,28 +89,28 @@
    (let [result (async/chan)]
      (get-directions! db coordinates departure result)
      result))
-  ([db coordinates departure chan]
+  ([db coordinates departure result]
    (async/go
      (let [[url opts] (directions db coordinates departure)
            response   (async/<! (promise/async (js/fetch url (clj->js opts))))
            body       (async/<! (promise/async (. response (text))))]
        (if (not (.-ok response))
-         (async/>! chan [{:error/id ::directions
-                          :error/info (ex-info (str "Error fetching directions: " body)
-                                               (misc/roundtrip response))}])
+         (async/>! result [{:error/id   ::directions
+                            :error/info (ex-info (str "Error fetching directions: " body)
+                                                 (misc/roundtrip response))}])
          (let [content (edn/read-string {:readers readers} body)
                user    (data/q queries/user-id db)
                trips   (for [step (:directions/steps content)
                              :when (= "transit" (:step/mode step))
                              :when (some? (:step/trip step))]
                          (:step/trip step))]
-           (async/>! chan [content {:user/uid        user
-                                    :user/directions [:directions/uuid (:directions/uuid content)]}])
+           (async/>! result [content {:user/uid        user
+                                      :user/directions [:directions/uuid (:directions/uuid content)]}])
            (doseq [trip-id (distinct trips)]
              (let [trip  (async/<! (get-entity! db trip-id))
                    route (get-entity! db (get trip :trip/route))]
-               (async/>! chan [trip])
-               (async/>! chan [(async/<! route)])))))))))
+               (async/>! result [trip])
+               (async/>! result [(async/<! route)])))))))))
 
 (defn get-areas!
   "fetches the supported areas from kamal"
@@ -138,4 +135,26 @@
                     :headers {:Accept "application/edn"}}
           response (async/<! (promise/async (js/fetch (str uri (clj->js opts)))))
           body     (async/<! (promise/async (. response (text))))]
-      (println (edn/read-string {:readers readers} body)))))
+      (edn/read-string {:readers readers} body))))
+
+(def frequency-trip '[:find ?frequency ?attribute ?value
+                      :in $ ?trip-id ?current-time
+                      :where [?trip      :trip/id ?trip-id]
+                             [?frequency :frequency/trip ?trip]
+                             [?frequency :frequency/start_time ?start-time]
+                             [(< ?start-time ?current-time)]
+                             [?frequency :frequency/end_time ?end-time]
+                             [(< ?current-time ?end-time)]
+                             [?frequency ?attribute ?value]])
+
+(defn get-trip-details!
+  "returns a channel with the service and frequency information of a trip"
+  [db datetime trip-id]
+  (async/go
+    (let [secs      (misc/seconds-of-day (new js/Date datetime))
+          trip      (data/entity db [:trip/id trip-id])
+          datoms    (query! db frequency-trip trip-id secs)
+          calendar  (get-entity! db {:service/id (:service/id (:trip/service trip))})]
+      [(async/<! calendar)
+       (misc/datoms->map (async/<! datoms)
+                         {:frequency/trip [:trip/id trip-id]})])))
