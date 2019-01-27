@@ -148,23 +148,13 @@
           body     (async/<! (promise/async (. response (text))))]
       (edn/read-string {:readers readers} body))))
 
-(def frequency-trip '[:find ?frequency ?attribute ?value
-                      :in $ ?trip-id ?current-time
-                      :where [?trip      :trip/id ?trip-id]
-                             [?frequency :frequency/trip ?trip]
-                             [?frequency :frequency/start_time ?start-time]
-                             [(< ?start-time ?current-time)]
-                             [?frequency :frequency/end_time ?end-time]
-                             [(< ?current-time ?end-time)]
-                             [?frequency ?attribute ?value]])
-
 (defn get-trip-details!
   "returns a channel with the service and frequency information of a trip"
   [db datetime trip-id]
   (async/go
     (let [secs      (misc/seconds-of-day (new js/Date datetime))
           trip      (data/entity db [:trip/id trip-id])
-          datoms    (query! db frequency-trip trip-id secs)
+          datoms    (query! db queries/frequency-trip trip-id secs)
           calendar  (get-entity! db {:service/id (:service/id (:trip/service trip))})]
       [(async/<! calendar)
        (misc/datoms->map (async/<! datoms)

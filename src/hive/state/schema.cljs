@@ -17,6 +17,7 @@
 
               (gtfs/reference? identifiers field)
               [(field :keyword) {:db/type :db.type/ref}])))))
+              ;; TODO: store remote kamal values permanently
 
 (def schema (merge-with into
               ;; GTFS entities
