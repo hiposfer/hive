@@ -89,7 +89,7 @@
   The value of the ratom will be automatically updated whenever
   a change is detected"
   [query & inputs]
-  (rata/q! query conn inputs))
+  (apply rata/q! query conn inputs))
 
 ;; utility to not be so verbose
 (defn db [] (deref conn))
