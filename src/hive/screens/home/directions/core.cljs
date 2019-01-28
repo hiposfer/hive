@@ -1,4 +1,9 @@
 (ns hive.screens.home.directions.core
+  "The Directions Screen is where the user can see details about a route
+   returned by Kamal
+
+   It features a full screen map with a details section below containing
+   the steps required to reach the goal"
   (:require [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
@@ -11,22 +16,11 @@
             [hive.utils.miscelaneous :as misc]
             [hive.state.queries :as queries]
             [datascript.core :as data]
-            [hive.services.kamal :as kamal])
+            [hive.services.kamal :as kamal]
+            [hive.screens.home.directions.trip-overview :as trip-overview])
   (:import (goog.date DateTime)))
 
-(def big-circle 16)
 (def micro-circle 3)
-(def section-height {"walking" 90 "transit" 120})
-
-(defn- TransitLine
-  [steps]
-  (let [stroke      (misc/route-color (:trip/route (:step/trip (first steps))))]
-    [:> React/View {:width 20 :alignItems "center"}
-      [:> React/View (merge {:backgroundColor stroke}
-                            (symbols/circle big-circle))]
-      [:> React/View {:backgroundColor stroke :width "15%" :flex 1}]
-      [:> React/View (merge {:backgroundColor stroke :borderColor "transparent"}
-                            (symbols/circle big-circle))]]))
 
 (defn- WalkingDots
   [steps]
@@ -35,11 +29,11 @@
     [:> React/View {:width 20 :alignItems "center"
                     :justifyContent "space-around"}
       (when (= "depart" (:maneuver/type (:step/maneuver (first steps))))
-        [:> React/View (merge (symbols/circle big-circle)
+        [:> React/View (merge (symbols/circle trip-overview/big-circle)
                               {:backgroundColor "slategray"})])
       (for [i (range 10)] ^{:key i} [:> React/View style])
       (when (= "arrive" (:maneuver/type (:step/maneuver (last steps))))
-        [:> React/View (merge (symbols/circle big-circle)
+        [:> React/View (merge (symbols/circle trip-overview/big-circle)
                               {:backgroundColor "slategray"})])]))
 
 (defn- walk-message
@@ -55,13 +49,7 @@
   [steps]
   (if (= "walking" (:step/mode (first steps)))
     [:> assets/Ionicons {:name "ios-walk" :size 32}]
-    (case (:route/type (:trip/route (:step/trip (first steps))))
-      0 [:> assets/Ionicons {:name "ios-train" :size 32}]
-      1 [:> assets/Ionicons {:name "ios-subway" :size 32}]
-      2 [:> assets/Ionicons {:name "md-train" :size 32}]
-      3 [:> assets/Ionicons {:name "ios-bus" :size 32}]
-      ;; default
-      [:> React/ActivityIndicator])))
+    [trip-overview/TripIcon (:step/trip (first steps))]))
 
 (defn- StepOverviewMsg
   [props steps]
@@ -97,28 +85,26 @@
       [:> React/Text {:style {:height 20}}
                      (:step/name (last steps))])])
 
-(def time-style {:textAlign "center" :color "gray" :fontSize 12})
-
 (defn- RouteSectionTimes
   [props steps]
   [:> React/View {:width 40 :justifyContent "space-between"}
-    [:> React/Text {:style time-style}
+    [:> React/Text {:style trip-overview/time-style}
       (when (or (= "transit" (:step/mode (first steps)))
                 (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
         (misc/hour-minute (:step/arrive (first steps))))]
     (when (or (= "transit" (:step/mode (last steps)))
               (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
-      [:> React/Text {:style time-style}
+      [:> React/Text {:style trip-overview/time-style}
                      (misc/hour-minute (:step/arrive (last steps)))])])
 
 (defn- RouteSection
   [props steps]
-  (let [height     (get section-height (:step/mode (first steps)))]
+  (let [height     (get trip-overview/section-height (:step/mode (first steps)))]
     [:> React/View {:height height :flexDirection "row"}
       [RouteSectionTimes props steps]
       (if (= "walking" (:step/mode (first steps)))
         [WalkingDots steps]
-        [TransitLine steps])
+        [trip-overview/TransitLine steps])
       [StepOverview props steps]]))
 
 (defn- Route
@@ -265,6 +251,8 @@
                                  :strokeWidth 4}])))
 
 (defn- clean-directions
+  "remove all directions downloaded on this screen to avoid displaying them
+  if the user goes back and forth between goal selection and directions screen"
   [db]
   (for [r (data/q queries/routes-ids db)]
     [:db.fn/retractEntity [:directions/uuid r]]))

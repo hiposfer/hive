@@ -1,4 +1,9 @@
 (ns hive.screens.home.core
+  "The Home screen a.k.a landing page is the first thing
+  that the user sees when the app starts.
+
+  It features a full screen map with a search box and a button
+  leading to the settings page"
   (:require [reagent.core :as r]
             [react-native :as React]
             [expo :as Expo]
@@ -15,10 +20,6 @@
             [hive.assets :as assets]
             [hive.screens.errors :as errors]
             [hive.utils.promises :as promise]))
-
-; NOTE: this is the way to remove all routes ... not sure where to do this
-;(for [r (data/q queries/routes-ids (state/db))]
-;  [:db.fn/retractEntity [:route/uuid r]])
 
 (defn- set-target
   "associates a target and a path to get there with the user"

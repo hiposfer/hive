@@ -1,4 +1,8 @@
 (ns hive.screens.home.directions.trip-overview
+  "The Trip Overview Screen is where the user can see details about
+  the vehicle and its associated entities like Service provider, start
+  and end time, service days and more. This is also where a User can decide
+  to suggest a change to a Trip data"
   (:require [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
@@ -106,9 +110,6 @@
 
 
 (defn Screen
-  "basic navigation directions.
-
-   Async, some data might be missing when rendered !!"
   [props]
   (let [trip-id   (:trip/id (:params (:state (:navigation props))))
         route     (state/q! queries/user-route)
