@@ -4,7 +4,7 @@
   (:require [expo :as Expo]
             [cljs.reader :as edn]
             [datascript.core :as data]
-            [hive.state.schema :as schema]))
+            [hive.schema :as schema]))
 
 (def SQLite ^js/Expo.SQLite Expo/SQLite)
 

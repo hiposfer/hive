@@ -1,8 +1,8 @@
 (ns hive.services.firebase
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
-            [hive.state.queries :as queries]
-            [hive.state.core :as state]))
+            [hive.queries :as queries]
+            [hive.state :as state]))
 
 ;; it seems that firebase creates an instance of itself when requiring it so
 ;; using the ns form doesnt bring any benefits :(

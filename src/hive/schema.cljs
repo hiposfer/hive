@@ -1,4 +1,4 @@
-(ns hive.state.schema
+(ns hive.schema
   (:require [hiposfer.gtfs.edn :as gtfs]))
 
 (def gtfs-data (js->clj (js/require "./resources/gtfs.json")

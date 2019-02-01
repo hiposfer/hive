@@ -3,7 +3,7 @@
             [expo :as Expo]
             [hive.assets :as assets]
             [hive.utils.miscelaneous :as misc]
-            [hive.state.core :as state]))
+            [hive.state :as state]))
 
 (defn- on-enable-gps-pressed
   "launch the android location settings hoping that the user enables the gps"

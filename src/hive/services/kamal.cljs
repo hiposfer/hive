@@ -1,7 +1,7 @@
 (ns hive.services.kamal
   (:require [clojure.string :as str]
             [cljs.tools.reader.edn :as edn]
-            [hive.state.queries :as queries]
+            [hive.queries :as queries]
             [datascript.core :as data]
             [lambdaisland.uri :as uri]
             [hive.utils.miscelaneous :as misc]

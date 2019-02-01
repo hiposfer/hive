@@ -1,15 +1,15 @@
 (ns hive.screens.settings.core
-  (:require [hive.state.core :as state]
+  (:require [hive.state :as state]
             [react-native :as React]
             [hive.screens.symbols :as symbols]
             [expo :as Expo]
-            [hive.state.queries :as queries]
+            [hive.queries :as queries]
             [reagent.core :as r]
             [cljs.spec.alpha :as s]
             [hive.services.secure-store :as secure]
             [hive.services.firebase :as firebase]
             [hive.assets :as assets]
-            [hive.state.core :as state]))
+            [hive.state :as state]))
 
 (s/def ::email (s/and string? #(re-matches #"\S+@\S+\.\S+" %)))
 (s/def ::password (s/and string? #(>= (count %) 8)))

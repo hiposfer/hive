@@ -1,4 +1,4 @@
-(ns hive.state.middleware.logger
+(ns hive.middleware.logger
   (:require [datascript.core :as data]
             [hive.utils.miscelaneous :as tool]
             [clojure.walk :as walk]

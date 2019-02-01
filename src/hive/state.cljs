@@ -1,4 +1,4 @@
-(ns hive.state.core
+(ns hive.state
   "This namespace contains a mini framework which is just basically glue code
    between the different libraries used. Its main purpose is state management
    for Clojurescript Single Page Applications. Its secondary purposes are
@@ -40,8 +40,8 @@
   (:require [hive.utils.miscelaneous :as tool]
             [datascript.core :as data]
             [hiposfer.rata.core :as rata]
-            [hive.state.middleware.logger :as log]
-            [hive.state.schema :as schema]
+            [hive.middleware.logger :as log]
+            [hive.schema :as schema]
             [cljs.core.async :as async]))
 
 ;; Before creating this mini-framework I tried re-frame and

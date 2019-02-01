@@ -12,9 +12,9 @@
             [goog.date.duration :as duration]
             [clojure.string :as str]
             [hive.assets :as assets]
-            [hive.state.core :as state]
+            [hive.state :as state]
             [hive.utils.miscelaneous :as misc]
-            [hive.state.queries :as queries]
+            [hive.queries :as queries]
             [datascript.core :as data]
             [hive.services.kamal :as kamal]
             [hive.screens.home.directions.trip-overview :as trip-overview])

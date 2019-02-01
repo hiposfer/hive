@@ -1,4 +1,4 @@
-(ns hive.state.queries)
+(ns hive.queries)
 
 ;; TODO: most of these queries rely on user ID. It could be better to compute
 ;; that once and later on just pull or entity attributes out of it

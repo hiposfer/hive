@@ -7,7 +7,7 @@
   on every reload"
   (:require [cljs-react-navigation.base :as base]
             [cljs-react-navigation.reagent :as reagent]
-            [hive.state.core :as state]))
+            [hive.state :as state]))
 
 ;; copied from cljs-react-navigation.re-frame
 ;; https://github.com/seantempesta/cljs-react-navigation/blob/master/src/cljs_react_navigation/re_frame.cljs

@@ -1,9 +1,6 @@
 (ns hive.screens.symbols
   (:require [react-native :as React]
-            [expo :as Expo]
-            [hive.state.core :as state]
-            [hive.state.queries :as queries]
-            [hive.utils.geometry :as geometry]))
+            [expo :as Expo]))
 
 (defn PointOfInterest
   "Components for displaying location related items. Usually used inside a List"
@@ -17,25 +14,6 @@
        subtitle]
     [:> React/View {:style {:flex 0.1 :justifyContent "flex-end"}}
       (when (some? right-icon) right-icon)]])
-
-(defn CityMap
-  "a React Native MapView component which will only re-render on user-city change
-
-  DEPRECATED !!!"
-  [children]
-  (let [bbox   @(state/q! queries/user-area-bbox)
-        position @(state/q! queries/user-position)
-        area (geometry/mapview-region {:children children
-                                       :bbox     bbox
-                                       :position position})]
-    (if (nil? bbox)
-      [:> React/View {:flex 1 :alignItems "center" :justifyContent "center"}
-        [:> React/ActivityIndicator {:color "blue" :size "large"}]]
-      [:> Expo/MapView {:region                area
-                        :showsUserLocation     true
-                        :style                 {:flex 1}
-                        :showsMyLocationButton true}
-                       children])))
 
 (def shadow
   {:elevation 3 :shadowColor "#000000" :shadowRadius 5

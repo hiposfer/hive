@@ -1,10 +1,10 @@
 (ns hive.screens.settings.city-picker
-  (:require [hive.state.queries :as queries]
+  (:require [hive.queries :as queries]
             [hive.screens.symbols :as symbols]
             [react-native :as React]
             [expo :as Expo]
             [hive.assets :as assets]
-            [hive.state.core :as state]
+            [hive.state :as state]
             [datascript.core :as data]))
 
 (defn change-city

@@ -2,7 +2,7 @@
   (:require [hive.utils.miscelaneous :as tool]
             [react-native :as React]
             [expo :as Expo]
-            [hive.state.queries :as queries]
+            [hive.queries :as queries]
             [datascript.core :as data]))
 
 ;; todo: should altitude be inside the point coordinates?
@@ -25,12 +25,8 @@
       [{:user/uid      uid
         :user/position p}])))
 
-(defn defaults
-  "sensitive defaults for location tracking"
-  [callback]
-  {:enableHighAccuracy true
-   :timeInterval       3000
-   :callback          callback})
+(def defaults {:enableHighAccuracy true
+               :timeInterval       3000})
 
 (defn- request
   [opts response]
@@ -43,12 +39,13 @@
   Expo's API: https://docs.expo.io/versions/latest/sdk/location.html
 
   Returns a promise that will resolve to the watchPositionAsync return value"
-  ^js/Promise [opts]
-  (if (and (= "android" React/Platform.OS)
-           (not Expo/Constants.isDevice))
+  ^js/Promise
+  [opts]
+  (if (and (= "android" React/Platform.OS) (not Expo/Constants.isDevice))
     (ex-info "Oops, this will not work on Sketch in an Android emulator. Try it on your device!"
              (assoc opts ::reason ::emulator-denial))
-    (.. (Expo/Permissions.askAsync "location")
-        (then tool/keywordize)
-        (then #(request opts %))
-        (then tool/reject-on-error))))
+    (let [opts (merge defaults opts)]
+      (.. (Expo/Permissions.askAsync "location")
+          (then tool/keywordize)
+          (then #(request opts %))
+          (then tool/reject-on-error)))))

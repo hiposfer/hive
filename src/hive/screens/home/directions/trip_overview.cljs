@@ -8,10 +8,10 @@
             [expo :as Expo]
             [clojure.string :as str]
             [hive.assets :as assets]
-            [hive.state.core :as state]
+            [hive.state :as state]
             [hive.utils.miscelaneous :as misc]
-            [hive.state.queries :as queries]
-            [hive.state.schema :as schema]
+            [hive.queries :as queries]
+            [hive.schema :as schema]
             [hiposfer.gtfs.edn :as gtfs])
   (:import (goog.date DateTime)))
 

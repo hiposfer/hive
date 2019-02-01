@@ -1,4 +1,4 @@
-(ns hive.screens.home.core
+(ns hive.screens.home.ui
   "The Home screen a.k.a landing page is the first thing
   that the user sees when the app starts.
 
@@ -8,38 +8,16 @@
             [react-native :as React]
             [expo :as Expo]
             [clojure.string :as str]
-            [hive.state.queries :as queries]
-            [hive.utils.miscelaneous :as tool]
-            [hive.services.mapbox :as mapbox]
+            [hive.queries :as queries]
             [hive.services.location :as location]
             [hive.utils.geometry :as geometry]
             [hive.services.kamal :as kamal]
             [hive.screens.symbols :as symbols]
             [datascript.core :as data]
-            [hive.state.core :as state]
+            [hive.state :as state]
             [hive.assets :as assets]
             [hive.screens.errors :as errors]
-            [hive.utils.promises :as promise]))
-
-(defn- set-target
-  "associates a target and a path to get there with the user"
-  [db navigate target]
-  (let [user     (data/q queries/user-id db)
-        position (data/pull db [:user/position] [:user/uid user])
-        start    (:coordinates (:geometry (:user/position position)))
-        end      (:coordinates (:place/geometry target))]
-    [{:user/uid  user
-      :user/goal [:place/id (:place/id target)]}
-     [kamal/get-directions! db [start end]]
-     [React/Keyboard.dismiss]
-     [navigate "directions"]]))
-
-(defn- humanize-distance
-  "Convert a distance (meters) to human readable form."
-  [distance]
-  (if (> distance 1000)
-    (str (. (/ distance 1000) (toFixed 1)) " km")
-    (str (. distance (toFixed 0)) " m")))
+            [hive.screens.home.handlers :as handle]))
 
 (defn- Places
   "list of items resulting from a geocode search, displayed to the user to choose his
@@ -55,54 +33,13 @@
        ^{:key (:place/id target)}
        [:> React/TouchableOpacity
          {:style    {:height 60 :flexDirection "row"}
-          :onPress #(state/transact! (set-target (state/db) navigate target))}
+          :onPress #(state/transact! (handle/set-target (state/db) navigate target))}
          [symbols/PointOfInterest
            [:> assets/Ionicons {:name "ios-pin" :size 26 :color "red"}]
-           [:> React/Text (humanize-distance distance)]
+           [:> React/Text (handle/humanize-distance distance)]
            [:> React/Text {:numberOfLines 1} (:place/text target)]
            [:> React/Text {:style {:color "gray"} :numberOfLines 1}
                           (str/join ", " (map :text (:place/context target)))]]])]))
-
-(defn- reset-places
-  "transact the geocoding result under the user id"
-  ([db]
-   (for [id (data/q queries/places-id db)]
-     [:db.fn/retractEntity id]))
-  ([data db]
-   (concat (reset-places db)
-           (for [f (:features data)]
-             (tool/with-ns "place" f)))))
-
-(defn- autocomplete
-  "request an autocomplete geocoding result from mapbox and adds its result to the
-   app state"
-  [text db]
-  (let [user-id  (data/q queries/user-entity db)
-        network  (data/q '[:find ?connection .
-                           :where [?session :session/uuid]
-                           [?session :connection/type ?connection]])
-        user     (data/entity db user-id)
-        args     {:query        text
-                  :proximity    (:user/position user)
-                  :access_token (:ENV/MAPBOX state/tokens)
-                  :bbox         (:area/bbox (:user/area user))}]
-    (cond
-      (empty? text) nil
-
-      ;; note - we assume that no position means no GPS enabled ...
-      (not (some? (:user/position user)))
-      [{:error/id :home/search
-        :error/type :location/unknown}
-       [React/Keyboard.dismiss]]
-
-      (= "none" network)
-      [{:error/id :home/search
-        :error/type :internet/missing}
-       [React/Keyboard.dismiss]]
-
-      :else
-      [[promise/finally [mapbox/geocoding! args]
-                        [reset-places db]]])))
 
 (defn- ErrorModal
   [props]
@@ -132,12 +69,12 @@
           [:> React/TouchableWithoutFeedback
             {:onPress #(when (some? @ref)
                          (. @ref clear)
-                         (state/transact! (reset-places (state/db))))}
+                         (state/transact! (handle/reset-places (state/db))))}
             [:> assets/Ionicons {:name "ios-close-circle" :size 26}]])]
       [:> React/TextInput {:placeholder "Where would you like to go?"
                            :ref #(vreset! ref %) :style {:flex 0.9}
                            :underlineColorAndroid "transparent"
-                           :onChangeText #(state/transact! (autocomplete % (state/db)))}]]))
+                           :onChangeText #(state/transact! (handle/autocomplete % (state/db)))}]]))
 
 (defn- on-location-updated [position]
   (state/transact! (location/set-location (state/db) position)))
@@ -145,7 +82,7 @@
 (defn Screen
   "The main screen of the app. Contains a search bar and a mapview"
   [props]
-  (r/with-let [tracker  (location/watch! (location/defaults on-location-updated))
+  (r/with-let [tracker  (location/watch! {:callback on-location-updated})
                navigate (:navigate (:navigation props))
                pids     (state/q! queries/places-id)
                bbox     (state/q! queries/user-area-bbox)
@@ -171,8 +108,3 @@
                                  :style {:color "white"}}]]])]
     ;; remove tracker on component will unmount
     (finally (. tracker (then #(. % (remove)))))))
-
-;(state/transact! [[:db.fn/retractEntity [:route/uuid "cjd5qccf5007147p6t4mneh5r"]]])
-;(data/pull (state/db) '[*] [:route/uuid "5b44dbb7-ac02-40a0-b50f-6c855c5bff14"])
-
-;(data/q '[:find [(pull ?id [*]) ...] :where [?id :place/id]] (state/db))
