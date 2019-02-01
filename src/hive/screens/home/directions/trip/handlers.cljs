@@ -36,12 +36,6 @@
                                   "de-De")]
     (subs text 0 5)))
 
-(defn seconds-of-day
-  [^js/Date date]
-  (+ (. date (getSeconds))
-     (* 60 (+ (. date (getMinutes))
-              (* 60 (. date (getHours)))))))
-
 (defn time-since-midnight
   [seconds]
   (let [now (new js/Date)]
