@@ -12,7 +12,8 @@
             [hive.utils.miscelaneous :as misc]
             [hive.queries :as queries]
             [hive.schema :as schema]
-            [hiposfer.gtfs.edn :as gtfs])
+            [hiposfer.gtfs.edn :as gtfs]
+            [hive.screens.home.directions.trip.handlers :as handle])
   (:import (goog.date DateTime)))
 
 (def big-circle 16)
@@ -20,7 +21,7 @@
 
 (defn TransitLine
   [steps]
-  (let [stroke      (misc/route-color (:trip/route (:step/trip (first steps))))]
+  (let [stroke      (handle/route-color (:trip/route (:step/trip (first steps))))]
     [:> React/View {:width 20 :alignItems "center"}
       [:> React/View (merge {:backgroundColor stroke}
                             (symbols/circle big-circle))]
@@ -75,9 +76,9 @@
   [steps]
   [:> React/View {:width 40 :justifyContent "space-between"}
     [:> React/Text {:style time-style}
-                   (misc/hour-minute (:step/arrive (first steps)))]
+                   (handle/hour-minute (:step/arrive (first steps)))]
     [:> React/Text {:style time-style}
-                   (misc/hour-minute (:step/arrive (last steps)))]])
+                   (handle/hour-minute (:step/arrive (last steps)))]])
 
 (defn- RouteSection
   [steps]
@@ -115,8 +116,8 @@
         route     (state/q! queries/user-route)
         datoms    @(state/q! queries/frequency-trip
                              trip-id
-                             (misc/seconds-of-day (new js/Date "2018-05-07T10:15:30+01:00")))
-        frequency (misc/datoms->map datoms {})
+                             (handle/seconds-of-day (new js/Date "2018-05-07T10:15:30+01:00")))
+        frequency (handle/datoms->map datoms {})
         trip      @(state/pull! [:trip/headsign
                                  {:trip/service [:service/monday
                                                  :service/tuesday
@@ -150,9 +151,9 @@
            (str "Every " (misc/convert (:frequency/headway_secs frequency)
                                        :from "seconds" :to "minutes")
                 " minutes from "
-                (misc/time-since-midnight (:frequency/start_time frequency))
+                (handle/time-since-midnight (:frequency/start_time frequency))
                 " to "
-                (misc/time-since-midnight (:frequency/end_time frequency)))]
+                (handle/time-since-midnight (:frequency/end_time frequency)))]
          [:> React/Text {:style {:paddingLeft 10 :color "slategray"}}
                         (if (or (= 0 (:frequency/exact_times frequency))
                                 (nil? (:frequency/exact_times frequency)))

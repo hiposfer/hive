@@ -17,7 +17,9 @@
             [hive.utils.miscelaneous :as misc]
             [hive.utils.geometry :as geometry]
             [hive.screens.symbols :as symbols]
-            [hive.screens.home.directions.trip.ui :as trip.ui])
+            [hive.screens.home.directions.handlers :as handle]
+            [hive.screens.home.directions.trip.ui :as trip.ui]
+            [hive.screens.home.directions.trip.handlers :as trip.handle])
   (:import (goog.date DateTime)))
 
 (def micro-circle 3)
@@ -35,15 +37,6 @@
       (when (= "arrive" (:maneuver/type (:step/maneuver (last steps))))
         [:> React/View (merge (symbols/circle trip.ui/big-circle)
                               {:backgroundColor "slategray"})])]))
-
-(defn- walk-message
-  [steps]
-  (let [distance (apply + (map :step/distance steps))
-        departs  (:step/arrive (first steps))
-        arrive   (:step/arrive (last steps))
-        duration (duration/format (* 1000 (- arrive departs)))]
-    (str "walk " (misc/convert distance :from "meters" :to "km")
-         " km (around " duration ").")))
 
 (defn- SectionIcon
   [steps]
@@ -65,7 +58,7 @@
           [SectionIcon steps]]
         [:> React/Text {:style {:color "gray" :paddingRight 7 :flex 3}}
           (if (= "walking" (:step/mode (first steps)))
-            (walk-message steps)
+            (handle/walk-message steps)
             (-> (:maneuver/instruction (:step/maneuver (first steps)))
                 (str/replace "[Dummy]" "")
                 (subs 0 60)))]
@@ -91,11 +84,11 @@
     [:> React/Text {:style trip.ui/time-style}
       (when (or (= "transit" (:step/mode (first steps)))
                 (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
-        (misc/hour-minute (:step/arrive (first steps))))]
+        (trip.handle/hour-minute (:step/arrive (first steps))))]
     (when (or (= "transit" (:step/mode (last steps)))
               (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
       [:> React/Text {:style trip.ui/time-style}
-                     (misc/hour-minute (:step/arrive (last steps)))])])
+                     (trip.handle/hour-minute (:step/arrive (last steps)))])])
 
 (defn- RouteSection
   [props steps]
@@ -151,56 +144,12 @@
                              :paddingRight 25}}
        (duration/format (* 1000 (:directions/duration route)))]]))
 
-(defn- previous-routes
-  [db]
-  (let [current-route (data/entity db (data/q queries/user-route db))]
-    (for [datom (data/datoms db :avet :directions/uuid)
-          :let [route (data/entity db (:e datom))]
-          :when (< (:directions/uuid route)
-                   (:directions/uuid current-route))]
-      route)))
-
-(defn- next-routes
-  [db]
-  (let [current-route (data/entity db (data/q queries/user-route db))]
-    (for [datom (data/datoms db :avet :directions/uuid)
-          :let [route (data/entity db (:e datom))]
-          :when (< (:directions/uuid current-route)
-                   (:directions/uuid route))]
-      route)))
-
-(defn- on-previous-pressed
-  [db]
-  (let [user-id  (data/q queries/user-entity db)
-        user     (data/entity db user-id)
-        previous (previous-routes db)]
-    (when (some? (last previous))
-      [{:user/uid        (:user/uid user)
-        :user/directions [:directions/uuid (:directions/uuid (last previous))]}])))
-
-(defn- on-next-pressed
-  [db]
-  (let [user-id  (data/q queries/user-entity db)
-        user     (data/entity db user-id)
-        start    (:coordinates (:geometry (:user/position user)))
-        end      (:coordinates (:place/geometry (:user/goal user)))
-        steps    (eduction (map :step/wait)
-                           (remove nil?)
-                           (:directions/steps (:user/directions user)))
-        can-wait (first steps)
-        departs  (+ (js/Date.now) (* 1000 can-wait) 1000)
-        nexts    (next-routes db)]
-    (if (some? (first nexts))
-      [{:user/uid (:user/uid user)
-        :user/directions [:directions/uuid (:directions/uuid (first nexts))]}]
-      [[kamal/get-directions! db [start end] departs]])))
-
 (defn- Info
   [props user-route]
   ;; check if there are any previous directions that we can go back to
   (let [route    @(state/pull! [{:directions/steps [:step/arrive]}]
                                user-route)
-        previous  (previous-routes (state/db))
+        previous  (handle/previous-routes (state/db))
         alignment (if (not-empty previous) "space-between" "flex-end")
         ;; goal - cannot change during this component lifetime
         goal      (data/entity (state/db) (data/q queries/user-goal (state/db)))]
@@ -210,27 +159,26 @@
        [Transfers user-route]
        [:> React/View {:paddingRight 20}
          [:> React/Text {:style {:color "gray"}}
-           (misc/hour-minute (:step/arrive (first (:directions/steps route))))]
+           (trip.handle/hour-minute (:step/arrive (first (:directions/steps route))))]
          [:> React/Text {:style {:color "gray"}}
-           (misc/hour-minute (:step/arrive (last (:directions/steps route))))]]]
+           (trip.handle/hour-minute (:step/arrive (last (:directions/steps route))))]]]
       [:> React/Text {:style {:color "gray" :paddingLeft "2.5%"}} (:place/text goal)]
       [:> React/View {:flexDirection "row" :justifyContent alignment}
         (when (not-empty previous)
           [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5
                                               :alignItems "center"}
-                                      :onPress #(state/transact! (on-previous-pressed (state/db)))}
+                                      :onPress #(state/transact! (handle/on-previous-pressed (state/db)))}
             [:> assets/Ionicons {:name "ios-arrow-back" :size 22 :color "#3bb2d0"
                                  :style {:paddingRight 5}}]
             [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
                            "previous"]])
         [:> React/TouchableOpacity {:style {:flexDirection "row" :padding 5
                                             :alignItems "center" :paddingLeft 40}
-                                    :onPress #(state/transact! (on-next-pressed (state/db)))}
+                                    :onPress #(state/transact! (handle/on-next-pressed (state/db)))}
           [:> React/Text {:style {:color "#3bb2d0" :fontSize 18}}
                          "next"]
           [:> assets/Ionicons {:name "ios-arrow-forward" :size 22 :color "#3bb2d0"
                                :style {:paddingLeft 5}}]]]]))
-
 
 (defn- MapLines
   [user-route]
@@ -244,18 +192,11 @@
                             user-route)]
     (for [steps (partition-by :step/mode (:directions/steps route))
           :let [coords (mapcat :coordinates (map :step/geometry steps))
-                stroke (misc/route-color (:trip/route (:step/trip (first steps))))]]
+                stroke (trip.handle/route-color (:trip/route (:step/trip (first steps))))]]
       ^{:key (hash steps)}
       [:> Expo/MapView.Polyline {:coordinates (map geometry/latlng coords)
                                  :strokeColor stroke
                                  :strokeWidth 4}])))
-
-(defn- clean-directions
-  "remove all directions downloaded on this screen to avoid displaying them
-  if the user goes back and forth between goal selection and directions screen"
-  [db]
-  (for [r (data/q queries/routes-ids db)]
-    [:db.fn/retractEntity [:directions/uuid r]]))
 
 (defn Screen
   [props]
@@ -265,7 +206,7 @@
                position     (state/q! queries/user-position)
                back-handler (React/BackHandler.addEventListener
                               "hardwareBackPress"
-                              #(misc/nullify (state/transact! (clean-directions (state/db)))))]
+                              #(misc/nullify (state/transact! (handle/clean-directions (state/db)))))]
     [:> React/ScrollView {:flex 1}
      [:> React/View {:height (* 0.85 (:height window))}
       (let [children (when (some? @route) {:children (MapLines @route)})
