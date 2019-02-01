@@ -50,7 +50,7 @@
         trip     (:step/trip (first steps))]
     [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}
                                 :onPress #(state/transact! [[navigate "trip" trip]
-                                                            [kamal/get-trip-details! (state/db)
+                                                            [handle/get-trip-details! (state/db)
                                                                                      "2018-05-07T10:15:30+01:00"
                                                                                      (:trip/id trip)]])}
       [:> React/View {:flex-direction "row" :alignItems "center"
