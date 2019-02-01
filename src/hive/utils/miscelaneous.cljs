@@ -1,7 +1,8 @@
 (ns hive.utils.miscelaneous
   "a namespace for functions that have not found a home :'("
   (:require [clojure.spec.alpha :as s]
-            [js-quantities :as quantity]))
+            [js-quantities :as quantity]
+            [cljs.core.async.impl.protocols :as asyncpro]))
 
 ;; HACK: https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
 (defn promise?
@@ -68,7 +69,7 @@
 
 (defn channel?
   [x]
-  (satisfies? cljs.core.async.impl.protocols/Channel x))
+  (satisfies? asyncpro/Channel x))
 
 (defn hour-minute
   "returns the epoch-seconds time as HH:MM in the local time"

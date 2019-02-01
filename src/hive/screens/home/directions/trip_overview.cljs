@@ -18,7 +18,7 @@
 (def big-circle 16)
 (def section-height {"walking" 90 "transit" 120})
 
-(defn- TransitLine
+(defn TransitLine
   [steps]
   (let [stroke      (misc/route-color (:trip/route (:step/trip (first steps))))]
     [:> React/View {:width 20 :alignItems "center"}
