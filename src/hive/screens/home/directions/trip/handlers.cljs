@@ -59,3 +59,9 @@
                       (first (str/split (:description entry) #"\.|,")))]
     (str (first vehicles) " "
          (:route/short_name (:trip/route trip)))))
+
+(defn seconds-of-day
+  [^js/Date date]
+  (+ (. date (getSeconds))
+     (* 60 (+ (. date (getMinutes))
+              (* 60 (. date (getHours)))))))

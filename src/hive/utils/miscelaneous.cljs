@@ -53,9 +53,3 @@
 (defn channel?
   [x]
   (satisfies? asyncpro/Channel x))
-
-(defn seconds-of-day
-  [^js/Date date]
-  (+ (. date (getSeconds))
-     (* 60 (+ (. date (getMinutes))
-              (* 60 (. date (getHours)))))))

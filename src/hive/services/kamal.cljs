@@ -147,15 +147,3 @@
           response (async/<! (promise/async (js/fetch (str uri (clj->js opts)))))
           body     (async/<! (promise/async (. response (text))))]
       (edn/read-string {:readers readers} body))))
-
-(defn get-trip-details!
-  "returns a channel with the service and frequency information of a trip"
-  [db datetime trip-id]
-  (async/go
-    (let [secs      (misc/seconds-of-day (new js/Date datetime))
-          trip      (data/entity db [:trip/id trip-id])
-          datoms    (query! db queries/frequency-trip trip-id secs)
-          calendar  (get-entity! db {:service/id (:service/id (:trip/service trip))})]
-      [(async/<! calendar)
-       (misc/datoms->map (async/<! datoms)
-                         {:frequency/trip [:trip/id trip-id]})])))

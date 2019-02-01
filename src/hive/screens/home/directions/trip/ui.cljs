@@ -104,7 +104,7 @@
         route     (state/q! queries/user-route)
         datoms    @(state/q! queries/frequency-trip
                              trip-id
-                             (misc/seconds-of-day (new js/Date "2018-05-07T10:15:30+01:00")))
+                             (handle/seconds-of-day (new js/Date "2018-05-07T10:15:30+01:00")))
         frequency (handle/datoms->map datoms {})
         trip      @(state/pull! [:trip/headsign
                                  {:trip/service [:service/monday
