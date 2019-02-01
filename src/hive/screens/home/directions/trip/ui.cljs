@@ -1,4 +1,4 @@
-(ns hive.screens.home.directions.trip-overview
+(ns hive.screens.home.directions.trip.ui
   "The Trip Overview Screen is where the user can see details about
   the vehicle and its associated entities like Service provider, start
   and end time, service days and more. This is also where a User can decide

@@ -1,23 +1,23 @@
-(ns hive.screens.home.directions.core
+(ns hive.screens.home.directions.ui
   "The Directions Screen is where the user can see details about a route
    returned by Kamal
 
    It features a full screen map with a details section below containing
    the steps required to reach the goal"
-  (:require [hive.screens.symbols :as symbols]
-            [react-native :as React]
+  (:require [react-native :as React]
             [expo :as Expo]
             [reagent.core :as r]
-            [hive.utils.geometry :as geometry]
+            [datascript.core :as data]
             [goog.date.duration :as duration]
             [clojure.string :as str]
             [hive.assets :as assets]
             [hive.state :as state]
-            [hive.utils.miscelaneous :as misc]
             [hive.queries :as queries]
-            [datascript.core :as data]
             [hive.services.kamal :as kamal]
-            [hive.screens.home.directions.trip-overview :as trip-overview])
+            [hive.utils.miscelaneous :as misc]
+            [hive.utils.geometry :as geometry]
+            [hive.screens.symbols :as symbols]
+            [hive.screens.home.directions.trip.ui :as trip.ui])
   (:import (goog.date DateTime)))
 
 (def micro-circle 3)
@@ -29,11 +29,11 @@
     [:> React/View {:width 20 :alignItems "center"
                     :justifyContent "space-around"}
       (when (= "depart" (:maneuver/type (:step/maneuver (first steps))))
-        [:> React/View (merge (symbols/circle trip-overview/big-circle)
+        [:> React/View (merge (symbols/circle trip.ui/big-circle)
                               {:backgroundColor "slategray"})])
       (for [i (range 10)] ^{:key i} [:> React/View style])
       (when (= "arrive" (:maneuver/type (:step/maneuver (last steps))))
-        [:> React/View (merge (symbols/circle trip-overview/big-circle)
+        [:> React/View (merge (symbols/circle trip.ui/big-circle)
                               {:backgroundColor "slategray"})])]))
 
 (defn- walk-message
@@ -49,14 +49,14 @@
   [steps]
   (if (= "walking" (:step/mode (first steps)))
     [:> assets/Ionicons {:name "ios-walk" :size 32}]
-    [trip-overview/TripIcon (:step/trip (first steps))]))
+    [trip.ui/TripIcon (:step/trip (first steps))]))
 
 (defn- StepOverviewMsg
   [props steps]
   (let [navigate (:navigate (:navigation props))
         trip     (:step/trip (first steps))]
     [:> React/TouchableOpacity {:style {:flex 1 :justifyContent "center"}
-                                :onPress #(state/transact! [[navigate "trip-overview" trip]
+                                :onPress #(state/transact! [[navigate "trip" trip]
                                                             [kamal/get-trip-details! (state/db)
                                                                                      "2018-05-07T10:15:30+01:00"
                                                                                      (:trip/id trip)]])}
@@ -88,23 +88,23 @@
 (defn- RouteSectionTimes
   [props steps]
   [:> React/View {:width 40 :justifyContent "space-between"}
-    [:> React/Text {:style trip-overview/time-style}
+    [:> React/Text {:style trip.ui/time-style}
       (when (or (= "transit" (:step/mode (first steps)))
                 (= "depart" (:maneuver/type (:step/maneuver (first steps)))))
         (misc/hour-minute (:step/arrive (first steps))))]
     (when (or (= "transit" (:step/mode (last steps)))
               (= "arrive" (:maneuver/type (:step/maneuver (last steps)))))
-      [:> React/Text {:style trip-overview/time-style}
+      [:> React/Text {:style trip.ui/time-style}
                      (misc/hour-minute (:step/arrive (last steps)))])])
 
 (defn- RouteSection
   [props steps]
-  (let [height     (get trip-overview/section-height (:step/mode (first steps)))]
+  (let [height     (get trip.ui/section-height (:step/mode (first steps)))]
     [:> React/View {:height height :flexDirection "row"}
       [RouteSectionTimes props steps]
       (if (= "walking" (:step/mode (first steps)))
         [WalkingDots steps]
-        [trip-overview/TransitLine steps])
+        [trip.ui/TransitLine steps])
       [StepOverview props steps]]))
 
 (defn- Route
