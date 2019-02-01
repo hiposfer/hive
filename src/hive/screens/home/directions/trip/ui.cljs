@@ -128,11 +128,12 @@
          [TripIcon trip]
          [:> React/View {:flex 1}
            [:> React/Text {:style {:paddingLeft 10 :color "slategray"}}
-             (handle/route-type-name trip)]
+                          (handle/route-type-name trip)]
           [:> React/Text {:style {:paddingLeft 10 :color "slategray"}}
-                         (str/replace (:trip/headsign trip)
-                                      "[Dummy]"
-                                      "")]]]
+                         (str "direction: "
+                              (str/replace (:trip/headsign trip)
+                                           "[Dummy]"
+                                           ""))]]]
        [:> React/View {:flex 1}
          [:> React/Text {:style {:color "slategray"}}
            (str "Every " (misc/convert (:frequency/headway_secs frequency)
