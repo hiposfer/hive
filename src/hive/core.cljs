@@ -3,20 +3,20 @@
             [expo :as Expo]
             [cljs.core.async :as async]
             [react-native :as React]
-            [hive.state :as state]
             [datascript.core :as data]
-            [hive.services.sqlite :as sqlite]
+            [cljs-react-navigation.reagent :as rn-nav]
+            [hive.state :as state]
             [hive.queries :as queries]
+            [hive.services.kamal :as kamal]
+            [hive.services.sqlite :as sqlite]
             [hive.utils.miscelaneous :as misc]
             [hive.utils.promises :as promise]
             [hive.screens.home.ui :as home]
             [hive.screens.router :as router]
-            [hive.screens.settings.core :as settings]
-            [hive.screens.settings.city-picker :as city-picker]
-            [cljs-react-navigation.reagent :as rn-nav]
+            [hive.screens.settings.ui :as settings]
+            [hive.screens.settings.city-picker.ui :as city-picker]
             [hive.screens.home.directions.ui :as directions]
-            [hive.screens.home.directions.trip.ui :as trip]
-            [hive.services.kamal :as kamal]))
+            [hive.screens.home.directions.trip.ui :as trip]))
 
 (defn RootUi []
   "Each Screen will receive two props:

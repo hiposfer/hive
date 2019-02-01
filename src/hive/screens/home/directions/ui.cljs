@@ -53,15 +53,20 @@
                                                             [kamal/get-trip-details! (state/db)
                                                                                      "2018-05-07T10:15:30+01:00"
                                                                                      (:trip/id trip)]])}
-      [:> React/View {:flex-direction "row" :alignItems "center"}
+      [:> React/View {:flex-direction "row" :alignItems "center"
+                      :justifyContent "space-between"}
         [:> React/View {:paddingRight 10 :with 32}
           [SectionIcon steps]]
-        [:> React/Text {:style {:color "gray" :paddingRight 7 :flex 3}}
-          (if (= "walking" (:step/mode (first steps)))
-            (handle/walk-message steps)
-            (-> (:maneuver/instruction (:step/maneuver (first steps)))
-                (str/replace "[Dummy]" "")
-                (subs 0 60)))]
+        (if (= "walking" (:step/mode (first steps)))
+          [:> React/Text {:style {:color "gray"}}
+                         (handle/walk-message steps)]
+          [:> React/View
+            [:> React/Text {:style {:color "gray"}}
+                           (trip.handle/route-type-name trip)]
+            [:> React/Text {:style {:color "gray"}}
+                           (str "direction: "
+                                (str/replace (:trip/headsign trip)
+                                             "[Dummy]" ""))]])
         [:> assets/Ionicons {:name "ios-arrow-forward" :size 22
                              :color "gray" :style {:paddingRight 20}}]]]))
 
@@ -106,10 +111,10 @@
                                 [:step/arrive
                                  :step/mode
                                  :step/name
-                                 {:step/maneuver [:maneuver/instruction
-                                                  :maneuver/type]}
+                                 {:step/maneuver [:maneuver/type]}
                                  :step/distance
                                  {:step/trip [:trip/id
+                                              :trip/headsign
                                               {:trip/route [:route/long_name
                                                             :route/short_name
                                                             :route/type

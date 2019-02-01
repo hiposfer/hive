@@ -1,4 +1,4 @@
-(ns hive.screens.settings.city-picker
+(ns hive.screens.settings.city-picker.ui
   (:require [hive.queries :as queries]
             [hive.screens.symbols :as symbols]
             [react-native :as React]

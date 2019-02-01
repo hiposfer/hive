@@ -3,16 +3,14 @@
   the vehicle and its associated entities like Service provider, start
   and end time, service days and more. This is also where a User can decide
   to suggest a change to a Trip data"
-  (:require [hive.screens.symbols :as symbols]
-            [react-native :as React]
+  (:require [react-native :as React]
             [expo :as Expo]
             [clojure.string :as str]
             [hive.assets :as assets]
             [hive.state :as state]
-            [hive.utils.miscelaneous :as misc]
             [hive.queries :as queries]
-            [hive.schema :as schema]
-            [hiposfer.gtfs.edn :as gtfs]
+            [hive.utils.miscelaneous :as misc]
+            [hive.screens.symbols :as symbols]
             [hive.screens.home.directions.trip.handlers :as handle])
   (:import (goog.date DateTime)))
 
@@ -41,15 +39,6 @@
      ;; default
      [:> React/ActivityIndicator])))
 
-(defn route-type-name
-  [trip]
-  (let [route-types (filter #(= :route/type (:keyword %))
-                            (gtfs/fields schema/gtfs-data))]
-    (first
-      (for [entry (:values (first route-types))
-            :when (= (:value entry) (:route/type (:trip/route trip)))]
-        (first (str/split (:description entry) #"\.|,"))))))
-
 (defn- StepOverviewMsg
   [steps]
   [:> React/View {:flex 1 :justifyContent "center"}
@@ -57,7 +46,7 @@
       [:> React/View {:paddingRight 10 :with 32}
         [TripIcon (:step/trip (first steps))]]
       [:> React/Text {:style {:color "gray" :paddingRight 7 :flex 3}}
-        (str/replace (:maneuver/instruction (:step/maneuver (first steps)))
+        (str/replace "";(:maneuver/instruction (:step/maneuver (first steps)))
                      "[Dummy]"
                      "")]]])
 
@@ -95,8 +84,7 @@
                                 [:step/arrive
                                  :step/mode
                                  :step/name
-                                 {:step/maneuver [:maneuver/instruction
-                                                  :maneuver/type]}
+                                 {:step/maneuver [:maneuver/type]}
                                  {:step/trip [:trip/id
                                               {:trip/route [:route/long_name
                                                             :route/short_name
@@ -140,8 +128,7 @@
          [TripIcon trip]
          [:> React/View {:flex 1}
            [:> React/Text {:style {:paddingLeft 10 :color "slategray"}}
-             (str (route-type-name trip) " "
-                  (:route/short_name (:trip/route trip)))]
+             (handle/route-type-name trip)]
           [:> React/Text {:style {:paddingLeft 10 :color "slategray"}}
                          (str/replace (:trip/headsign trip)
                                       "[Dummy]"

@@ -1,4 +1,7 @@
-(ns hive.screens.home.directions.trip.handlers)
+(ns hive.screens.home.directions.trip.handlers
+  (:require [hive.schema :as schema]
+            [hiposfer.gtfs.edn :as gtfs]
+            [clojure.string :as str]))
 
 ;; adapted from
 ;; https://stackoverflow.com/a/16348977
@@ -52,3 +55,13 @@
              (if (contains? replacements a)
                [a (get replacements a)]
                [a v]))))
+
+(defn route-type-name
+  [trip]
+  (let [vehicles    (for [entry (:values (gtfs/get-mapping schema/gtfs-data
+                                                           :route/type))
+                          :when (= (:value entry)
+                                   (:route/type (:trip/route trip)))]
+                      (first (str/split (:description entry) #"\.|,")))]
+    (str (first vehicles) " "
+         (:route/short_name (:trip/route trip)))))

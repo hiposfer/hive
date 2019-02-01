@@ -1,4 +1,4 @@
-(ns hive.screens.settings.core
+(ns hive.screens.settings.ui
   (:require [hive.state :as state]
             [react-native :as React]
             [hive.screens.symbols :as symbols]
